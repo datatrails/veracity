@@ -1,0 +1,516 @@
+{
+  "events": [
+    {
+      "identity": "assets/31de2eb6-de4f-4e5a-9635-38f7cd5a0fc8/events/21d55b73-b4bc-4098-baf7-336ddee4f2f2",
+      "asset_identity": "assets/31de2eb6-de4f-4e5a-9635-38f7cd5a0fc8",
+      "event_attributes": {},
+      "asset_attributes": {
+        "document_hash_value": "3f3cbc0b6b3b20883b8fb1bf0203b5a1233809b2ab8edc8dd00b5cf1afaae3ee",
+        "document_version": "1",
+        "arc_description": "Does the last Merkle document default work?",
+        "arc_display_name": "Last Merkle Document",
+        "arc_display_type": "Document",
+        "arc_profile": "Document",
+        "document_hash_alg": "sha256"
+      },
+      "operation": "NewAsset",
+      "behaviour": "AssetCreator",
+      "timestamp_declared": "2024-03-14T23:24:50Z",
+      "timestamp_accepted": "2024-03-14T23:24:50Z",
+      "timestamp_committed": "2024-03-22T11:13:55.557Z",
+      "principal_declared": {
+        "issuer": "https://app.soak.stage.datatrails.ai/appidpv1",
+        "subject": "e96dfa33-b645-4b83-a041-e87ac426c089",
+        "display_name": "Root",
+        "email": ""
+      },
+      "principal_accepted": {
+        "issuer": "https://app.soak.stage.datatrails.ai/appidpv1",
+        "subject": "e96dfa33-b645-4b83-a041-e87ac426c089",
+        "display_name": "Root",
+        "email": ""
+      },
+      "confirmation_status": "CONFIRMED",
+      "transaction_id": "",
+      "block_number": 0,
+      "transaction_index": 0,
+      "from": "0xF17B3B9a3691846CA0533Ce01Fa3E35d6d6f714C",
+      "tenant_identity": "tenant/73b06b4e-504e-4d31-9fd9-5e606f329b51",
+      "merklelog_entry": {
+        "commit": {
+          "index": "0",
+          "idtimestamp": "018e3f48610b089800"
+        },
+        "confirm": {
+          "mmr_size": "7",
+          "root": "XdcejozGdFYn7JTa/5PUodWtmomUuGuTTouMvxyDevo=",
+          "timestamp": "1711106035557",
+          "idtimestamp": "",
+          "signed_tree_head": ""
+        },
+        "unequivocal": null
+      }
+    },
+    {
+      "identity": "assets/f56cf9ce-0c8a-43e6-85c4-90836766ad2b/events/03480736-4893-4324-879f-f2d7c18592e4",
+      "asset_identity": "assets/f56cf9ce-0c8a-43e6-85c4-90836766ad2b",
+      "event_attributes": {},
+      "asset_attributes": {
+        "arc_description": "does default Merkle work now?",
+        "arc_display_name": "Last Merkle Asset",
+        "arc_display_type": "Test"
+      },
+      "operation": "NewAsset",
+      "behaviour": "AssetCreator",
+      "timestamp_declared": "2024-03-14T23:24:03Z",
+      "timestamp_accepted": "2024-03-14T23:24:03Z",
+      "timestamp_committed": "2024-03-22T11:13:55.557Z",
+      "principal_declared": {
+        "issuer": "https://app.soak.stage.datatrails.ai/appidpv1",
+        "subject": "e96dfa33-b645-4b83-a041-e87ac426c089",
+        "display_name": "Root",
+        "email": ""
+      },
+      "principal_accepted": {
+        "issuer": "https://app.soak.stage.datatrails.ai/appidpv1",
+        "subject": "e96dfa33-b645-4b83-a041-e87ac426c089",
+        "display_name": "Root",
+        "email": ""
+      },
+      "confirmation_status": "CONFIRMED",
+      "transaction_id": "",
+      "block_number": 0,
+      "transaction_index": 0,
+      "from": "0xF17B3B9a3691846CA0533Ce01Fa3E35d6d6f714C",
+      "tenant_identity": "tenant/73b06b4e-504e-4d31-9fd9-5e606f329b51",
+      "merklelog_entry": {
+        "commit": {
+          "index": "1",
+          "idtimestamp": "018e3f4874c6089800"
+        },
+        "confirm": {
+          "mmr_size": "7",
+          "root": "XdcejozGdFYn7JTa/5PUodWtmomUuGuTTouMvxyDevo=",
+          "timestamp": "1711106035557",
+          "idtimestamp": "",
+          "signed_tree_head": ""
+        },
+        "unequivocal": null
+      }
+    },
+    {
+      "identity": "assets/f56cf9ce-0c8a-43e6-85c4-90836766ad2b/events/4f3184f6-3bed-4002-a63f-404656a7ead5",
+      "asset_identity": "assets/f56cf9ce-0c8a-43e6-85c4-90836766ad2b",
+      "event_attributes": {
+        "arc_description": "Poking the Asset to test confirmation time",
+        "arc_display_type": "Poke"
+      },
+      "asset_attributes": {},
+      "operation": "Record",
+      "behaviour": "RecordEvidence",
+      "timestamp_declared": "2024-03-22T11:13:07Z",
+      "timestamp_accepted": "2024-03-22T11:13:07Z",
+      "timestamp_committed": "2024-03-22T11:13:55.557Z",
+      "principal_declared": {
+        "issuer": "local",
+        "subject": "jon.geater@datatrails.ai",
+        "display_name": "Jon Geater",
+        "email": "jon.geater@datatrails.ai"
+      },
+      "principal_accepted": {
+        "issuer": "local",
+        "subject": "jon.geater@datatrails.ai",
+        "display_name": "Jon Geater",
+        "email": "jon.geater@datatrails.ai"
+      },
+      "confirmation_status": "CONFIRMED",
+      "transaction_id": "",
+      "block_number": 0,
+      "transaction_index": 0,
+      "from": "0xF17B3B9a3691846CA0533Ce01Fa3E35d6d6f714C",
+      "tenant_identity": "tenant/73b06b4e-504e-4d31-9fd9-5e606f329b51",
+      "merklelog_entry": {
+        "commit": {
+          "index": "3",
+          "idtimestamp": "018e65ddbe1406a600"
+        },
+        "confirm": {
+          "mmr_size": "7",
+          "root": "XdcejozGdFYn7JTa/5PUodWtmomUuGuTTouMvxyDevo=",
+          "timestamp": "1711106035557",
+          "idtimestamp": "",
+          "signed_tree_head": ""
+        },
+        "unequivocal": null
+      }
+    },
+    {
+      "identity": "assets/f56cf9ce-0c8a-43e6-85c4-90836766ad2b/events/6750db77-28c1-4340-b4ad-d8edf3d2ff38",
+      "asset_identity": "assets/f56cf9ce-0c8a-43e6-85c4-90836766ad2b",
+      "event_attributes": {
+        "arc_description": "Second poke",
+        "arc_display_type": "Poke"
+      },
+      "asset_attributes": {},
+      "operation": "Record",
+      "behaviour": "RecordEvidence",
+      "timestamp_declared": "2024-03-22T11:13:23Z",
+      "timestamp_accepted": "2024-03-22T11:13:23Z",
+      "timestamp_committed": "2024-03-22T16:07:57.276Z",
+      "principal_declared": {
+        "issuer": "local",
+        "subject": "jon.geater@datatrails.ai",
+        "display_name": "Jon Geater",
+        "email": "jon.geater@datatrails.ai"
+      },
+      "principal_accepted": {
+        "issuer": "local",
+        "subject": "jon.geater@datatrails.ai",
+        "display_name": "Jon Geater",
+        "email": "jon.geater@datatrails.ai"
+      },
+      "confirmation_status": "CONFIRMED",
+      "transaction_id": "",
+      "block_number": 0,
+      "transaction_index": 0,
+      "from": "0xF17B3B9a3691846CA0533Ce01Fa3E35d6d6f714C",
+      "tenant_identity": "tenant/73b06b4e-504e-4d31-9fd9-5e606f329b51",
+      "merklelog_entry": {
+        "commit": {
+          "index": "4",
+          "idtimestamp": "018e65de0ada06a600"
+        },
+        "confirm": {
+          "mmr_size": "8",
+          "root": "4HSSWuOJSSU/lHC7V4rU/UtZxDPG5QzjwxcnJhJS258=",
+          "timestamp": "1711123677276",
+          "idtimestamp": "",
+          "signed_tree_head": ""
+        },
+        "unequivocal": null
+      }
+    },
+    { "identity": "assets/ee0233fc-cfa2-40ea-af5a-b54c58dcfd39/events/032aeb8b-50f8-4a71-8564-73b1e9846ac1", "asset_identity": "assets/ee0233fc-cfa2-40ea-af5a-b54c58dcfd39", "event_attributes": {}, "asset_attributes": { "arc_description": "Test for Merkle Log Entry screen",
+        "arc_display_name": "release candidate",
+        "arc_display_type": "Test"
+      },
+      "operation": "NewAsset",
+      "behaviour": "AssetCreator",
+      "timestamp_declared": "2024-03-22T16:07:55Z",
+      "timestamp_accepted": "2024-03-22T16:07:55Z",
+      "timestamp_committed": "2024-03-22T16:07:57.276Z",
+      "principal_declared": {
+        "issuer": "https://app.soak.stage.datatrails.ai/appidpv1",
+        "subject": "e96dfa33-b645-4b83-a041-e87ac426c089",
+        "display_name": "Root",
+        "email": ""
+      },
+      "principal_accepted": {
+        "issuer": "https://app.soak.stage.datatrails.ai/appidpv1",
+        "subject": "e96dfa33-b645-4b83-a041-e87ac426c089",
+        "display_name": "Root",
+        "email": ""
+      },
+      "confirmation_status": "CONFIRMED",
+      "transaction_id": "",
+      "block_number": 0,
+      "transaction_index": 0,
+      "from": "0xF17B3B9a3691846CA0533Ce01Fa3E35d6d6f714C",
+      "tenant_identity": "tenant/73b06b4e-504e-4d31-9fd9-5e606f329b51",
+      "merklelog_entry": {
+        "commit": {
+          "index": "7",
+          "idtimestamp": "018e66eb3d0405f700"
+        },
+        "confirm": {
+          "mmr_size": "8",
+          "root": "4HSSWuOJSSU/lHC7V4rU/UtZxDPG5QzjwxcnJhJS258=",
+          "timestamp": "1711123677276",
+          "idtimestamp": "",
+          "signed_tree_head": ""
+        },
+        "unequivocal": null
+      }
+    },
+
+    {
+      "identity": "assets/ee0233fc-cfa2-40ea-af5a-b54c58dcfd39/events/9f1def52-9fd3-4089-877f-507b28564f6a",
+      "asset_identity": "assets/ee0233fc-cfa2-40ea-af5a-b54c58dcfd39",
+      "event_attributes": {
+        "arc_description": "Poke the second",
+        "arc_display_type": "Poke"
+      },
+      "asset_attributes": {},
+      "operation": "Record",
+      "behaviour": "RecordEvidence",
+      "timestamp_declared": "2024-03-22T16:08:35Z",
+      "timestamp_accepted": "2024-03-22T16:08:35Z",
+      "timestamp_committed": "2024-03-22T16:08:53.268Z",
+      "principal_declared": {
+        "issuer": "https://app.soak.stage.datatrails.ai/appidpv1",
+        "subject": "e96dfa33-b645-4b83-a041-e87ac426c089",
+        "display_name": "Root",
+        "email": ""
+      },
+      "principal_accepted": {
+        "issuer": "https://app.soak.stage.datatrails.ai/appidpv1",
+        "subject": "e96dfa33-b645-4b83-a041-e87ac426c089",
+        "display_name": "Root",
+        "email": ""
+      },
+      "confirmation_status": "CONFIRMED",
+      "transaction_id": "",
+      "block_number": 0,
+      "transaction_index": 0,
+      "from": "0xF17B3B9a3691846CA0533Ce01Fa3E35d6d6f714C",
+      "tenant_identity": "tenant/73b06b4e-504e-4d31-9fd9-5e606f329b51",
+      "merklelog_entry": {
+        "commit": {
+          "index": "8",
+          "idtimestamp": "018e66ebd78005f700"
+        },
+        "confirm": {
+          "mmr_size": "11",
+          "root": "7JI/HDSKtOzA7d2FF1GUedqQrvWaZ+4DzdgZnsP2AyQ=",
+          "timestamp": "1711123733268",
+          "idtimestamp": "",
+          "signed_tree_head": ""
+        },
+        "unequivocal": null
+      }
+    },
+    {
+      "identity": "assets/ee0233fc-cfa2-40ea-af5a-b54c58dcfd39/events/5c135ce8-2542-4c65-ae30-c5cf1e014f77",
+      "asset_identity": "assets/ee0233fc-cfa2-40ea-af5a-b54c58dcfd39",
+      "event_attributes": {
+        "arc_display_type": "Poke",
+        "arc_description": "Poke the first"
+      },
+      "asset_attributes": {},
+      "operation": "Record",
+      "behaviour": "RecordEvidence",
+      "timestamp_declared": "2024-03-22T16:08:25Z",
+      "timestamp_accepted": "2024-03-22T16:08:25Z",
+      "timestamp_committed": "2024-03-22T16:08:53.268Z",
+      "principal_declared": {
+        "issuer": "https://app.soak.stage.datatrails.ai/appidpv1",
+        "subject": "e96dfa33-b645-4b83-a041-e87ac426c089",
+        "display_name": "Root",
+        "email": ""
+      },
+      "principal_accepted": {
+        "issuer": "https://app.soak.stage.datatrails.ai/appidpv1",
+        "subject": "e96dfa33-b645-4b83-a041-e87ac426c089",
+        "display_name": "Root",
+        "email": ""
+      },
+      "confirmation_status": "CONFIRMED",
+      "transaction_id": "",
+      "block_number": 0,
+      "transaction_index": 0,
+      "from": "0xF17B3B9a3691846CA0533Ce01Fa3E35d6d6f714C",
+      "tenant_identity": "tenant/73b06b4e-504e-4d31-9fd9-5e606f329b51",
+      "merklelog_entry": {
+        "commit": {
+          "index": "10",
+          "idtimestamp": "018e66ec19b505f700"
+        },
+        "confirm": {
+          "mmr_size": "11",
+          "root": "7JI/HDSKtOzA7d2FF1GUedqQrvWaZ+4DzdgZnsP2AyQ=",
+          "timestamp": "1711123733268",
+          "idtimestamp": "",
+          "signed_tree_head": ""
+        },
+        "unequivocal": null
+      }
+    },
+
+    {
+      "identity": "assets/ee0233fc-cfa2-40ea-af5a-b54c58dcfd39/events/d5d25e95-0160-4ee3-8e68-db44d75a88d5",
+      "asset_identity": "assets/ee0233fc-cfa2-40ea-af5a-b54c58dcfd39",
+      "event_attributes": {
+        "arc_display_type": "Poke",
+        "arc_description": "Poke the third"
+      },
+      "asset_attributes": {},
+      "operation": "Record",
+      "behaviour": "RecordEvidence",
+      "timestamp_declared": "2024-03-27T17:35:44Z",
+      "timestamp_accepted": "2024-03-27T17:35:44Z",
+      "timestamp_committed": "2024-03-27T17:36:12.599Z",
+      "principal_declared": {
+        "issuer": "https://app.soak.stage.datatrails.ai/appidpv1",
+        "subject": "e96dfa33-b645-4b83-a041-e87ac426c089",
+        "display_name": "Root",
+        "email": ""
+      },
+      "principal_accepted": {
+        "issuer": "https://app.soak.stage.datatrails.ai/appidpv1",
+        "subject": "e96dfa33-b645-4b83-a041-e87ac426c089",
+        "display_name": "Root",
+        "email": ""
+      },
+      "confirmation_status": "CONFIRMED",
+      "transaction_id": "",
+      "block_number": 0,
+      "transaction_index": 0,
+      "from": "0xF17B3B9a3691846CA0533Ce01Fa3E35d6d6f714C",
+      "tenant_identity": "tenant/73b06b4e-504e-4d31-9fd9-5e606f329b51",
+      "merklelog_entry": {
+        "commit": {
+          "index": "11",
+          "idtimestamp": "018e80fbd6e313a600"
+        },
+        "confirm": {
+          "mmr_size": "15",
+          "root": "QpPTm02YkCceTYZhfk5yLxI3+Wn6hAn+DbK7Pc9dWkQ=",
+          "timestamp": "1711560972599",
+          "idtimestamp": "",
+          "signed_tree_head": ""
+        },
+        "unequivocal": null
+      }
+    },
+
+    {
+      "identity": "assets/ee0233fc-cfa2-40ea-af5a-b54c58dcfd39/events/962dfb26-8549-450c-a47d-414573ff2ac2",
+      "asset_identity": "assets/ee0233fc-cfa2-40ea-af5a-b54c58dcfd39",
+      "event_attributes": {
+        "arc_description": "Keep on poking",
+        "arc_display_type": "Poke"
+      },
+      "asset_attributes": {},
+      "operation": "Record",
+      "behaviour": "RecordEvidence",
+      "timestamp_declared": "2024-03-28T11:38:42Z",
+      "timestamp_accepted": "2024-03-28T11:38:42Z",
+      "timestamp_committed": "2024-03-28T11:39:10.904Z",
+      "principal_declared": {
+        "issuer": "https://app.soak.stage.datatrails.ai/appidpv1",
+        "subject": "e96dfa33-b645-4b83-a041-e87ac426c089",
+        "display_name": "Root",
+        "email": ""
+      },
+      "principal_accepted": {
+        "issuer": "https://app.soak.stage.datatrails.ai/appidpv1",
+        "subject": "e96dfa33-b645-4b83-a041-e87ac426c089",
+        "display_name": "Root",
+        "email": ""
+      },
+      "confirmation_status": "CONFIRMED",
+      "transaction_id": "",
+      "block_number": 0,
+      "transaction_index": 0,
+      "from": "0xF17B3B9a3691846CA0533Ce01Fa3E35d6d6f714C",
+      "tenant_identity": "tenant/73b06b4e-504e-4d31-9fd9-5e606f329b51",
+      "merklelog_entry": {
+        "commit": {
+          "index": "15",
+          "idtimestamp": "018e84db541a05c800"
+        },
+        "confirm": {
+          "mmr_size": "16",
+          "root": "SzK5WLTZUhH3ajKjtJOqJuniSpPOGQgJUy3aZY5dKkw=",
+          "timestamp": "1711625950904",
+          "idtimestamp": "",
+          "signed_tree_head": ""
+        },
+        "unequivocal": null
+      }
+    },
+    {
+      "identity": "assets/ee0233fc-cfa2-40ea-af5a-b54c58dcfd39/events/1e2a4d65-1920-4800-a5c7-c13944ab49d5",
+      "asset_identity": "assets/ee0233fc-cfa2-40ea-af5a-b54c58dcfd39",
+      "event_attributes": {
+        "arc_display_type": "Poke",
+        "arc_description": "Another poke"
+      },
+      "asset_attributes": {},
+      "operation": "Record",
+      "behaviour": "RecordEvidence",
+      "timestamp_declared": "2024-03-28T11:38:34Z",
+      "timestamp_accepted": "2024-03-28T11:38:34Z",
+      "timestamp_committed": "2024-03-28T11:39:30.334Z",
+      "principal_declared": {
+        "issuer": "https://app.soak.stage.datatrails.ai/appidpv1",
+        "subject": "e96dfa33-b645-4b83-a041-e87ac426c089",
+        "display_name": "Root",
+        "email": ""
+      },
+      "principal_accepted": {
+        "issuer": "https://app.soak.stage.datatrails.ai/appidpv1",
+        "subject": "e96dfa33-b645-4b83-a041-e87ac426c089",
+        "display_name": "Root",
+        "email": ""
+      },
+      "confirmation_status": "CONFIRMED",
+      "transaction_id": "",
+      "block_number": 0,
+      "transaction_index": 0,
+      "from": "0xF17B3B9a3691846CA0533Ce01Fa3E35d6d6f714C",
+      "tenant_identity": "tenant/73b06b4e-504e-4d31-9fd9-5e606f329b51",
+      "merklelog_entry": {
+        "commit": {
+          "index": "16",
+          "idtimestamp": "018e84db9da305c800"
+        },
+        "confirm": {
+          "mmr_size": "18",
+          "root": "S4lVvhCqsWdagJ4BcY/redp8+xuwYR/1+cYaosJjrMc=",
+          "timestamp": "1711625970334",
+          "idtimestamp": "",
+          "signed_tree_head": ""
+        },
+        "unequivocal": null
+      }
+    },
+    {
+      "identity": "assets/ee0233fc-cfa2-40ea-af5a-b54c58dcfd39/events/7aa171a2-ebb1-4a85-8c32-afe9cf77954f",
+      "asset_identity": "assets/ee0233fc-cfa2-40ea-af5a-b54c58dcfd39",
+      "event_attributes": {
+        "arc_description": "That's enough poking",
+        "arc_display_type": "Poke"
+      },
+      "asset_attributes": {},
+      "operation": "Record",
+      "behaviour": "RecordEvidence",
+      "timestamp_declared": "2024-03-28T11:38:50Z",
+      "timestamp_accepted": "2024-03-28T11:38:50Z",
+      "timestamp_committed": "2024-03-28T11:39:37.032Z",
+      "principal_declared": {
+        "issuer": "https://app.soak.stage.datatrails.ai/appidpv1",
+        "subject": "e96dfa33-b645-4b83-a041-e87ac426c089",
+        "display_name": "Root",
+        "email": ""
+      },
+      "principal_accepted": {
+        "issuer": "https://app.soak.stage.datatrails.ai/appidpv1",
+        "subject": "e96dfa33-b645-4b83-a041-e87ac426c089",
+        "display_name": "Root",
+        "email": ""
+      },
+      "confirmation_status": "CONFIRMED",
+      "transaction_id": "",
+      "block_number": 0,
+      "transaction_index": 0,
+      "from": "0xF17B3B9a3691846CA0533Ce01Fa3E35d6d6f714C",
+      "tenant_identity": "tenant/73b06b4e-504e-4d31-9fd9-5e606f329b51",
+      "merklelog_entry": {
+        "commit": {
+          "index": "18",
+          "idtimestamp": "018e84dbbb6513a600"
+        },
+        "confirm": {
+          "mmr_size": "19",
+          "root": "D1AKmopLpUTegb5hVqbzkhEXPxRhKOOHfPMW5ynkKtA=",
+          "timestamp": "1711625977032",
+          "idtimestamp": "",
+          "signed_tree_head": ""
+        },
+        "unequivocal": null
+      }
+    }
+  ],
+  "next_page_token": ""
+}

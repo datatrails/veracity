@@ -1,0 +1,46 @@
+{
+    "identity": "assets/ee0233fc-cfa2-40ea-af5a-b54c58dcfd39/events/d5d25e95-0160-4ee3-8e68-db44d75a88d5",
+    "asset_identity": "assets/ee0233fc-cfa2-40ea-af5a-b54c58dcfd39",
+    "event_attributes": {
+        "arc_display_type": "Poke",
+        "arc_description": "Poke the third"
+    },
+    "asset_attributes": {},
+    "operation": "Record",
+    "behaviour": "RecordEvidence",
+    "timestamp_declared": "2024-03-27T17:35:44Z",
+    "timestamp_accepted": "2024-03-27T17:35:44Z",
+    "timestamp_committed": "2024-03-27T17:36:12.599Z",
+    "principal_declared": {
+        "issuer": "https://app.soak.stage.datatrails.ai/appidpv1",
+        "subject": "e96dfa33-b645-4b83-a041-e87ac426c089",
+        "display_name": "Root",
+        "email": ""
+    },
+    "principal_accepted": {
+        "issuer": "https://app.soak.stage.datatrails.ai/appidpv1",
+        "subject": "e96dfa33-b645-4b83-a041-e87ac426c089",
+        "display_name": "Root",
+        "email": ""
+    },
+    "confirmation_status": "CONFIRMED",
+    "transaction_id": "",
+    "block_number": 0,
+    "transaction_index": 0,
+    "from": "0xF17B3B9a3691846CA0533Ce01Fa3E35d6d6f714C",
+    "tenant_identity": "tenant/73b06b4e-504e-4d31-9fd9-5e606f329b51",
+    "merklelog_entry": {
+        "commit": {
+            "index": "11",
+            "idtimestamp": "018e80fbd6e313a600"
+        },
+        "confirm": {
+            "mmr_size": "15",
+            "root": "QpPTm02YkCceTYZhfk5yLxI3+Wn6hAn+DbK7Pc9dWkQ=",
+            "timestamp": "1711560972599",
+            "idtimestamp": "",
+            "signed_tree_head": ""
+        },
+        "unequivocal": null
+    }
+}

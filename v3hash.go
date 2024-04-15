@@ -18,13 +18,13 @@ func bencodeEvent(v3Event simplehash.V3Event) ([]byte, error) {
 	// TODO: we ought to be able to avoid this double encode decode, but it is fiddly
 	eventJson, err := json.Marshal(v3Event)
 	if err != nil {
-		return nil, fmt.Errorf("EventSimpleHashV3: failed to marshal event : %v", err)
+		return nil, fmt.Errorf("EventSimpleHashV3: failed to marshal event : %w", err)
 	}
 
 	var jsonAny any
 
 	if err = json.Unmarshal(eventJson, &jsonAny); err != nil {
-		return nil, fmt.Errorf("EventSimpleHashV3: failed to unmarshal events: %v", err)
+		return nil, fmt.Errorf("EventSimpleHashV3: failed to unmarshal events: %w", err)
 	}
 
 	bencodeEvent, err := bencode.EncodeBytes(jsonAny)

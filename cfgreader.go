@@ -61,7 +61,7 @@ func cfgReader(cmd *CmdCtx, cCtx *cli.Context) error {
 
 	reader, err = azblob.NewReaderNoAuth(account, url, container)
 	if err != nil {
-		return fmt.Errorf("failed to connect to blob store: %v", err)
+		return fmt.Errorf("failed to connect to blob store: %w", err)
 	}
 	cmd.reader = reader
 

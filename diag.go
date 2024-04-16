@@ -89,7 +89,7 @@ func NewDiagCmd() *cli.Command {
 			fmt.Printf("%8d leaf-index - massif-first-index\n", expectLeafIndexMassif)
 			leafIndexMassif, err := cmd.massif.GetMassifLeafIndex(leafIndex)
 			if err != nil {
-				return fmt.Errorf("when expecting %d for %d: %w", expectLeafIndexMassif, mmrIndex, err)
+				return fmt.Errorf("when expecting %d for %d: %v", expectLeafIndexMassif, mmrIndex, err)
 			}
 
 			/// this is broken bug#9303

@@ -141,7 +141,7 @@ func NewEventDiagCmd() *cli.Command {
 
 				leafIndexMassif, err := cmd.massif.GetMassifLeafIndex(leafIndex)
 				if err != nil {
-					return fmt.Errorf("when expecting %d for %d: %w", leafIndexMassif, mmrIndex, err)
+					return fmt.Errorf("when expecting %d for %d: %v", leafIndexMassif, mmrIndex, err)
 				}
 				fmt.Printf(" |%8d leaf-index-massif\n", leafIndexMassif)
 

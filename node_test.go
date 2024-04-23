@@ -32,7 +32,7 @@ func TestNodeCmd(t *testing.T) {
 
 	tenantID := mmrtesting.DefaultGeneratorTenantIdentity
 	testContext, testGenerator, cfg := merklelogmmrblobs.NewAzuriteTestContext(t, "TestNodeCmd")
-	merklelogmmrblobs.GenerateTenantLog(&testContext, testGenerator, 10, tenantID, true)
+	merklelogmmrblobs.GenerateTenantLog(&testContext, testGenerator, 10, tenantID, true, massifHeight)
 
 	tests := []struct {
 		testArgs []string

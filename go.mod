@@ -7,19 +7,22 @@ replace (
 	github.com/datatrails/forestrie/go-forestrie/mmr => ../../mmr
 	github.com/datatrails/forestrie/go-forestrie/mmrblobs => ../../mmrblobs
 	github.com/datatrails/forestrie/go-forestrie/mmrtesting => ../../mmrtesting
+	github.com/ethereum/go-ethereum => github.com/ConsenSys/quorum v0.0.0-20221208112643-d318a5aa973a
 )
 
 require (
 	github.com/datatrails/forestrie/go-forestrie/mmrblobs v0.0.0-00010101000000-000000000000
-	github.com/datatrails/go-datatrails-common v0.13.5
-	github.com/datatrails/go-datatrails-common-api-gen v0.3.11
+	github.com/datatrails/go-datatrails-common v0.14.0
+	github.com/datatrails/go-datatrails-common-api-gen v0.4.1
 	github.com/datatrails/go-datatrails-simplehash v0.0.3
 	github.com/urfave/cli/v2 v2.27.1
 	github.com/zeebo/bencode v1.0.0
 )
 
 require (
+	github.com/btcsuite/btcd v0.20.1-beta // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.0.2 // indirect
+	github.com/ethereum/go-ethereum v0.0.0-20221208112643-d318a5aa973a // indirect
 	google.golang.org/genproto v0.0.0-20231127180814-3a041ad873d4 // indirect
 )
 
@@ -57,7 +60,6 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.1 // indirect
 	github.com/ldclabs/cose/go v0.0.0-20221214142927-d22c1cfc2154 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
@@ -70,7 +72,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/stretchr/testify v1.8.4 // indirect
+	github.com/stretchr/testify v1.9.0
 	github.com/veraison/go-cose v1.1.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect

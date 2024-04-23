@@ -30,7 +30,7 @@ func cfgMassifReader(cmd *CmdCtx, cCtx *cli.Context) error {
 		}
 	}
 
-	massifReader := mmrblobs.NewMassifReader(logger.Sugar, cmd.reader)
+	massifReader := mmrblobs.NewMassifReader(logger.Sugar, cmd.reader, mmrblobs.WithoutGetRootSupport())
 	cmd.massifReader = massifReader
 	cmd.massifHeight = uint8(cCtx.Uint("height"))
 	if cmd.massifHeight == 0 {

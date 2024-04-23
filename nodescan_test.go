@@ -35,7 +35,7 @@ func TestNodeScanCmd(t *testing.T) {
 	tenantID := mmrtesting.DefaultGeneratorTenantIdentity
 	testContext, testGenerator, cfg := merklelogmmrblobs.NewAzuriteTestContext(t, "TestNodeScanCmd")
 
-	eventsResponse := merklelogmmrblobs.GenerateTenantLog(&testContext, testGenerator, 10, tenantID, true)
+	eventsResponse := merklelogmmrblobs.GenerateTenantLog(&testContext, testGenerator, 10, tenantID, true, massifHeight)
 	marshaledEvents, err := marshalEventsList(eventsResponse)
 	require.NoError(t, err)
 

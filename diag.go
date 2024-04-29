@@ -83,21 +83,24 @@ func NewDiagCmd() *cli.Command {
 			fmt.Printf("%8d leaf-count\n", cmd.massif.MassifLeafCount())
 			fmt.Printf("%8d last-leaf-mmrindex\n", cmd.massif.LastLeafMMRIndex())
 
-			leafIndex := mmr.LeafCount(mmrIndex)
-			fmt.Printf("%8d leaf-index\n", leafIndex)
-			expectLeafIndexMassif := leafIndex - mmr.LeafCount(cmd.massif.Start.FirstIndex)
-			fmt.Printf("%8d leaf-index - massif-first-index\n", expectLeafIndexMassif)
-			leafIndexMassif, err := cmd.massif.GetMassifLeafIndex(leafIndex)
-			if err != nil {
-				return fmt.Errorf("when expecting %d for %d: %v", expectLeafIndexMassif, mmrIndex, err)
-			}
+			// trieIndex is equivilent to leafIndex, but we use the term trieIndex
+			//  when dealing with trie data.
+			trieIndex := mmr.LeafCount(mmrIndex + 1)
+			fmt.Printf("%8d trie-index\n", trieIndex)
 
-			/// this is broken bug#9303
-			// logTrieKey, err := cmd.massif.GetLeafEntryIndex(mmrIndex)
-			// if err != nil {
-			// 	return err
-			// }
-			logTrieKey := mmrblobs.GetTrieEntry(cmd.massif.Data, cmd.massif.IndexStart(), leafIndexMassif)
+			expectTrieIndexMassif := trieIndex - mmr.LeafCount(cmd.massif.Start.FirstIndex)
+			fmt.Printf("%8d trie-index - massif-first-index\n", expectTrieIndexMassif)
+
+			logTrieKey, err := cmd.massif.GetTrieKey(mmrIndex)
+			if err != nil {
+				return fmt.Errorf("when expecting %d for %d: %v", expectTrieIndexMassif, mmrIndex, err)
+			}
+			logTrieEntry, err := cmd.massif.GetTrieEntry(mmrIndex)
+			if err != nil {
+				entryIndex := mmr.LeafCount(mmrIndex + 1)
+				expectTrieIndexMassif := entryIndex - mmr.LeafCount(cmd.massif.Start.FirstIndex)
+				return fmt.Errorf("when expecting %d for %d: %v", expectTrieIndexMassif, mmrIndex, err)
+			}
 
 			logNodeValue, err := cmd.massif.Get(mmrIndex)
 			if err != nil {
@@ -112,8 +115,9 @@ func NewDiagCmd() *cli.Command {
 				return err
 			}
 			idTime := time.UnixMilli(unixMS)
-			fmt.Printf("%x log-trie-entry\n", logTrieKey[:32])
+			fmt.Printf("%x log-trie-key\n", logTrieKey[:32])
 			fmt.Printf("%x %s\n", logTrieKey[32:], idTime.Format(time.DateTime))
+			fmt.Printf("%x log-trie-entry\n", logTrieEntry[:64])
 
 			return nil
 		},

@@ -126,11 +126,11 @@ func NewEventDiagCmd() *cli.Command {
 				// if err != nil {
 				// 	return err
 				// }
-				respID, _, err := mmrblobs.SplitIDTimestampHex(resp.MerklelogEntry.Commit.Idtimestamp)
+				respIdTimestamp, _, err := mmrblobs.SplitIDTimestampHex(resp.MerklelogEntry.Commit.Idtimestamp)
 				if err != nil {
 					return err
 				}
-				respIDTimeMS, err := snowflakeid.IDUnixMilli(respID, uint8(cmd.massif.Start.CommitmentEpoch))
+				respIDTimeMS, err := snowflakeid.IDUnixMilli(respIdTimestamp, uint8(cmd.massif.Start.CommitmentEpoch))
 				if err != nil {
 					return err
 				}
@@ -152,7 +152,7 @@ func NewEventDiagCmd() *cli.Command {
 					return err
 				}
 
-				trieKeyIDBytes := logTrieKey[mmrblobs.TrieEntrySnowflakeIDStart:mmrblobs.TrieEntrySnowflakeIDEnd]
+				trieKeyIDBytes := logTrieKey[mmrblobs.TrieEntryIdTimestampStart:mmrblobs.TrieEntryIdTimestampEnd]
 				trieKeyID := binary.BigEndian.Uint64(trieKeyIDBytes)
 				unixMS, err := snowflakeid.IDUnixMilli(trieKeyID, uint8(cmd.massif.Start.CommitmentEpoch))
 				if err != nil {
@@ -166,7 +166,7 @@ func NewEventDiagCmd() *cli.Command {
 					return err
 				}
 
-				trieKey := mmrblobs.NewTrieKey(mmrblobs.KeyTypeApplicationContent, respID, []byte(v3Event.Identity))
+				trieKey := mmrblobs.NewTrieKey(mmrblobs.KeyTypeApplicationContent, []byte(v3Event.Identity))
 				if len(trieKey) != mmrblobs.TrieKeyBytes {
 					return mmrblobs.ErrIndexEntryBadSize
 				}
@@ -188,7 +188,7 @@ func NewEventDiagCmd() *cli.Command {
 				err = simplehashv3Hasher.HashEventFromJSON(
 					eventJson,
 					simplehash.WithPrefix([]byte{uint8(merklelog.LeafTypePlain)}),
-					simplehash.WithIDCommitted(respID))
+					simplehash.WithIDCommitted(respIdTimestamp))
 
 				if err != nil {
 					return err

@@ -108,7 +108,7 @@ func NewDiagCmd() *cli.Command {
 			}
 			fmt.Printf("%x log-value\n", logNodeValue)
 
-			idBytes := logTrieKey[mmrblobs.TrieEntrySnowflakeIDStart:mmrblobs.TrieEntrySnowflakeIDEnd]
+			idBytes := logTrieKey[mmrblobs.TrieEntryIdTimestampStart:mmrblobs.TrieEntryIdTimestampEnd]
 			id := binary.BigEndian.Uint64(idBytes)
 			unixMS, err := snowflakeid.IDUnixMilli(id, uint8(cmd.massif.Start.CommitmentEpoch))
 			if err != nil {

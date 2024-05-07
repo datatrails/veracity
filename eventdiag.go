@@ -166,7 +166,7 @@ func NewEventDiagCmd() *cli.Command {
 					return err
 				}
 
-				trieKey := mmrblobs.NewTrieKey(mmrblobs.KeyTypeApplicationContent, v3Event.TenantIdentity, []byte(v3Event.Identity))
+				trieKey := mmrblobs.NewTrieKey(mmrblobs.KeyTypeApplicationContent, []byte(v3Event.TenantIdentity), []byte(v3Event.Identity))
 				if len(trieKey) != mmrblobs.TrieKeyBytes {
 					return mmrblobs.ErrIndexEntryBadSize
 				}

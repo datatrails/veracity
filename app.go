@@ -31,6 +31,9 @@ func NewApp() *cli.App {
 			&cli.StringFlag{
 				Name: "bug", Usage: "specify a bug number to enable a work around or special behaviour",
 			},
+			&cli.BoolFlag{
+				Name: "envauth", Usage: "set to enable authorization from the environment (not all commands support this)",
+			},
 		},
 	}
 	return app
@@ -43,6 +46,6 @@ func AddCommands(app *cli.App) *cli.App {
 	app.Commands = append(app.Commands, NewDiagCmd())
 	app.Commands = append(app.Commands, NewEventDiagCmd())
 	app.Commands = append(app.Commands, NewMassifsCmd())
-
+	app.Commands = append(app.Commands, NewLogWatcherCmd())
 	return app
 }

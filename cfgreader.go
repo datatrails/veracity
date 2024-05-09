@@ -30,8 +30,9 @@ func cfgReader(cmd *CmdCtx, cCtx *cli.Context) error {
 
 	account := cCtx.String("account")
 	url := cCtx.String("url")
+	envAuth := cCtx.Bool("envauth")
 
-	if account == "" {
+	if account == "" && url == "" {
 		account = AzuriteStorageAccount
 		cmd.log.Infof("defaulting to the emulator account %s", account)
 	}
@@ -57,6 +58,15 @@ func cfgReader(cmd *CmdCtx, cCtx *cli.Context) error {
 	}
 	if !strings.HasSuffix(url, "/") {
 		url = url + "/"
+	}
+
+	if envAuth {
+		reader, err = azblob.NewDev(azblob.NewDevConfigFromEnv(), container)
+		if err != nil {
+			return err
+		}
+		cmd.reader = reader
+		return nil
 	}
 
 	reader, err = azblob.NewReaderNoAuth(account, url, container)

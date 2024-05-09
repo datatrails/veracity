@@ -11,7 +11,9 @@ replace (
 )
 
 require (
+	github.com/datatrails/forestrie/go-forestrie/merklelog v0.0.0-20240304142727-f7c5132676de
 	github.com/datatrails/forestrie/go-forestrie/mmrblobs v0.0.0-00010101000000-000000000000
+	github.com/datatrails/forestrie/go-forestrie/mmrtesting v0.0.0-00010101000000-000000000000
 	github.com/datatrails/go-datatrails-common v0.15.1
 	github.com/datatrails/go-datatrails-common-api-gen v0.4.1
 	github.com/datatrails/go-datatrails-simplehash v0.0.3
@@ -46,9 +48,7 @@ require (
 	github.com/containerd/cgroups/v3 v3.0.2 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
-	github.com/datatrails/forestrie/go-forestrie/merklelog v0.0.0-20240304142727-f7c5132676de
 	github.com/datatrails/forestrie/go-forestrie/mmr v0.0.0-00010101000000-000000000000
-	github.com/datatrails/forestrie/go-forestrie/mmrtesting v0.0.0-00010101000000-000000000000
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/docker/go-units v0.5.0 // indirect

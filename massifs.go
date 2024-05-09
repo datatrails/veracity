@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/datatrails/forestrie/go-forestrie/massifs"
 	"github.com/datatrails/forestrie/go-forestrie/mmr"
-	"github.com/datatrails/forestrie/go-forestrie/mmrblobs"
 	"github.com/urfave/cli/v2"
 )
 
@@ -74,7 +74,7 @@ to produce the desired information computationaly produce`,
 			mmrIndex := cCtx.Uint64("mmrindex")
 			massifIndex := cCtx.Uint64("first-massif")
 			if mmrIndex > uint64(0) {
-				massifIndex, err = mmrblobs.MassifIndexFromMMRIndex(height, mmrIndex)
+				massifIndex, err = massifs.MassifIndexFromMMRIndex(height, mmrIndex)
 				if err != nil {
 					return err
 				}
@@ -108,8 +108,8 @@ to produce the desired information computationaly produce`,
 				// *last* full massif. which we always  know when starting a new
 				// massif.
 				peakStackIndices = PeakStack(height, firstMMRIndex+1)
-				peakStackStart := mmrblobs.PeakStackStart(height)
-				logStart := mmrblobs.PeakStackEnd(mi, height)
+				peakStackStart := massifs.PeakStackStart(height)
+				logStart := massifs.PeakStackEnd(mi, height)
 
 				tableFmt := "|% 8d|% 8d|% 8d|% 8d|% 8d|% 8d|% 8d| [%s]"
 				plainFmt := "% 8d% 8d% 8d% 8d% 8d% 8d% 8d [%s]"
@@ -131,8 +131,8 @@ to produce the desired information computationaly produce`,
 					// this calc is wrong (its double) but it is what we do. the
 					// massifs all have twice the amount of space reserved for
 					// the trie than we need.
-					trieDataSize := mmrblobs.TrieEntryBytes * (1 << height)
-					peakStackSize := mmrblobs.PeakStackLen(mi) * 32
+					trieDataSize := massifs.TrieEntryBytes * (1 << height)
+					peakStackSize := massifs.PeakStackLen(mi) * 32
 					switch cCtx.String("format") {
 					case tableFmtName:
 						row = fmt.Sprintf(tableSizesFmt, trieDataSize, peakStackSize) + row

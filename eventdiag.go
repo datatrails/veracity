@@ -8,11 +8,11 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/datatrails/forestrie/go-forestrie/massifs"
 	"github.com/datatrails/forestrie/go-forestrie/merklelog"
 	"github.com/datatrails/forestrie/go-forestrie/merklelog/events"
 	"github.com/datatrails/forestrie/go-forestrie/merklelog/snowflakeid"
 	"github.com/datatrails/forestrie/go-forestrie/mmr"
-	"github.com/datatrails/forestrie/go-forestrie/mmrblobs"
 	v2assets "github.com/datatrails/go-datatrails-common-api-gen/assets/v2/assets"
 	"github.com/datatrails/go-datatrails-simplehash/simplehash"
 	"github.com/urfave/cli/v2"
@@ -73,7 +73,7 @@ func NewEventDiagCmd() *cli.Command {
 						return err
 					}
 
-					id, epoch, err := mmrblobs.SplitIDTimestampHex(resp.MerklelogEntry.Commit.Idtimestamp)
+					id, epoch, err := massifs.SplitIDTimestampHex(resp.MerklelogEntry.Commit.Idtimestamp)
 					if err != nil {
 						return err
 					}
@@ -109,7 +109,7 @@ func NewEventDiagCmd() *cli.Command {
 				// Get the mmrIndex from the request and then compute the massif
 				// it implies based on the massifHeight command line option.
 				mmrIndex := resp.MerklelogEntry.Commit.Index
-				massifIndex, err := mmrblobs.MassifIndexFromMMRIndex(cmd.massifHeight, mmrIndex)
+				massifIndex, err := massifs.MassifIndexFromMMRIndex(cmd.massifHeight, mmrIndex)
 				if err != nil {
 					return err
 				}
@@ -122,11 +122,11 @@ func NewEventDiagCmd() *cli.Command {
 				// Get the human time from the idtimestamp committed on the event.
 
 				// the idCommitted is in hex from the event, we need to convert it to uint64
-				// idCommitted, _, err := mmrblobs.SplitIDTimestampHex(merkleLogEntry.Commit.Idtimestamp)
+				// idCommitted, _, err := massifs.SplitIDTimestampHex(merkleLogEntry.Commit.Idtimestamp)
 				// if err != nil {
 				// 	return err
 				// }
-				respIdTimestamp, _, err := mmrblobs.SplitIDTimestampHex(resp.MerklelogEntry.Commit.Idtimestamp)
+				respIdTimestamp, _, err := massifs.SplitIDTimestampHex(resp.MerklelogEntry.Commit.Idtimestamp)
 				if err != nil {
 					return err
 				}
@@ -146,13 +146,13 @@ func NewEventDiagCmd() *cli.Command {
 				fmt.Printf(" |%8d leaf-index-massif\n", leafIndexMassif)
 
 				// Read the trie entry from the log
-				logTrieKey := mmrblobs.GetTrieEntry(cmd.massif.Data, cmd.massif.IndexStart(), leafIndexMassif)
+				logTrieKey := massifs.GetTrieEntry(cmd.massif.Data, cmd.massif.IndexStart(), leafIndexMassif)
 				logNodeValue, err := cmd.massif.Get(mmrIndex)
 				if err != nil {
 					return err
 				}
 
-				trieKeyIDBytes := logTrieKey[mmrblobs.TrieEntryIdTimestampStart:mmrblobs.TrieEntryIdTimestampEnd]
+				trieKeyIDBytes := logTrieKey[massifs.TrieEntryIdTimestampStart:massifs.TrieEntryIdTimestampEnd]
 				trieKeyID := binary.BigEndian.Uint64(trieKeyIDBytes)
 				unixMS, err := snowflakeid.IDUnixMilli(trieKeyID, uint8(cmd.massif.Start.CommitmentEpoch))
 				if err != nil {
@@ -166,9 +166,9 @@ func NewEventDiagCmd() *cli.Command {
 					return err
 				}
 
-				trieKey := mmrblobs.NewTrieKey(mmrblobs.KeyTypeApplicationContent, []byte(v3Event.TenantIdentity), []byte(v3Event.Identity))
-				if len(trieKey) != mmrblobs.TrieKeyBytes {
-					return mmrblobs.ErrIndexEntryBadSize
+				trieKey := massifs.NewTrieKey(massifs.KeyTypeApplicationContent, []byte(v3Event.TenantIdentity), []byte(v3Event.Identity))
+				if len(trieKey) != massifs.TrieKeyBytes {
+					return massifs.ErrIndexEntryBadSize
 				}
 				cmpPrint(
 					" |%x trie-key\n",

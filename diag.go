@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/datatrails/forestrie/go-forestrie/massifs"
 	"github.com/datatrails/forestrie/go-forestrie/merklelog/snowflakeid"
 	"github.com/datatrails/forestrie/go-forestrie/mmr"
-	"github.com/datatrails/forestrie/go-forestrie/mmrblobs"
 	"github.com/urfave/cli/v2"
 )
 
@@ -36,9 +36,9 @@ func NewDiagCmd() *cli.Command {
 				return fmt.Errorf("massif height can't be zero")
 			}
 
-			fmt.Printf("%8d trie-header-start\n", mmrblobs.TrieHeaderStart())
-			fmt.Printf("%8d trie-data-start\n", mmrblobs.TrieDataStart())
-			fmt.Printf("%8d peak-stack-start\n", mmrblobs.PeakStackStart(cmd.massifHeight))
+			fmt.Printf("%8d trie-header-start\n", massifs.TrieHeaderStart())
+			fmt.Printf("%8d trie-data-start\n", massifs.TrieDataStart())
+			fmt.Printf("%8d peak-stack-start\n", massifs.PeakStackStart(cmd.massifHeight))
 
 			// support identifying the massif implicitly via the index of a log
 			// entry. note that mmrIndex 0 is just handled as though the caller
@@ -46,13 +46,13 @@ func NewDiagCmd() *cli.Command {
 			mmrIndex := cCtx.Uint64("mmrindex")
 			massifIndex := cCtx.Uint64("massif")
 			if mmrIndex > uint64(0) {
-				massifIndex, err = mmrblobs.MassifIndexFromMMRIndex(cmd.massifHeight, mmrIndex)
+				massifIndex, err = massifs.MassifIndexFromMMRIndex(cmd.massifHeight, mmrIndex)
 				if err != nil {
 					return err
 				}
 			}
-			fmt.Printf("%8d peak-stack-len\n", mmrblobs.PeakStackLen(massifIndex))
-			logStart := mmrblobs.PeakStackEnd(massifIndex, cmd.massifHeight)
+			fmt.Printf("%8d peak-stack-len\n", massifs.PeakStackLen(massifIndex))
+			logStart := massifs.PeakStackEnd(massifIndex, cmd.massifHeight)
 			fmt.Printf("%8d tree-start\n", logStart)
 			fmt.Printf("%8d massif\n", massifIndex)
 			if mmrIndex > 0 {
@@ -108,7 +108,7 @@ func NewDiagCmd() *cli.Command {
 			}
 			fmt.Printf("%x log-value\n", logNodeValue)
 
-			idBytes := logTrieKey[mmrblobs.TrieEntryIdTimestampStart:mmrblobs.TrieEntryIdTimestampEnd]
+			idBytes := logTrieKey[massifs.TrieEntryIdTimestampStart:massifs.TrieEntryIdTimestampEnd]
 			id := binary.BigEndian.Uint64(idBytes)
 			unixMS, err := snowflakeid.IDUnixMilli(id, uint8(cmd.massif.Start.CommitmentEpoch))
 			if err != nil {

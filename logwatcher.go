@@ -9,9 +9,9 @@ import (
 
 	"time"
 
+	"github.com/datatrails/forestrie/go-forestrie/massifs"
 	"github.com/datatrails/forestrie/go-forestrie/merklelog/events"
 	"github.com/datatrails/forestrie/go-forestrie/merklelog/snowflakeid"
-	"github.com/datatrails/forestrie/go-forestrie/mmrblobs"
 
 	// "github.com/datatrails/go-datatrails-common/azblob"
 	"github.com/urfave/cli/v2"
@@ -92,7 +92,7 @@ func NewWatchConfig(cCtx *cli.Context, cmd *CmdCtx) (WatchConfig, error) {
 			return WatchConfig{}, err
 		}
 	} else {
-		id, epoch, err := mmrblobs.SplitIDTimestampHex(cfg.IDSince)
+		id, epoch, err := massifs.SplitIDTimestampHex(cfg.IDSince)
 		if err != nil {
 			return WatchConfig{}, err
 		}
@@ -104,7 +104,7 @@ func NewWatchConfig(cCtx *cli.Context, cmd *CmdCtx) (WatchConfig, error) {
 
 func idTimestampHex(t time.Time) (string, error) {
 	id := events.IDTimeFromTime(t)
-	return mmrblobs.IDTimestampToHex(id, currentEpoch), nil
+	return massifs.IDTimestampToHex(id, currentEpoch), nil
 }
 
 // NewLogWatcherCmd watches for changes on any log

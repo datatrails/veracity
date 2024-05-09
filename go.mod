@@ -5,14 +5,14 @@ go 1.22
 replace (
 	github.com/datatrails/forestrie/go-forestrie/merklelog => ../../merklelog
 	github.com/datatrails/forestrie/go-forestrie/mmr => ../../mmr
-	github.com/datatrails/forestrie/go-forestrie/mmrblobs => ../../mmrblobs
+	github.com/datatrails/forestrie/go-forestrie/massifs => ../../massifs
 	github.com/datatrails/forestrie/go-forestrie/mmrtesting => ../../mmrtesting
 	github.com/ethereum/go-ethereum => github.com/ConsenSys/quorum v0.0.0-20221208112643-d318a5aa973a
 )
 
 require (
 	github.com/datatrails/forestrie/go-forestrie/merklelog v0.0.0-20240304142727-f7c5132676de
-	github.com/datatrails/forestrie/go-forestrie/mmrblobs v0.0.0-00010101000000-000000000000
+	github.com/datatrails/forestrie/go-forestrie/massifs v0.0.0-00010101000000-000000000000
 	github.com/datatrails/forestrie/go-forestrie/mmrtesting v0.0.0-00010101000000-000000000000
 	github.com/datatrails/go-datatrails-common v0.15.1
 	github.com/datatrails/go-datatrails-common-api-gen v0.4.1

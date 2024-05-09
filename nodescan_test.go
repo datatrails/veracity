@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/datatrails/forestrie/go-forestrie/massifs"
 	"github.com/datatrails/forestrie/go-forestrie/merklelog"
 	merklelogmmrblobs "github.com/datatrails/forestrie/go-forestrie/merklelog/mmrblobs"
 	"github.com/datatrails/forestrie/go-forestrie/mmr"
-	"github.com/datatrails/forestrie/go-forestrie/mmrblobs"
 	"github.com/datatrails/forestrie/go-forestrie/mmrtesting"
 	v2assets "github.com/datatrails/go-datatrails-common-api-gen/assets/v2/assets"
 	"github.com/datatrails/go-datatrails-common/logger"
@@ -50,7 +50,7 @@ func TestNodeScanCmd(t *testing.T) {
 	fmt.Printf("TreeIndex(%d) == %d\n", leafIndex, mmr.TreeIndex(uint64(leafIndex)))
 
 	// Get the idtimestamp that ensures every entry is unique
-	idTimestamp, _, err := mmrblobs.SplitIDTimestampHex(
+	idTimestamp, _, err := massifs.SplitIDTimestampHex(
 		eventsResponse[leafIndex].MerklelogEntry.Commit.Idtimestamp)
 	require.NoError(t, err)
 

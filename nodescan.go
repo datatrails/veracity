@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/datatrails/forestrie/go-forestrie/mmrblobs"
+	"github.com/datatrails/forestrie/go-forestrie/massifs"
 	"github.com/urfave/cli/v2"
 )
 
@@ -38,7 +38,7 @@ func NewNodeScanCmd() *cli.Command {
 			start := cmd.massif.LogStart()
 			count := cmd.massif.Count()
 			for i := uint64(0); i < count; i++ {
-				entry := cmd.massif.Data[start+i*mmrblobs.ValueBytes : start+i*mmrblobs.ValueBytes+mmrblobs.ValueBytes]
+				entry := cmd.massif.Data[start+i*massifs.ValueBytes : start+i*massifs.ValueBytes+massifs.ValueBytes]
 				if bytes.Compare(entry, targetValue) == 0 {
 					fmt.Printf("%d\n", i+cmd.massif.Start.FirstIndex)
 					return nil

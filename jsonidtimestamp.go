@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/datatrails/forestrie/go-forestrie/mmrblobs"
+	"github.com/datatrails/forestrie/go-forestrie/massifs"
 )
 
 // extractIDTimestamp safely recovers an idtimestamp from api response data.
@@ -27,7 +27,7 @@ func extractIDTimestamp(eventJson []byte) (uint64, error) {
 	if !ok {
 		return 0, fmt.Errorf("merklelog_entry.commit missing from event")
 	}
-	id, _, err := mmrblobs.SplitIDTimestampHex(idtimestamp)
+	id, _, err := massifs.SplitIDTimestampHex(idtimestamp)
 	if err != nil {
 		return 0, err
 	}

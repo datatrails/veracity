@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/datatrails/forestrie/go-forestrie/mmrblobs"
+	"github.com/datatrails/forestrie/go-forestrie/massifs"
 	"github.com/datatrails/go-datatrails-common/logger"
 	"github.com/urfave/cli/v2"
 )
@@ -30,7 +30,7 @@ func cfgMassifReader(cmd *CmdCtx, cCtx *cli.Context) error {
 		}
 	}
 
-	massifReader := mmrblobs.NewMassifReader(logger.Sugar, cmd.reader, mmrblobs.WithoutGetRootSupport())
+	massifReader := massifs.NewMassifReader(logger.Sugar, cmd.reader, massifs.WithoutGetRootSupport())
 	cmd.massifReader = massifReader
 	cmd.massifHeight = uint8(cCtx.Uint("height"))
 	if cmd.massifHeight == 0 {
@@ -67,7 +67,7 @@ func cfgMassif(cmd *CmdCtx, cCtx *cli.Context) error {
 
 	// now, if we have a non zero mmrIndex, use it to (re)compute the massifIndex
 	if mmrIndex > uint64(0) {
-		massifIndex, err = mmrblobs.MassifIndexFromMMRIndex(cmd.massifHeight, mmrIndex)
+		massifIndex, err = massifs.MassifIndexFromMMRIndex(cmd.massifHeight, mmrIndex)
 		if err != nil {
 			return err
 		}

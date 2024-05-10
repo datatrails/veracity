@@ -138,7 +138,8 @@ func NewLogWatcherCmd() *cli.Command {
 				Value: time.Second,
 			},
 			&cli.IntFlag{
-				Name: "count", Usage: "Number of intervals. Zero means forever.",
+				Name: "count", Usage: "Number of intervals. Zero means forever. Defaults to single poll",
+				Value: 1,
 			},
 		},
 		Action: func(cCtx *cli.Context) error {
@@ -186,11 +187,60 @@ func NewLogWatcherCmd() *cli.Command {
 						)
 					}
 				case "tenants":
-					for _, it := range filtered.Items {
-						if it.Name == nil {
-							continue
+					if len(filtered.Items) == 0 {
+						fmt.Printf(
+							"no results since %v (%s). qt: %v\n",
+							w.lastSince.Format(time.RFC3339),
+							w.lastIDSince,
+							filterDuration,
+						)
+					}
+					c := NewLogTailCollator()
+					err = c.CollatePage(filtered.Items)
+					if err != nil {
+						return err
+					}
+					if len(c.massifs) > 0 {
+						fmt.Printf(
+							"%d active logs since %v (%s). qt: %v\n",
+							len(c.massifs),
+							w.lastSince.Format(time.RFC3339),
+							w.lastIDSince,
+							filterDuration,
+						)
+						for tenant, lt := range c.massifs {
+							fmt.Printf(" %s massif %d\n", tenant, lt.Number)
 						}
-						fmt.Printf("%s\n", *it.Name)
+					} else {
+						fmt.Printf(
+							"no logs updated since %v (%s). qt: %v\n",
+							w.lastSince.Format(time.RFC3339),
+							w.lastIDSince,
+							filterDuration,
+						)
+					}
+					if len(c.seals) > 0 {
+						fmt.Printf(
+							"%d tenants sealed since %v (%s). qt: %v\n",
+							len(c.seals),
+							w.lastSince.Format(time.RFC3339),
+							w.lastIDSince,
+							filterDuration,
+						)
+						for tenant, lt := range c.seals {
+							fmt.Printf(" %s seal %d\n", tenant, lt.Number)
+						}
+
+					} else {
+						/*
+							fmt.Printf(
+								"no tenants sealed since %v (%s). qt: %v\n",
+								w.lastSince.Format(time.RFC3339),
+								w.lastIDSince,
+								filterDuration,
+							)*/
+						// XXX: TODO: we haven't added the tag for the sealed
+						// blobs yet so this message is confusingly wrong. This is work in flight
 					}
 				}
 

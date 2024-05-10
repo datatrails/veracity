@@ -1,6 +1,8 @@
 package veracity
 
 import (
+	"slices"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/datatrails/forestrie/go-forestrie/massifs"
 )
@@ -93,6 +95,27 @@ func NewLogTailCollator() LogTailCollator {
 	}
 }
 
+// sortMapOfLogTails returns a sorted list of the keys to map of LogTails
+func sortMapOfLogTails(m map[string]LogTail) []string {
+	// The go lang community seems pretty divided on O(1)iterators, and I think this is still "the way"
+	keys := make([]string, 0, len(m))
+	for k, _ := range m {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
+	return keys
+}
+
+// SortedMassifTenants returns the keys of the massifs map in sorted order
+func (c LogTailCollator) SortedMassifTenants() []string {
+	return sortMapOfLogTails(c.massifs)
+}
+
+// SortedSealedTenants returns the keys of the massifs map in sorted order
+func (c LogTailCollator) SortedSealedTenants() []string {
+	return sortMapOfLogTails(c.seals)
+}
+
 // collectPageItem is typically used to handle the first item in a page prior to processing the remainder in a loop
 func (c *LogTailCollator) collectPageItem(it *azblob.FilterBlobItem) error {
 	lt, err := NewLogTail(*it.Name)
@@ -111,6 +134,9 @@ func (c *LogTailCollator) collectPageItem(it *azblob.FilterBlobItem) error {
 		}
 		return nil
 	}
+
+	// We only support 2 extensions, if we reach here we have excluded ".log" so
+	// we know we have a seal
 	cur, ok := c.seals[lt.Tenant]
 	if !ok {
 		c.seals[lt.Tenant] = lt

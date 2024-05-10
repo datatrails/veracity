@@ -1,6 +1,8 @@
 package veracity
 
 import (
+	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
@@ -278,6 +280,41 @@ func TestLogTailCollator_CollatePage(t *testing.T) {
 					}
 					assert.Equal(t, lt.Number, want.Number)
 				}
+			}
+		})
+	}
+}
+
+func Test_sortMapOfLogTails(t *testing.T) {
+	type args struct {
+		m map[string]LogTail
+	}
+
+	mkmap := func(keys ...string) map[string]LogTail {
+		m := map[string]LogTail{}
+		for i, k := range keys {
+			m[k] = LogTail{Path: fmt.Sprintf("%d", i)}
+		}
+		return m
+	}
+
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "happy case",
+			args: args{
+				m: mkmap("bbbb", "aaaa"),
+			},
+			want: []string{"aaaa", "bbbb"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := sortMapOfLogTails(tt.args.m); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("sortMapOfLogTails() = %v, want %v", got, tt.want)
 			}
 		})
 	}

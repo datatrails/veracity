@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/datatrails/forestrie/go-forestrie/massifs"
+	"github.com/datatrails/forestrie/go-forestrie/massifs/snowflakeid"
 	"github.com/datatrails/forestrie/go-forestrie/merklelog"
 	"github.com/datatrails/forestrie/go-forestrie/merklelog/events"
-	"github.com/datatrails/forestrie/go-forestrie/merklelog/snowflakeid"
 	"github.com/datatrails/forestrie/go-forestrie/mmr"
 	v2assets "github.com/datatrails/go-datatrails-common-api-gen/assets/v2/assets"
 	"github.com/datatrails/go-datatrails-simplehash/simplehash"

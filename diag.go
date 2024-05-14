@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/datatrails/forestrie/go-forestrie/massifs"
-	"github.com/datatrails/forestrie/go-forestrie/merklelog/snowflakeid"
+	"github.com/datatrails/forestrie/go-forestrie/massifs/snowflakeid"
 	"github.com/datatrails/forestrie/go-forestrie/mmr"
 	"github.com/urfave/cli/v2"
 )

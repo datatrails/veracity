@@ -9,9 +9,7 @@ import (
 
 	"time"
 
-	"github.com/datatrails/forestrie/go-forestrie/massifs"
-	"github.com/datatrails/forestrie/go-forestrie/merklelog/events"
-	"github.com/datatrails/forestrie/go-forestrie/merklelog/snowflakeid"
+	"github.com/datatrails/forestrie/go-forestrie/massifs/watcher"
 
 	// "github.com/datatrails/go-datatrails-common/azblob"
 	"github.com/urfave/cli/v2"
@@ -21,92 +19,23 @@ const (
 	currentEpoch = uint8(1) // good until the end of the first unix epoch
 )
 
-type WatchConfig struct {
-	Since         time.Time
-	IDSince       string
-	Horizon       time.Duration
-	Interval      time.Duration
-	IntervalCount int
-}
-
-type Watcher struct {
-	cfg WatchConfig
-	// these are just for reporting for now
-	lastSince   time.Time
-	lastIDSince string
-}
-
-func (w *Watcher) FirstFilter() string {
-	w.lastSince = w.cfg.Since
-	w.lastIDSince = w.cfg.IDSince
-	return fmt.Sprintf(`"lastid">='%s'`, w.cfg.IDSince)
-}
-
-func (w *Watcher) NextFilter() (string, error) {
-	var err error
-	if w.cfg.Horizon == 0 {
-		return w.FirstFilter(), nil
-	}
-	w.lastSince = time.Now().Add(-w.cfg.Horizon)
-	w.lastIDSince, err = idTimestampHex(w.lastSince)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf(`"lastid">='%s'`, w.lastIDSince), nil
-}
-
 // func sortedKeys(map[string]LogTail)
 
-func NewWatchConfig(cCtx *cli.Context, cmd *CmdCtx) (WatchConfig, error) {
+func NewWatchConfig(cCtx *cli.Context, cmd *CmdCtx) (watcher.WatchConfig, error) {
 
-	var err error
-	cfg := WatchConfig{}
-
-	// If horizon is provided, the since values are derived
-	if (cCtx.String("since") != "" || cCtx.String("idsince") != "") && cCtx.Duration("horizon") != 0 {
-		return WatchConfig{}, fmt.Errorf("provide horizon on its own or either of the since parameters.")
-	}
-
+	cfg := watcher.WatchConfig{}
 	cfg.Interval = cCtx.Duration("interval")
-	if cfg.Interval == 0 {
-		cfg.Interval = time.Second
-	}
-
 	cfg.Horizon = cCtx.Duration("horizon")
-	if cfg.Horizon == 0 {
-		// temporarily force a horizon
-		cfg.Horizon = time.Second * 30
-	}
-
-	// since defaults to now (but will get trumped by horizon if that was provided)
-	cfg.Since = time.Now()
 	if cCtx.Timestamp("since") != nil {
 		cfg.Since = *cCtx.Timestamp("since")
 	}
-	// horizon trumps since
-	if cfg.Horizon > 0 {
-		cfg.Since = time.Now().Add(-cfg.Horizon)
-	}
 	cfg.IDSince = cCtx.String("idsince")
-	if cfg.IDSince == "" {
-		cfg.IDSince, err = idTimestampHex(cfg.Since)
-		if err != nil {
-			return WatchConfig{}, err
-		}
-	} else {
-		id, epoch, err := massifs.SplitIDTimestampHex(cfg.IDSince)
-		if err != nil {
-			return WatchConfig{}, err
-		}
-		// set since from the provided idsince so we can report in human
-		cfg.Since = snowflakeid.IDTime(id, snowflakeid.EpochTimeUTC(epoch))
+
+	err := watcher.ConfigDefaults(&cfg)
+	if err != nil {
+		return watcher.WatchConfig{}, nil
 	}
 	return cfg, nil
-}
-
-func idTimestampHex(t time.Time) (string, error) {
-	id := events.IDTimeFromTime(t)
-	return massifs.IDTimestampToHex(id, currentEpoch), nil
 }
 
 // NewLogWatcherCmd watches for changes on any log
@@ -157,7 +86,7 @@ func NewLogWatcherCmd() *cli.Command {
 			if err != nil {
 				return err
 			}
-			w := Watcher{cfg: cfg}
+			w := watcher.Watcher{Cfg: cfg}
 
 			tagsFilter := w.FirstFilter()
 
@@ -177,7 +106,7 @@ func NewLogWatcherCmd() *cli.Command {
 					// or cost issues.
 				}
 
-				c := NewLogTailCollator()
+				c := watcher.NewLogTailCollator()
 				err = c.CollatePage(filtered.Items)
 				if err != nil {
 					return err
@@ -185,16 +114,16 @@ func NewLogWatcherCmd() *cli.Command {
 
 				fmt.Printf(
 					"%d active logs since %v (%s). qt: %v\n",
-					len(c.massifs),
-					w.lastSince.Format(time.RFC3339),
-					w.lastIDSince,
+					len(c.Massifs),
+					w.LastSince.Format(time.RFC3339),
+					w.LastIDSince,
 					filterDuration,
 				)
 				fmt.Printf(
 					"%d tenants sealed since %v (%s). qt: %v\n",
-					len(c.seals),
-					w.lastSince.Format(time.RFC3339),
-					w.lastIDSince,
+					len(c.Seals),
+					w.LastSince.Format(time.RFC3339),
+					w.LastIDSince,
 					filterDuration,
 				)
 
@@ -202,28 +131,25 @@ func NewLogWatcherCmd() *cli.Command {
 				default:
 				case "tenants":
 					for _, tenant := range c.SortedMassifTenants() {
-						lt := c.massifs[tenant]
+						lt := c.Massifs[tenant]
 						fmt.Printf(" %s massif %d\n", tenant, lt.Number)
 					}
 					for _, tenant := range c.SortedSealedTenants() {
-						lt := c.seals[tenant]
+						lt := c.Seals[tenant]
 						fmt.Printf(" %s seal %d\n", tenant, lt.Number)
 					}
 				}
 
 				// Note we don't allow a zero interval
-				if count == 1 || w.cfg.Interval == 0 {
+				if count == 1 || w.Cfg.Interval == 0 {
 					break
 				}
 				// count == 0 is infinite
 				if count > 1 {
 					count--
 				}
-				tagsFilter, err = w.NextFilter()
-				if err != nil {
-					return err
-				}
-				time.Sleep(w.cfg.Interval)
+				tagsFilter = w.NextFilter()
+				time.Sleep(w.Cfg.Interval)
 			}
 			return nil
 		},

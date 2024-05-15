@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/datatrails/forestrie/go-forestrie/massifs"
-	"github.com/datatrails/forestrie/go-forestrie/mmr"
+	"github.com/datatrails/go-datatrails-merklelog/massifs"
+	"github.com/datatrails/go-datatrails-merklelog/mmr"
 	"github.com/urfave/cli/v2"
 )
 

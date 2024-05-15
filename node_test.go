@@ -11,8 +11,8 @@ import (
 	"time"
 
 	merklelogmmrblobs "github.com/datatrails/forestrie/go-forestrie/merklelog/mmrblobs"
-	"github.com/datatrails/forestrie/go-forestrie/mmrtesting"
 	"github.com/datatrails/go-datatrails-common/logger"
+	"github.com/datatrails/go-datatrails-merklelog/mmrtesting"
 	"github.com/stretchr/testify/assert"
 )
 

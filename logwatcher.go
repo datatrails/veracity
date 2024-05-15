@@ -9,7 +9,7 @@ import (
 
 	"time"
 
-	"github.com/datatrails/forestrie/go-forestrie/massifs/watcher"
+	"github.com/datatrails/go-datatrails-merklelog/massifs/watcher"
 
 	// "github.com/datatrails/go-datatrails-common/azblob"
 	"github.com/urfave/cli/v2"

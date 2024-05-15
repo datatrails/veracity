@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/datatrails/forestrie/go-forestrie/massifs"
-	"github.com/datatrails/forestrie/go-forestrie/massifs/snowflakeid"
-	"github.com/datatrails/forestrie/go-forestrie/mmr"
+	"github.com/datatrails/go-datatrails-merklelog/massifs"
+	"github.com/datatrails/go-datatrails-merklelog/massifs/snowflakeid"
+	"github.com/datatrails/go-datatrails-merklelog/mmr"
 	"github.com/urfave/cli/v2"
 )
 

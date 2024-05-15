@@ -1,9 +1,9 @@
 package veracity
 
 import (
-	"github.com/datatrails/forestrie/go-forestrie/massifs"
 	"github.com/datatrails/go-datatrails-common/azblob"
 	"github.com/datatrails/go-datatrails-common/logger"
+	"github.com/datatrails/go-datatrails-merklelog/massifs"
 )
 
 // CmdCtx holds shared config and config derived state for all commands

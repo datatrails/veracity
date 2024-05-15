@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/datatrails/forestrie/go-forestrie/massifs"
+	"github.com/datatrails/go-datatrails-merklelog/massifs"
 	"github.com/urfave/cli/v2"
 )
 

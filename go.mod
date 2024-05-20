@@ -10,7 +10,7 @@ replace (
 require (
 	github.com/datatrails/forestrie/go-forestrie/merklelog v0.0.0-20240304142727-f7c5132676de
 	github.com/datatrails/go-datatrails-common v0.15.1
-	github.com/datatrails/go-datatrails-common-api-gen v0.4.4
+	github.com/datatrails/go-datatrails-common-api-gen v0.4.5
 	github.com/datatrails/go-datatrails-merklelog/massifs v0.0.1
 	github.com/datatrails/go-datatrails-merklelog/mmr v0.0.1
 	github.com/datatrails/go-datatrails-merklelog/mmrtesting v0.0.1

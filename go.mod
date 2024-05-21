@@ -2,13 +2,7 @@ module github.com/datatrails/veracity
 
 go 1.22
 
-replace (
-	github.com/datatrails/forestrie/go-forestrie/merklelog => ../../merklelog
-	github.com/ethereum/go-ethereum => github.com/ConsenSys/quorum v0.0.0-20221208112643-d318a5aa973a
-)
-
 require (
-	github.com/datatrails/forestrie/go-forestrie/merklelog v0.0.0-20240304142727-f7c5132676de
 	github.com/datatrails/go-datatrails-common v0.15.1
 	github.com/datatrails/go-datatrails-common-api-gen v0.4.5
 	github.com/datatrails/go-datatrails-merklelog/massifs v0.0.1

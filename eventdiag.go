@@ -8,8 +8,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/datatrails/forestrie/go-forestrie/merklelog"
-	"github.com/datatrails/forestrie/go-forestrie/merklelog/events"
+	"github.com/datatrails/forestrie/merklelog"
+	"github.com/datatrails/forestrie/merklelog/events"
 	v2assets "github.com/datatrails/go-datatrails-common-api-gen/assets/v2/assets"
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
 	"github.com/datatrails/go-datatrails-merklelog/massifs/snowflakeid"

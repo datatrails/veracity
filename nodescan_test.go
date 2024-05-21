@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/datatrails/forestrie/go-forestrie/merklelog"
-	merklelogmmrblobs "github.com/datatrails/forestrie/go-forestrie/merklelog/mmrblobs"
+	"github.com/datatrails/forestrie/merklelog"
+	merklelogmmrblobs "github.com/datatrails/forestrie/merklelog/mmrblobs"
 	v2assets "github.com/datatrails/go-datatrails-common-api-gen/assets/v2/assets"
 	"github.com/datatrails/go-datatrails-common/logger"
 	"github.com/datatrails/go-datatrails-merklelog/massifs"

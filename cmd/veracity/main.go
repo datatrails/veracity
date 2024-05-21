@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/datatrails/forestrie/go-forestrie/demos/veracity"
+	"github.com/datatrails/forestrie/demos/veracity"
 )
 
 func main() {

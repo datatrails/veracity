@@ -47,5 +47,6 @@ func AddCommands(app *cli.App) *cli.App {
 	app.Commands = append(app.Commands, NewEventDiagCmd())
 	app.Commands = append(app.Commands, NewMassifsCmd())
 	app.Commands = append(app.Commands, NewLogWatcherCmd())
+	app.Commands = append(app.Commands, NewLogTailCmd())
 	return app
 }

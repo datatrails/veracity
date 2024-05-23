@@ -6,6 +6,7 @@ package veracity
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"time"
 
@@ -17,10 +18,10 @@ import (
 
 const (
 	currentEpoch = uint8(1) // good until the end of the first unix epoch
+	tenantPrefix = "tenant/"
 )
 
-// func sortedKeys(map[string]LogTail)
-
+// NewWatchConfig derives a configuration from the options set on the command line context
 func NewWatchConfig(cCtx *cli.Context, cmd *CmdCtx) (watcher.WatchConfig, error) {
 
 	cfg := watcher.WatchConfig{}
@@ -67,10 +68,15 @@ func NewLogWatcherCmd() *cli.Command {
 			&cli.DurationFlag{
 				Name: "interval", Aliases: []string{"d"},
 				Value: time.Second,
+				Usage: "The default polling interval is one second, setting the interval to zero disables polling",
 			},
 			&cli.IntFlag{
 				Name: "count", Usage: "Number of intervals. Zero means forever. Defaults to single poll",
 				Value: 1,
+			},
+			&cli.StringFlag{
+				Name: "tenant", Aliases: []string{"t"},
+				Usage: "tenant to filter for, can be `,` separated list. by default all tenants are watched",
 			},
 		},
 		Action: func(cCtx *cli.Context) error {
@@ -86,6 +92,19 @@ func NewLogWatcherCmd() *cli.Command {
 			if err != nil {
 				return err
 			}
+
+			var watchTenants map[string]bool
+
+			if cCtx.String("tenant") != "" {
+				tenants := strings.Split(cCtx.String("tenant"), ",")
+				if len(tenants) > 0 {
+					watchTenants = make(map[string]bool)
+					for _, t := range tenants {
+						watchTenants[strings.TrimPrefix(t, tenantPrefix)] = true
+					}
+				}
+			}
+
 			w := watcher.Watcher{Cfg: cfg}
 
 			tagsFilter := w.FirstFilter()
@@ -131,10 +150,16 @@ func NewLogWatcherCmd() *cli.Command {
 				default:
 				case "tenants":
 					for _, tenant := range c.SortedMassifTenants() {
+						if watchTenants != nil && !watchTenants[tenant] {
+							continue
+						}
 						lt := c.Massifs[tenant]
 						fmt.Printf(" %s massif %d\n", tenant, lt.Number)
 					}
 					for _, tenant := range c.SortedSealedTenants() {
+						if watchTenants != nil && !watchTenants[tenant] {
+							continue
+						}
 						lt := c.Seals[tenant]
 						fmt.Printf(" %s seal %d\n", tenant, lt.Number)
 					}

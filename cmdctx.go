@@ -2,6 +2,7 @@ package veracity
 
 import (
 	"github.com/datatrails/go-datatrails-common/azblob"
+	"github.com/datatrails/go-datatrails-common/cbor"
 	"github.com/datatrails/go-datatrails-common/logger"
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
 )
@@ -12,6 +13,8 @@ type CmdCtx struct {
 	// storer *azblob.Storer
 	reader       azblob.Reader
 	massifReader massifs.MassifReader
+	cborCodec    cbor.CBORCodec
+	rootReader   massifs.SignedRootReader
 	massif       massifs.MassifContext
 
 	massifHeight uint8

@@ -4,8 +4,8 @@ go 1.22
 
 require (
 	github.com/datatrails/go-datatrails-common v0.15.1
-	github.com/datatrails/go-datatrails-common-api-gen v0.4.5
-	github.com/datatrails/go-datatrails-merklelog/massifs v0.0.1
+	github.com/datatrails/go-datatrails-common-api-gen v0.4.6
+	github.com/datatrails/go-datatrails-merklelog/massifs v0.0.3
 	github.com/datatrails/go-datatrails-merklelog/mmr v0.0.1
 	github.com/datatrails/go-datatrails-merklelog/mmrtesting v0.0.1
 	github.com/datatrails/go-datatrails-simplehash v0.0.3

@@ -31,6 +31,11 @@ includes:
 
 tasks:
 
+  build:
+    desc: ensure go build works for all modules
+    cmds:
+      - task: gobuild:go:build
+
   build:fast:
     desc: ensure go build works for all modules
     cmds:

@@ -116,7 +116,7 @@ to produce the desired information computationaly produce`,
 
 				// trieDataSize, peakStackSize, mmrDataSize
 				tableSizesFmt := "|% 8d|% 8d"
-				plainSizesFmt := "% 8d% 8d%"
+				plainSizesFmt := "% 8d% 8d "
 
 				var row string
 				switch cCtx.String("format") {

@@ -8,8 +8,6 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/datatrails/forestrie/merklelog"
-	"github.com/datatrails/forestrie/merklelog/events"
 	v2assets "github.com/datatrails/go-datatrails-common-api-gen/assets/v2/assets"
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
 	"github.com/datatrails/go-datatrails-merklelog/massifs/snowflakeid"
@@ -17,7 +15,44 @@ import (
 	"github.com/datatrails/go-datatrails-simplehash/simplehash"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+// LeafType provides domain separation for the different kinds of tree leaves we require.
+type LeafType uint8
+
+const (
+	// LeafTypePlain is used for committing to plain values.
+	LeafTypePlain LeafType = iota
+	// LeafTypePeriodSentinel is entered into the MMR once per period. By
+	// forcing a heartbeat entry, we guarantee a liveness indicator - their will
+	// be a definable lower bound on how often the MMR root changes
+	LeafTypePeriodSentinel
+	// LeafTypeEpochTombstone is always the last leave in an epoch MMR. This is
+	// used to provide crash fault tolerance on the epoch as whole
+	LeafTypeEpochTombStone
+)
+
+func NewTimestamp(id uint64, epoch uint8) (*timestamppb.Timestamp, error) {
+	ts := &timestamppb.Timestamp{}
+	err := SetTimestamp(id, ts, epoch)
+	if err != nil {
+		return nil, err
+	}
+	return ts, nil
+}
+
+func SetTimestamp(id uint64, ts *timestamppb.Timestamp, epoch uint8) error {
+	ms, err := snowflakeid.IDUnixMilli(id, epoch)
+	if err != nil {
+		return err
+	}
+
+	ts.Seconds = ms / 1000
+	ts.Nanos = int32(uint64(ms)-(uint64(ts.GetSeconds())*1000)) * 1e6
+
+	return nil
+}
 
 // NewEventDiagCmd provides diagnostic support for event verification
 //
@@ -78,7 +113,7 @@ func NewEventDiagCmd() *cli.Command {
 						return err
 					}
 
-					event.TimestampCommitted, err = events.NewTimestamp(id, epoch)
+					event.TimestampCommitted, err = NewTimestamp(id, epoch)
 					if err != nil {
 						return err
 					}
@@ -187,7 +222,7 @@ func NewEventDiagCmd() *cli.Command {
 
 				err = simplehashv3Hasher.HashEventFromJSON(
 					eventJson,
-					simplehash.WithPrefix([]byte{uint8(merklelog.LeafTypePlain)}),
+					simplehash.WithPrefix([]byte{uint8(LeafTypePlain)}),
 					simplehash.WithIDCommitted(respIdTimestamp))
 
 				if err != nil {

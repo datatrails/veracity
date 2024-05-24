@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	merklelogmmrblobs "github.com/datatrails/forestrie/merklelog/mmrblobs"
 	"github.com/datatrails/go-datatrails-common/logger"
 	"github.com/datatrails/go-datatrails-merklelog/mmrtesting"
+	"github.com/datatrails/veracity/veracitytesting"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,8 +31,8 @@ func TestNodeCmd(t *testing.T) {
 	// Create a single massif in the emulator
 
 	tenantID := mmrtesting.DefaultGeneratorTenantIdentity
-	testContext, testGenerator, cfg := merklelogmmrblobs.NewAzuriteTestContext(t, "TestNodeCmd")
-	merklelogmmrblobs.GenerateTenantLog(&testContext, testGenerator, 10, tenantID, true, massifHeight)
+	testContext, testGenerator, cfg := veracitytesting.NewAzuriteTestContext(t, "TestNodeCmd")
+	veracitytesting.GenerateTenantLog(&testContext, testGenerator, 10, tenantID, true, massifHeight, uint8(LeafTypePlain))
 
 	tests := []struct {
 		testArgs []string

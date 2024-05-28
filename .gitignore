@@ -1,3 +1,4 @@
 .local
 /veracity
 **/test_results
+dist/

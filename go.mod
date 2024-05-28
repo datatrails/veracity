@@ -2,10 +2,7 @@ module github.com/datatrails/veracity
 
 go 1.22
 
-
-replace (
-	github.com/datatrails/veacity => ./
-)
+replace github.com/datatrails/veacity => ./
 
 require (
 	github.com/datatrails/go-datatrails-common v0.15.1

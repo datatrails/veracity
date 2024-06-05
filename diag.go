@@ -21,8 +21,10 @@ func NewDiagCmd() *cli.Command {
 			&cli.Uint64Flag{
 				Name: "mmrindex", Aliases: []string{"i"},
 			},
-			&cli.Uint64Flag{
+			&cli.Int64Flag{
 				Name: "massif", Aliases: []string{"m"},
+				Usage: "allow inspection of an arbitrary mmr index by explicitly specifying a massif index",
+				Value: -1,
 			},
 		},
 		Action: func(cCtx *cli.Context) error {
@@ -44,8 +46,9 @@ func NewDiagCmd() *cli.Command {
 			// entry. note that mmrIndex 0 is just handled as though the caller
 			// asked for massifIndex 0
 			mmrIndex := cCtx.Uint64("mmrindex")
-			massifIndex := cCtx.Uint64("massif")
-			if mmrIndex > uint64(0) {
+			signedMassifIndex := cCtx.Int64("massif")
+			massifIndex := uint64(signedMassifIndex)
+			if mmrIndex > uint64(0) && signedMassifIndex == -1 {
 				massifIndex, err = massifs.MassifIndexFromMMRIndex(cmd.massifHeight, mmrIndex)
 				if err != nil {
 					return err
@@ -85,9 +88,10 @@ func NewDiagCmd() *cli.Command {
 
 			// trieIndex is equivilent to leafIndex, but we use the term trieIndex
 			//  when dealing with trie data.
-			trieIndex := mmr.LeafCount(mmrIndex + 1)
+			trieIndex := mmr.LeafIndex(mmrIndex)
 			fmt.Printf("%8d trie-index\n", trieIndex)
 
+			// FirstIndex is the *size* of the mmr preceding the current massif
 			expectTrieIndexMassif := trieIndex - mmr.LeafCount(cmd.massif.Start.FirstIndex)
 			fmt.Printf("%8d trie-index - massif-first-index\n", expectTrieIndexMassif)
 
@@ -97,7 +101,8 @@ func NewDiagCmd() *cli.Command {
 			}
 			logTrieEntry, err := cmd.massif.GetTrieEntry(mmrIndex)
 			if err != nil {
-				entryIndex := mmr.LeafCount(mmrIndex + 1)
+				entryIndex := mmr.LeafIndex(mmrIndex)
+				// FirstIndex is the *size* of the mmr preceding the current massif
 				expectTrieIndexMassif := entryIndex - mmr.LeafCount(cmd.massif.Start.FirstIndex)
 				return fmt.Errorf("when expecting %d for %d: %v", expectTrieIndexMassif, mmrIndex, err)
 			}

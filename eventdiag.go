@@ -170,7 +170,7 @@ func NewEventDiagCmd() *cli.Command {
 					return err
 				}
 
-				leafIndex := mmr.LeafCount(mmrIndex)
+				leafIndex := mmr.LeafIndex(mmrIndex)
 				// Note that the banner info is all from the event response
 				fmt.Printf("%d %s %s\n", leafIndex, time.UnixMilli(respIDTimeMS).Format(time.RFC3339Nano), resp.Identity)
 

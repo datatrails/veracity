@@ -34,7 +34,7 @@ Installation is a manual process:
 3. Set the file permissions
 4. Move the binary to a location on your PATH
 
-For example, for the linux or darwin the following steps would be conventional
+For example, for the Linux or Darwin OS the following steps would be conventional
 
 ```
 PLATFORM=Darwin
@@ -78,9 +78,9 @@ LEAF=2b8ecdee967d976a31bac630036d6b183bd40913f969b47b438d4614ce7fa155
 veracity --url $URL --tenant=$TENANT nodescan -v $LEAF
 ```
 
-This command will report the mmr index of that leaf as `10`
+This command will report the MMR index of that leaf as `10`
 
-The conventional way to visualise the mmr index is like this
+The conventional way to visualise the MMR index is like this
 
 ```
 
@@ -93,7 +93,7 @@ The conventional way to visualise the mmr index is like this
 0  1  2  3 5  5   6 LEAF INDEX
 ```
 
-And that shows that the leaf, which has mmr index `10` is the *6'th* event ever
+And that shows that the leaf, which has MMR index `10` is the *7'th* event ever
 recorded in that tenant.
 
 The results of this command can be independently checked by downloading the

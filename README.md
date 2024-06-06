@@ -67,7 +67,8 @@ in your $PATH
 scanning the log. This is typically used in development as a diagnostic aid.
 It can also be used for some audit use cases.
 
-Find a leaf in the log by full audit.
+Find a leaf in the log by full audit. The Merkle Leaf value for any DataTrails event
+can be found from its event details page in the UI. Follow the "Merkle Log Entry" link.
 
 ```
 URL=https://app.datatrails.ai/verifiabledata

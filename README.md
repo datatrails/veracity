@@ -77,7 +77,6 @@ LEAF=2b8ecdee967d976a31bac630036d6b183bd40913f969b47b438d4614ce7fa155
 veracity --url $URL --tenant=$TENANT nodescan -v $LEAF
 ```
 
-The merkle logs encode a 
 This command will report the mmr index of that leaf as `10`
 
 The conventional way to visualise the mmr index is like this
@@ -93,7 +92,8 @@ The conventional way to visualise the mmr index is like this
 0  1  2  3 5  5   6 LEAF INDEX
 ```
 
-And that shows that leaf is the *6'th* event ever recorded in that tenant.
+And that shows that the leaf, which has mmr index `10` is the *6'th* event ever
+recorded in that tenant.
 
 The results of this command can be independently checked by downloading the
 public verifiable data for the DataTrails tenant on which the event was

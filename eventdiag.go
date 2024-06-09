@@ -8,29 +8,19 @@ import (
 	"reflect"
 	"time"
 
-	v2assets "github.com/datatrails/go-datatrails-common-api-gen/assets/v2/assets"
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
 	"github.com/datatrails/go-datatrails-merklelog/massifs/snowflakeid"
 	"github.com/datatrails/go-datatrails-merklelog/mmr"
 	"github.com/datatrails/go-datatrails-simplehash/simplehash"
 	"github.com/urfave/cli/v2"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// LeafType provides domain separation for the different kinds of tree leaves we require.
-type LeafType uint8
-
 const (
 	// LeafTypePlain is used for committing to plain values.
-	LeafTypePlain LeafType = iota
-	// LeafTypePeriodSentinel is entered into the MMR once per period. By
-	// forcing a heartbeat entry, we guarantee a liveness indicator - their will
-	// be a definable lower bound on how often the MMR root changes
-	LeafTypePeriodSentinel
-	// LeafTypeEpochTombstone is always the last leave in an epoch MMR. This is
-	// used to provide crash fault tolerance on the epoch as whole
-	LeafTypeEpochTombStone
+	LeafTypePlain         = uint8(0)
+	PublicAssetsPrefix    = "publicassets/"
+	ProtectedAssetsPrefix = "assets/"
 )
 
 func NewTimestamp(id uint64, epoch uint8) (*timestamppb.Timestamp, error) {
@@ -67,15 +57,12 @@ func NewEventDiagCmd() *cli.Command {
 			},
 		},
 		Action: func(cCtx *cli.Context) error {
-			eventsJson, err := readFile(cCtx)
+			verifiableEvents, err := readFile(cCtx)
 			if err != nil {
 				return err
 			}
 
 			cmd := &CmdCtx{}
-			if err = cfgBugs(cmd, cCtx); err != nil {
-				return err
-			}
 			if err = cfgMassifReader(cmd, cCtx); err != nil {
 				return err
 			}
@@ -88,91 +75,48 @@ func NewEventDiagCmd() *cli.Command {
 				return false
 			}
 
-			for _, eventJson := range eventsJson {
+			for _, event := range verifiableEvents {
 
-				resp := v2assets.EventResponseJSONAPI{}
-				err = protojson.Unmarshal(eventJson, &resp)
-				if err != nil {
-					return err
-				}
-
-				// If we are compensating for bug 9308, do so by restoring timestamp_committed from the idtimestamp
-				if Bug(cmd, Bug9308) {
-					v3, err := simplehash.V3FromEventJSON(eventJson)
-					if err != nil {
-						return err
-					}
-
-					event, err := newEventResponseFromV3(&v3)
-					if err != nil {
-						return err
-					}
-
-					id, epoch, err := massifs.SplitIDTimestampHex(resp.MerklelogEntry.Commit.Idtimestamp)
-					if err != nil {
-						return err
-					}
-
-					event.TimestampCommitted, err = NewTimestamp(id, epoch)
-					if err != nil {
-						return err
-					}
-
-					// due to https://dev.azure.com/jitsuin/avid/_workitems/edit/9323
-					// We have to go via the besboke marshaler
-
-					marshaler := v2assets.NewFlatMarshalerForEvents()
-					eventJson, err = marshaler.Marshal(event)
-					if err != nil {
-						return err
-					}
-
-					respRecovered := v2assets.EventResponseJSONAPI{}
-					err = protojson.Unmarshal(eventJson, &respRecovered)
-					if err != nil {
-						return err
-					}
-
-					// ms := event.TimestampCommitted.AsTime().UnixMilli()
-					// fmt.Printf("%d %s %s\n", ms, event.TimestampCommitted.AsTime().Format(time.RFC3339Nano), respRecovered.TimestampCommitted)
-				}
-
-				if resp.MerklelogEntry == nil || resp.MerklelogEntry.Commit == nil {
+				if event.LogEntry == nil || event.LogEntry.Commit == nil {
 					continue
 				}
 
 				// Get the mmrIndex from the request and then compute the massif
 				// it implies based on the massifHeight command line option.
-				mmrIndex := resp.MerklelogEntry.Commit.Index
+				mmrIndex := event.LogEntry.Commit.Index
 				massifIndex, err := massifs.MassifIndexFromMMRIndex(cmd.massifHeight, mmrIndex)
 				if err != nil {
 					return err
 				}
+				tenantIdentity := cCtx.String("tenant")
+				if tenantIdentity == "" {
+					// The tenant identity on the event is the original tenant
+					// that created the event. For public assets and shared
+					// assets, this is true regardless of which tenancy the
+					// record is fetched from.  Those same events will appear in
+					// the logs of all tenants they were shared with.
+					tenantIdentity = event.V3Event.TenantIdentity
+				}
 				// read the massif blob
-				cmd.massif, err = cmd.massifReader.GetMassif(context.Background(), resp.TenantIdentity, massifIndex)
+				cmd.massif, err = cmd.massifReader.GetMassif(context.Background(), tenantIdentity, massifIndex)
 				if err != nil {
 					return err
 				}
 
 				// Get the human time from the idtimestamp committed on the event.
 
-				// the idCommitted is in hex from the event, we need to convert it to uint64
-				// idCommitted, _, err := massifs.SplitIDTimestampHex(merkleLogEntry.Commit.Idtimestamp)
-				// if err != nil {
-				// 	return err
-				// }
-				respIdTimestamp, _, err := massifs.SplitIDTimestampHex(resp.MerklelogEntry.Commit.Idtimestamp)
+				eventIDTimestamp, _, err := massifs.SplitIDTimestampHex(event.LogEntry.Commit.Idtimestamp)
 				if err != nil {
 					return err
 				}
-				respIDTimeMS, err := snowflakeid.IDUnixMilli(respIdTimestamp, uint8(cmd.massif.Start.CommitmentEpoch))
+				eventIDTimestampMS, err := snowflakeid.IDUnixMilli(eventIDTimestamp, uint8(cmd.massif.Start.CommitmentEpoch))
 				if err != nil {
 					return err
 				}
 
 				leafIndex := mmr.LeafIndex(mmrIndex)
 				// Note that the banner info is all from the event response
-				fmt.Printf("%d %s %s\n", leafIndex, time.UnixMilli(respIDTimeMS).Format(time.RFC3339Nano), resp.Identity)
+				fmt.Printf("%d %s %s\n", leafIndex, time.UnixMilli(eventIDTimestampMS).Format(time.RFC3339Nano), event.V3EventOrig.Identity)
 
 				leafIndexMassif, err := cmd.massif.GetMassifLeafIndex(leafIndex)
 				if err != nil {
@@ -181,65 +125,64 @@ func NewEventDiagCmd() *cli.Command {
 				fmt.Printf(" |%8d leaf-index-massif\n", leafIndexMassif)
 
 				// Read the trie entry from the log
-				logTrieKey := massifs.GetTrieEntry(cmd.massif.Data, cmd.massif.IndexStart(), leafIndexMassif)
+				logTrieEntry := massifs.GetTrieEntry(cmd.massif.Data, cmd.massif.IndexStart(), leafIndexMassif)
 				logNodeValue, err := cmd.massif.Get(mmrIndex)
 				if err != nil {
 					return err
 				}
 
-				trieKeyIDBytes := logTrieKey[massifs.TrieEntryIdTimestampStart:massifs.TrieEntryIdTimestampEnd]
-				trieKeyID := binary.BigEndian.Uint64(trieKeyIDBytes)
-				unixMS, err := snowflakeid.IDUnixMilli(trieKeyID, uint8(cmd.massif.Start.CommitmentEpoch))
+				logTrieIDTimestampBytes := logTrieEntry[massifs.TrieEntryIdTimestampStart:massifs.TrieEntryIdTimestampEnd]
+				logTrieIDTimestamp := binary.BigEndian.Uint64(logTrieIDTimestampBytes)
+				unixMS, err := snowflakeid.IDUnixMilli(logTrieIDTimestamp, uint8(cmd.massif.Start.CommitmentEpoch))
 				if err != nil {
 					return err
 				}
 				idTime := time.UnixMilli(unixMS)
 
-				// Encode the api response in the V3 Schema
-				v3Event, err := simplehash.V3FromEventJSON(eventJson)
-				if err != nil {
-					return err
-				}
-
-				trieKey := massifs.NewTrieKey(massifs.KeyTypeApplicationContent, []byte(v3Event.TenantIdentity), []byte(v3Event.Identity))
+				trieKey := massifs.NewTrieKey(
+					massifs.KeyTypeApplicationContent,
+					[]byte(tenantIdentity),
+					[]byte(event.V3Event.Identity))
 				if len(trieKey) != massifs.TrieKeyBytes {
 					return massifs.ErrIndexEntryBadSize
 				}
 				cmpPrint(
 					" |%x trie-key\n",
-					" |%x != log-trie-key %x\n", trieKey[:32], logTrieKey[:32])
-				fmt.Printf(" |%x %s log-trie-key-id\n", trieKeyIDBytes, idTime.Format(time.DateTime))
-
-				simplehashv3Hasher := simplehash.NewHasherV3()
+					" |%x != log-trie-key %x\n", trieKey[:32], logTrieEntry[:32])
+				fmt.Printf(" |%x %s log-idtimestamp\n", logTrieIDTimestampBytes, idTime.Format(time.DateTime))
+				cmpPrint(
+					" |%x idtimestamp\n",
+					" |%x != log-idtimestamp %x\n", eventIDTimestamp, logTrieIDTimestamp)
 
 				// Compute the event data hash, independent of domain and idtimestamp
 
-				hasher := sha256.New()
-				if err = simplehash.V3HashEvent(hasher, v3Event); err != nil {
+				eventHasher := sha256.New()
+				if err = simplehash.V3HashEvent(eventHasher, event.V3Event); err != nil {
 					return err
 				}
-				eventHash := hasher.Sum(nil)
-
-				err = simplehashv3Hasher.HashEventFromJSON(
-					eventJson,
-					simplehash.WithPrefix([]byte{uint8(LeafTypePlain)}),
-					simplehash.WithIDCommitted(respIdTimestamp))
-
-				if err != nil {
-					return err
-				}
+				eventHash := eventHasher.Sum(nil)
 				fmt.Printf(" |%x v3hash (just the schema fields hashed)\n", eventHash)
 				if cCtx.Bool("bendump") {
-					bencode, err2 := bencodeEvent(v3Event)
+					bencode, err2 := bencodeEvent(event.V3Event)
 					if err2 != nil {
 						return err2
 					}
 					fmt.Printf(" |%s\n", string(bencode))
 				}
 
+				leafHasher := simplehash.NewHasherV3()
+				err = leafHasher.HashEventFromV3(
+					event.V3Event,
+					simplehash.WithPrefix([]byte{uint8(LeafTypePlain)}),
+					simplehash.WithIDCommitted(eventIDTimestamp))
+				if err != nil {
+					return err
+				}
+				leafHash := leafHasher.Sum(nil)
+
 				ok := cmpPrint(
 					" |%x leaf\n",
-					" |%x leaf != log-leaf %x\n", simplehashv3Hasher.Sum(nil), logNodeValue)
+					" |%x leaf != log-leaf %x\n", leafHash, logNodeValue)
 				if !ok {
 					// if the leaf doesn't match we definitely cant verify it
 					continue
@@ -248,19 +191,19 @@ func NewEventDiagCmd() *cli.Command {
 				// Generate the proof for the mmrIndex and get the root. We use
 				// the mmrSize from the end of the blob in which the leaf entry
 				// was recorded. Any size > than the leaf index would work.
-				hasher.Reset()
+				eventHasher.Reset()
 				mmrSize := cmd.massif.RangeCount()
-				proof, err := mmr.IndexProof(mmrSize, &cmd.massif, hasher, mmrIndex)
+				proof, err := mmr.IndexProof(mmrSize, &cmd.massif, eventHasher, mmrIndex)
 				if err != nil {
 					return err
 				}
-				root, err := mmr.GetRoot(mmrSize, &cmd.massif, hasher)
+				root, err := mmr.GetRoot(mmrSize, &cmd.massif, eventHasher)
 				if err != nil {
 					return err
 				}
 
-				hasher.Reset()
-				verified := mmr.VerifyInclusion(mmrSize, hasher, logNodeValue, mmrIndex, proof, root)
+				eventHasher.Reset()
+				verified := mmr.VerifyInclusion(mmrSize, eventHasher, logNodeValue, mmrIndex, proof, root)
 				if verified {
 					fmt.Printf("OK|%d %d\n", mmrIndex, leafIndex)
 					continue

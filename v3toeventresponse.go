@@ -1,6 +1,7 @@
 package veracity
 
 import (
+	"fmt"
 	"time"
 
 	v2assets "github.com/datatrails/go-datatrails-common-api-gen/assets/v2/assets"
@@ -9,7 +10,38 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func newEventResponseFromV3(v3 *simplehash.V3Event) (*v2assets.EventResponse, error) {
+func NewAttribute(value any) (*attribute.Attribute, error) {
+	switch v := value.(type) {
+	case string:
+		return attribute.NewStringAttribute(v), nil
+	case map[string]string:
+		return attribute.NewDictAttribute(v), nil
+	case []map[string]string:
+		return attribute.NewListAttribute(v), nil
+	// case []map[string]interface{}:
+	case []interface{}:
+		lv := []map[string]string{}
+		for _, it := range v {
+			mIface, ok := it.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			mString := map[string]string{}
+			for k, i := range mIface {
+				s, ok := i.(string)
+				if !ok {
+					continue
+				}
+				mString[k] = s
+			}
+			lv = append(lv, mString)
+		}
+		return attribute.NewListAttribute(lv), nil
+	default:
+		return nil, fmt.Errorf("value not string, map or list")
+	}
+}
+func newEventResponseFromV3(v3 simplehash.V3Event) (*v2assets.EventResponse, error) {
 
 	var err error
 	event := &v2assets.EventResponse{
@@ -20,12 +52,13 @@ func newEventResponseFromV3(v3 *simplehash.V3Event) (*v2assets.EventResponse, er
 	event.Identity = v3.Identity
 
 	for k, v := range v3.EventAttributes {
-		if event.EventAttributes[k], err = attribute.NewAttribute(v); err != nil {
+		if event.EventAttributes[k], err = NewAttribute(v); err != nil {
+
 			return nil, err
 		}
 	}
 	for k, v := range v3.AssetAttributes {
-		if event.AssetAttributes[k], err = attribute.NewAttribute(v); err != nil {
+		if event.AssetAttributes[k], err = NewAttribute(v); err != nil {
 			return nil, err
 		}
 	}

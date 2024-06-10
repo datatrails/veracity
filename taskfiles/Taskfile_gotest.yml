@@ -40,6 +40,30 @@ tasks:
             ./... \
             2>&1 | go-junit-report -set-exit-code -debug.print-events > {{.UNITTEST_DIR}}/main.xml
           gocov convert {{.UNITTEST_DIR}}/main.out > {{.UNITTEST_DIR}}/coverage.json
+
+  go:prodpublic:
+    desc: "run the integration tests"
+    dir: ../
+    vars:
+      GO_TEST_TAGS: '{{.GO_TEST_TAGS | default "-tags integration,prodpublic"}}'
+      GO_MOD_DIRS:
+        sh: find . -type f -name 'go.mod'
+
+    cmds:
+      - for: { var: GO_MOD_DIRS, as: MODULE}
+        cmd: |
+          cd $(dirname {{.MODULE}})
+          mkdir -p {{.UNITTEST_DIR}}
+          go test \
+            {{.GO_TEST_TAGS}} \
+            -race \
+            -v \
+            -coverprofile={{.UNITTEST_DIR}}/main.out \
+            ./... \
+            2>&1 | go-junit-report -set-exit-code -debug.print-events > {{.UNITTEST_DIR}}/main.xml
+          gocov convert {{.UNITTEST_DIR}}/main.out > {{.UNITTEST_DIR}}/coverage.json
+
+
   go:unit:
     desc: "run unit tests"
     dir: ../

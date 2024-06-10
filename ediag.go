@@ -13,43 +13,15 @@ import (
 	"github.com/datatrails/go-datatrails-merklelog/mmr"
 	"github.com/datatrails/go-datatrails-simplehash/simplehash"
 	"github.com/urfave/cli/v2"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
-
-const (
-	// LeafTypePlain is used for committing to plain values.
-	LeafTypePlain         = uint8(0)
-	PublicAssetsPrefix    = "publicassets/"
-	ProtectedAssetsPrefix = "assets/"
-)
-
-func NewTimestamp(id uint64, epoch uint8) (*timestamppb.Timestamp, error) {
-	ts := &timestamppb.Timestamp{}
-	err := SetTimestamp(id, ts, epoch)
-	if err != nil {
-		return nil, err
-	}
-	return ts, nil
-}
-
-func SetTimestamp(id uint64, ts *timestamppb.Timestamp, epoch uint8) error {
-	ms, err := snowflakeid.IDUnixMilli(id, epoch)
-	if err != nil {
-		return err
-	}
-
-	ts.Seconds = ms / 1000
-	ts.Nanos = int32(uint64(ms)-(uint64(ts.GetSeconds())*1000)) * 1e6
-
-	return nil
-}
 
 // NewEventDiagCmd provides diagnostic support for event verification
 //
 //nolint:gocognit
 func NewEventDiagCmd() *cli.Command {
-	return &cli.Command{Name: "ediag",
-		Usage: "print diagnostics about an events entry in the log",
+	return &cli.Command{Name: "event-log-info",
+		Aliases: []string{"ediag"},
+		Usage:   "print diagnostics about an events entry in the log",
 		Flags: []cli.Flag{
 			&cli.BoolFlag{Name: "bendump", Aliases: []string{"b"}, Value: false},
 			&cli.StringFlag{
@@ -57,7 +29,7 @@ func NewEventDiagCmd() *cli.Command {
 			},
 		},
 		Action: func(cCtx *cli.Context) error {
-			verifiableEvents, err := readFile(cCtx)
+			verifiableEvents, err := readArgs0FileOrStdIo(cCtx)
 			if err != nil {
 				return err
 			}

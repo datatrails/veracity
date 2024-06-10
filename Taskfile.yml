@@ -71,3 +71,4 @@ tasks:
     cmds:
      - task: azurite:preflight
      - task: gotest:go:azurite
+     - task: gotest:go:prodpublic

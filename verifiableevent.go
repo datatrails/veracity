@@ -45,24 +45,6 @@ func NewVerifiableEvent(eventJson []byte) (VerifiableEvent, error) {
 		return VerifiableEvent{}, err
 	}
 
-	/*
-		// Due to the perils of encoding time as strings (https://dev.azure.com/jitsuin/avid/_workitems/edit/9323)
-		// We have to round-trip via the besboke marshaler to ensure a stable encoding.
-
-		resp, err := newEventResponseFromV3(entry.V3Event)
-		if err != nil {
-			return VerifiableEvent{}, err
-		}
-		marshaler := assets.NewFlatMarshalerForEvents()
-		ve.Json, err = marshaler.Marshal(resp)
-		if err != nil {
-			return VerifiableEvent{}, err
-		}
-		err = json.Unmarshal(ve.Json, &ve.V3Event)
-		if err != nil {
-			return VerifiableEvent{}, err
-		}*/
-
 	ve.LogEntry = &assets.MerkleLogEntry{}
 	err = protojson.Unmarshal(entry.MerklelogEntry, ve.LogEntry)
 	if err != nil {

@@ -12,7 +12,7 @@ func cfgLogging(cmd *CmdCtx, cCtx *cli.Context) error {
 	if logLevel == "" {
 		logLevel = "INFO"
 	}
-	logger.New(logLevel)
-	cmd.log = logger.Sugar.WithServiceName("veracity")
+	logger.New(logLevel, logger.WithConsole())
+	cmd.log = logger.Sugar
 	return nil
 }

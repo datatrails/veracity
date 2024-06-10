@@ -41,7 +41,10 @@ func NewApp() *cli.App {
 
 func AddCommands(app *cli.App) *cli.App {
 	app.Commands = append(app.Commands, NewNodeCmd())
-	app.Commands = append(app.Commands, NewProveCmd())
+	app.Commands = append(app.Commands, NewEventsVerifyCmd())
+
+	// Note: this command is not implemented
+	// app.Commands = append(app.Commands, NewProveCmd())
 	app.Commands = append(app.Commands, NewNodeScanCmd())
 	app.Commands = append(app.Commands, NewDiagCmd())
 	app.Commands = append(app.Commands, NewEventDiagCmd())

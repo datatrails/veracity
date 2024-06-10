@@ -2,6 +2,8 @@ module github.com/datatrails/veracity
 
 go 1.22
 
+replace github.com/datatrails/go-datatrails-simplehash => ../go-datatrails-simplehash
+
 require (
 	github.com/datatrails/go-datatrails-common v0.16.1
 	github.com/datatrails/go-datatrails-common-api-gen v0.4.6

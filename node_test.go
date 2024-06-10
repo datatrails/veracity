@@ -32,7 +32,7 @@ func TestNodeCmd(t *testing.T) {
 
 	tenantID := mmrtesting.DefaultGeneratorTenantIdentity
 	testContext, testGenerator, cfg := veracitytesting.NewAzuriteTestContext(t, "TestNodeCmd")
-	veracitytesting.GenerateTenantLog(&testContext, testGenerator, 10, tenantID, true, massifHeight, uint8(LeafTypePlain))
+	veracitytesting.GenerateTenantLog(&testContext, testGenerator, 10, tenantID, true, massifHeight, LeafTypePlain)
 
 	tests := []struct {
 		testArgs []string

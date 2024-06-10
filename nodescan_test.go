@@ -34,7 +34,7 @@ func TestNodeScanCmd(t *testing.T) {
 	tenantID := mmrtesting.DefaultGeneratorTenantIdentity
 	testContext, testGenerator, cfg := veracitytesting.NewAzuriteTestContext(t, "TestNodeScanCmd")
 
-	eventsResponse := veracitytesting.GenerateTenantLog(&testContext, testGenerator, 10, tenantID, true, massifHeight, uint8(LeafTypePlain))
+	eventsResponse := veracitytesting.GenerateTenantLog(&testContext, testGenerator, 10, tenantID, true, massifHeight, LeafTypePlain)
 	marshaledEvents, err := marshalEventsList(eventsResponse)
 	require.NoError(t, err)
 
@@ -57,7 +57,7 @@ func TestNodeScanCmd(t *testing.T) {
 	simplehashv3Hasher := simplehash.NewHasherV3()
 	err = simplehashv3Hasher.HashEventFromJSON(
 		marshaledEvents[leafIndex],
-		simplehash.WithPrefix([]byte{uint8(LeafTypePlain)}),
+		simplehash.WithPrefix([]byte{LeafTypePlain}),
 		simplehash.WithIDCommitted(idTimestamp))
 	require.NoError(t, err)
 	expectedLeafNodeValue := fmt.Sprintf("%x", simplehashv3Hasher.Sum(nil))

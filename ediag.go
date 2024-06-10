@@ -145,7 +145,7 @@ func NewEventDiagCmd() *cli.Command {
 				leafHasher := simplehash.NewHasherV3()
 				err = leafHasher.HashEventFromV3(
 					event.V3Event,
-					simplehash.WithPrefix([]byte{uint8(LeafTypePlain)}),
+					simplehash.WithPrefix([]byte{LeafTypePlain}),
 					simplehash.WithIDCommitted(eventIDTimestamp))
 				if err != nil {
 					return err

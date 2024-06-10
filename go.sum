@@ -53,8 +53,8 @@ github.com/datatrails/go-datatrails-merklelog/mmr v0.0.2 h1:Jxov4/onoFiCISLQNSPy
 github.com/datatrails/go-datatrails-merklelog/mmr v0.0.2/go.mod h1:+Oz8O6bns0rF6gr03xJzKTBzUzyskZ8Gics8/qeNzYk=
 github.com/datatrails/go-datatrails-merklelog/mmrtesting v0.0.1 h1:sIyXWKTadqmVEsPj66RlKwRKzNQ7hK9SH1fRjZFDCa8=
 github.com/datatrails/go-datatrails-merklelog/mmrtesting v0.0.1/go.mod h1:KGdkOtamWG48EN4AXtTHPv6C0jJKrj840IMSkrD+egk=
-github.com/datatrails/go-datatrails-simplehash v0.0.3 h1:H4zNsdB9d2KMZ3EqM6n6AMGYB/RquEjANqcNrUlZtp8=
-github.com/datatrails/go-datatrails-simplehash v0.0.3/go.mod h1:ML1qlHH+SeaSTphpKw9psCsdI4UaTH3d68GpWOWOKgg=
+github.com/datatrails/go-datatrails-simplehash v0.0.4 h1:J1QTu4HCU4Frz8LgKiTBkZpL+rxld/Xp1ef47MMvy/c=
+github.com/datatrails/go-datatrails-simplehash v0.0.4/go.mod h1:ML1qlHH+SeaSTphpKw9psCsdI4UaTH3d68GpWOWOKgg=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

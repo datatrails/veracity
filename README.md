@@ -132,6 +132,9 @@ output will be:
 
 The same command accepts the result of a DataTrails list events call. And the event data can be supplied as local file if desired.
 
+    curl -sL $DATATRAILS_URL/archivist/v2/$EVENT_ID > event.json
+    veracity --url $DATATRAILS_URL/verifiabledata --tenant=$PUBLIC_TENANT_ID events-verify event.json
+
 # General use commands
 
 * `node` - read a merklelog node

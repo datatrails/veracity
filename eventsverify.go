@@ -11,7 +11,6 @@ import (
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
 	"github.com/datatrails/go-datatrails-merklelog/massifs/snowflakeid"
 	"github.com/datatrails/go-datatrails-merklelog/mmr"
-	"github.com/datatrails/go-datatrails-simplehash/simplehash"
 	"github.com/urfave/cli/v2"
 )
 
@@ -54,7 +53,7 @@ Note: for publicly attested events, or shared protected events, you must use --t
 				return err
 			}
 
-			verifiableEvents, err := readArgs0FileOrStdIo(cCtx)
+			verifiableEvents, err := readArgs0FileOrStdIoToVerifiableEvent(cCtx)
 			if err != nil {
 				return err
 			}
@@ -87,15 +86,15 @@ Note: for publicly attested events, or shared protected events, you must use --t
 
 			for _, event := range verifiableEvents {
 
-				if event.LogEntry == nil || event.LogEntry.Commit == nil {
+				if event.MerkleLog == nil || event.MerkleLog.Commit == nil {
 					countNotCommitted += 1
-					log("not committed: %s", event.V3EventOrig.Identity)
+					log("not committed: %s", event.EventID)
 					continue
 				}
 
 				// Get the mmrIndex from the request and then compute the massif
 				// it implies based on the massifHeight command line option.
-				mmrIndex := event.LogEntry.Commit.Index
+				mmrIndex := event.MerkleLog.Commit.Index
 
 				massifIndex := mmr.LeafIndex(mmrIndex+1) / mmr.HeightSize(uint64(cmd.massifHeight))
 				if tenantIdentity == "" {
@@ -104,7 +103,7 @@ Note: for publicly attested events, or shared protected events, you must use --t
 					// assets, this is true regardless of which tenancy the
 					// record is fetched from.  Those same events will appear in
 					// the logs of all tenants they were shared with.
-					tenantIdentity = event.V3Event.TenantIdentity
+					tenantIdentity = event.TenantID
 				}
 
 				// read the massif blob
@@ -113,7 +112,7 @@ Note: for publicly attested events, or shared protected events, you must use --t
 					return err
 				}
 
-				eventIDTimestamp, _, err := massifs.SplitIDTimestampHex(event.LogEntry.Commit.Idtimestamp)
+				eventIDTimestamp, _, err := massifs.SplitIDTimestampHex(event.MerkleLog.Commit.Idtimestamp)
 				if err != nil {
 					return err
 				}
@@ -125,18 +124,7 @@ Note: for publicly attested events, or shared protected events, you must use --t
 
 				leafIndex := mmr.LeafIndex(mmrIndex)
 
-				log("verifying: %d %d %s %s %s", mmrIndex, leafIndex, event.LogEntry.Commit.Idtimestamp, time.UnixMilli(eventIDTimestampMS).Format(time.RFC3339Nano), event.V3EventOrig.Identity)
-
-				leafHasher := simplehash.NewHasherV3()
-				err = leafHasher.HashEventFromV3(
-					event.V3Event,
-					simplehash.WithPrefix([]byte{LeafTypePlain}),
-					simplehash.WithIDCommitted(eventIDTimestamp))
-				if err != nil {
-					return err
-				}
-				leafHash := leafHasher.Sum(nil)
-				log("leaf hash: %x", leafHash)
+				log("verifying: %d %d %s %s %s", mmrIndex, leafIndex, event.MerkleLog.Commit.Idtimestamp, time.UnixMilli(eventIDTimestampMS).Format(time.RFC3339Nano), event.EventID)
 
 				hasher := sha256.New()
 				mmrSize := cmd.massif.RangeCount()
@@ -156,7 +144,7 @@ Note: for publicly attested events, or shared protected events, you must use --t
 				// discovery of the log head, and or verification against a
 				// sealed MMRSize.
 				hasher.Reset()
-				verified := mmr.VerifyInclusion(mmrSize, hasher, leafHash, mmrIndex, proof, root)
+				verified := mmr.VerifyInclusion(mmrSize, hasher, event.LeafHash, mmrIndex, proof, root)
 				if verified {
 					log("OK|%d %d|%s", mmrIndex, leafIndex, proofPath(proof))
 					continue

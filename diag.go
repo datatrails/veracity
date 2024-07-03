@@ -49,10 +49,7 @@ func NewDiagCmd() *cli.Command {
 			signedMassifIndex := cCtx.Int64("massif")
 			massifIndex := uint64(signedMassifIndex)
 			if mmrIndex > uint64(0) && signedMassifIndex == -1 {
-				massifIndex, err = massifs.MassifIndexFromMMRIndex(cmd.massifHeight, mmrIndex)
-				if err != nil {
-					return err
-				}
+				massifIndex = massifs.MassifIndexFromMMRIndex(cmd.massifHeight, mmrIndex)
 			}
 			fmt.Printf("%8d peak-stack-len\n", massifs.PeakStackLen(massifIndex))
 			logStart := massifs.PeakStackEnd(massifIndex, cmd.massifHeight)

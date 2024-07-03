@@ -67,10 +67,7 @@ func cfgMassif(cmd *CmdCtx, cCtx *cli.Context) error {
 
 	// now, if we have a non zero mmrIndex, use it to (re)compute the massifIndex
 	if mmrIndex > uint64(0) {
-		massifIndex, err = massifs.MassifIndexFromMMRIndex(cmd.massifHeight, mmrIndex)
-		if err != nil {
-			return err
-		}
+		massifIndex = massifs.MassifIndexFromMMRIndex(cmd.massifHeight, mmrIndex)
 
 		cmd.massif, err = cmd.massifReader.GetMassif(context.Background(), tenant, massifIndex)
 		return err

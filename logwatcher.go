@@ -109,10 +109,14 @@ func NewLogWatcherCmd() *cli.Command {
 
 			tagsFilter := w.FirstFilter()
 
+			reader, err := cfgReader(cmd, cCtx)
+			if err != nil {
+				return err
+			}
 			count := cCtx.Int("count")
 			for {
 				filterStart := time.Now()
-				filtered, err := cmd.reader.FilteredList(ctx, tagsFilter)
+				filtered, err := reader.FilteredList(ctx, tagsFilter)
 				if err != nil {
 					return err
 				}

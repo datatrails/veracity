@@ -34,6 +34,9 @@ func NewApp() *cli.App {
 			&cli.BoolFlag{
 				Name: "envauth", Usage: "set to enable authorization from the environment (not all commands support this)",
 			},
+			&cli.StringFlag{
+				Name: "logdir", Usage: "local directory containing log files",
+			},
 		},
 	}
 	return app

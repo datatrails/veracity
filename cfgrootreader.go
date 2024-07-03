@@ -13,15 +13,14 @@ func cfgRootReader(cmd *CmdCtx, cCtx *cli.Context) error {
 		}
 	}
 
-	if cmd.reader == nil {
-		if err = cfgReader(cmd, cCtx); err != nil {
-			return err
-		}
-	}
-
 	if cmd.cborCodec, err = massifs.NewRootSignerCodec(); err != nil {
 		return err
 	}
-	cmd.rootReader = massifs.NewSignedRootReader(cmd.log, cmd.reader, cmd.cborCodec)
+	reader, err := cfgReader(cmd, cCtx)
+	if err != nil {
+		return err
+	}
+
+	cmd.rootReader = massifs.NewSignedRootReader(cmd.log, reader, cmd.cborCodec)
 	return nil
 }

@@ -24,14 +24,16 @@ func cfgMassifReader(cmd *CmdCtx, cCtx *cli.Context) error {
 		}
 	}
 
-	if cmd.reader == nil {
-		if err = cfgReader(cmd, cCtx); err != nil {
+	if cCtx.String("logdir") != "" {
+
+	} else {
+		reader, err := cfgReader(cmd, cCtx)
+		if err != nil {
 			return err
 		}
+		mr := massifs.NewMassifReader(logger.Sugar, reader, massifs.WithoutGetRootSupport())
+		cmd.massifReader = &mr
 	}
-
-	massifReader := massifs.NewMassifReader(logger.Sugar, cmd.reader, massifs.WithoutGetRootSupport())
-	cmd.massifReader = massifReader
 	cmd.massifHeight = uint8(cCtx.Uint("height"))
 	if cmd.massifHeight == 0 {
 		cmd.massifHeight = defaultMassifHeight

@@ -5,6 +5,8 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -42,15 +44,55 @@ Note: for publicly attested events, or shared protected events, you must use --t
 			&cli.BoolFlag{Name: skipUncommittedFlagName, Value: false},
 		},
 		Action: func(cCtx *cli.Context) error {
+			cmd := &CmdCtx{}
 
 			var err error
-
-			cmd := &CmdCtx{}
 
 			// This command uses the structured logger for all optional output.
 			// Output not explicitly printed is silenced by default.
 			if err = cfgLogging(cmd, cCtx); err != nil {
 				return err
+			}
+
+			log := func(m string, args ...any) {
+				cmd.log.Infof(m, args...)
+			}
+
+			log("verifying events dir: %s", cCtx.String("logdir"))
+
+			ex, err := os.Executable()
+			if err != nil {
+				return err
+			}
+			currPath := filepath.Dir(ex)
+			logPath := filepath.Join(currPath, cCtx.String("logdir"))
+			log("log dir: %s", logPath)
+
+			entries, err := os.ReadDir(logPath)
+			if err != nil {
+				return err
+			}
+			for _, entry := range entries {
+				log("log entry: %v", entry.Name())
+				if !entry.IsDir() {
+					// this is a file
+					header := make([]byte, 32)
+					f, err := os.Open(filepath.Join(logPath, entry.Name()))
+					if err != nil {
+						return err
+					}
+					defer f.Close()
+					i, err := f.Read(header)
+					if err != nil {
+						return err
+					}
+					if i != 32 {
+						log("could not read enough bytes from a file: %s", entry.Name())
+						continue
+					}
+
+					log("read from %s - %d: %x", entry.Name(), i, header)
+				}
 			}
 
 			verifiableEvents, err := readArgs0FileOrStdIoToVerifiableEvent(cCtx)
@@ -60,10 +102,6 @@ Note: for publicly attested events, or shared protected events, you must use --t
 
 			if err = cfgMassifReader(cmd, cCtx); err != nil {
 				return err
-			}
-
-			log := func(m string, args ...any) {
-				cmd.log.Infof(m, args...)
 			}
 
 			proofPath := func(proof [][]byte) string {

@@ -102,6 +102,11 @@ func (mr *LocalMassifReader) GetFirstMassif(
 func NewLocalMassifReader(
 	log logger.Logger, opener Opener, dirLister DirLister, logdir string, logfile string, opts ...massifs.MassifReaderOption,
 ) (*LocalMassifReader, error) {
+
+	if logdir == "" && logfile == "" {
+		return nil, fmt.Errorf("one of logfile or logdir must be specified")
+	}
+
 	r := LocalMassifReader{
 		log:              log,
 		opener:           opener,

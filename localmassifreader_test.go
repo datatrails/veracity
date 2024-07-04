@@ -23,14 +23,23 @@ func TestNewLocalMassifReader(t *testing.T) {
 			switch name {
 			case "/same/log":
 				return []string{"/same/log/0.log", "/same/log/1.log"}, nil
-			case "/logs/validiinglid/":
-				return []string{"/logs/validiinglid/0.log", "/logs/validiinglid/invalid.log"}, nil
+			case "/logs/invalid/":
+				return []string{"/logs/invalid/0.log", "/logs/invalid/invalid.log"}, nil
+			case "/logs/short":
+				return []string{"/logs/short/0.log", "/logs/short/1.log"}, nil
+			case "/logs/valid":
+				return []string{"/logs/valid/0.log", "/logs/valid/1.log"}, nil
+			case "/logs/valid3":
+				return []string{"/logs/valid3/0.log", "/logs/valid3/1.log", "/logs/valid3/255.log"}, nil
 			default:
 				return []string{}, nil
 			}
 		},
 	)
 
+	// this mock returns headers of logfiles
+	// signigicant bytes we use in test are 27 for mmr height
+	// and last 4 (28-32) for mmr index
 	op := mocks.NewOpener(t)
 	op.On("Open", mock.Anything).Return(
 		func(name string) (io.ReadCloser, error) {
@@ -46,11 +55,32 @@ func TestNewLocalMassifReader(t *testing.T) {
 			case "/same/log/1.log":
 				b, _ := hex.DecodeString("000000000000000090757515a9086b0000000000000000000000010e00000000")
 				return io.NopCloser(bytes.NewReader(b)), nil
-			case "/logs/validiinglid/0.log":
+			case "/logs/invalid/0.log":
 				b, _ := hex.DecodeString("000000000000000090757515a9086b0000000000000000000000010e00000000")
 				return io.NopCloser(bytes.NewReader(b)), nil
-			case "/logs/validiinglid/invalid.log":
+			case "/logs/invalid/invalid.log":
+				b, _ := hex.DecodeString("000000000000000090757515a9086b0000000000000000000000010f00000000")
+				return io.NopCloser(bytes.NewReader(b)), nil
+			case "/logs/short/0.log":
 				b, _ := hex.DecodeString("000000000000000090757515a9086b0000000000000000000000010e00000000")
+				return io.NopCloser(bytes.NewReader(b)), nil
+			case "/logs/short/1.log":
+				b, _ := hex.DecodeString("00000000000000009075")
+				return io.NopCloser(bytes.NewReader(b)), nil
+			case "/logs/valid/0.log":
+				b, _ := hex.DecodeString("000000000000000090757515a9086b0000000000000000000000010e00000000")
+				return io.NopCloser(bytes.NewReader(b)), nil
+			case "/logs/valid/1.log":
+				b, _ := hex.DecodeString("000000000000000090757515a9086b0000000000000000000000010e00000007")
+				return io.NopCloser(bytes.NewReader(b)), nil
+			case "/logs/valid3/0.log":
+				b, _ := hex.DecodeString("000000000000000090757515a9086b0000000000000000000000010e00000000")
+				return io.NopCloser(bytes.NewReader(b)), nil
+			case "/logs/valid3/1.log":
+				b, _ := hex.DecodeString("000000000000000090757515a9086b0000000000000000000000010e00000007")
+				return io.NopCloser(bytes.NewReader(b)), nil
+			case "/logs/valid3/255.log":
+				b, _ := hex.DecodeString("000000000000000090757515a9086b0000000000000000000000010e000000ff")
 				return io.NopCloser(bytes.NewReader(b)), nil
 			default:
 				return nil, nil
@@ -97,24 +127,44 @@ func TestNewLocalMassifReader(t *testing.T) {
 			opener:    op,
 			dirlister: dl,
 			expectErr: false,
-			logdir:    "/logs/validiinglid/",
-			outcome:   map[uint64]string{0: "/logs/validiinglid/0.log"},
+			logdir:    "/logs/invalid/",
+			outcome:   map[uint64]string{0: "/logs/invalid/0.log"},
 		},
 		{
-			name:    "valid + short file",
-			outcome: map[uint64]string{},
+			name:      "valid + short file",
+			opener:    op,
+			dirlister: dl,
+			expectErr: false,
+			logdir:    "/logs/short",
+			outcome:   map[uint64]string{0: "/logs/short/0.log"},
 		},
 		{
-			name:    "two valid",
-			outcome: map[uint64]string{},
+			name:      "two valid",
+			opener:    op,
+			dirlister: dl,
+			expectErr: false,
+			logdir:    "/logs/valid",
+			outcome: map[uint64]string{
+				0: "/logs/valid/0.log",
+				7: "/logs/valid/1.log",
+			},
 		},
 		{
-			name:    "three valid",
-			outcome: map[uint64]string{},
+			name:      "three valid",
+			opener:    op,
+			dirlister: dl,
+			expectErr: false,
+			logdir:    "/logs/valid3",
+			outcome: map[uint64]string{
+				0:   "/logs/valid3/0.log",
+				7:   "/logs/valid3/1.log",
+				255: "/logs/valid3/255.log",
+			},
 		},
 		{
-			name:    "fail empty config",
-			outcome: map[uint64]string{},
+			name:       "fail empty config",
+			expectErr:  true,
+			errMessage: "one of logfile or logdir must be specified",
 		},
 		{
 			name:       "fail on bad file",

@@ -28,7 +28,13 @@ func cfgMassifReader(cmd *CmdCtx, cCtx *cli.Context) error {
 	logfile := cCtx.String("logfile")
 
 	if logdir != "" || logfile != "" {
-		mr, err := NewLocalMassifReader(logger.Sugar, cfgOpener(), cfgDirLister(), logdir, logfile)
+		opener := cfgOpener()
+		// if we want to read from stdin we configure stdin opener
+		if logfile == "-" {
+			cmd.log.Infof("configuring for stdin")
+			opener = cfgStdinOpener()
+		}
+		mr, err := NewLocalMassifReader(logger.Sugar, opener, cfgDirLister(), logdir, logfile)
 		if err != nil {
 			return err
 		}

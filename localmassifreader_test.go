@@ -184,6 +184,7 @@ func TestNewLocalMassifReader(t *testing.T) {
 				assert.NotNil(t, err, "expected error got nil")
 				assert.Equal(t, tc.errMessage, err.Error(), "unexpected error message")
 			} else {
+				assert.Nil(t, err, "unexpected error")
 				assert.Equal(t, tc.outcome, r.massifs)
 			}
 		})

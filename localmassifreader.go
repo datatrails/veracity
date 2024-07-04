@@ -1,7 +1,10 @@
 package veracity
 
 import (
+	"bufio"
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -167,7 +170,7 @@ func (mr *LocalMassifReader) loadLogfile(logfile string) error {
 	header := make([]byte, 32)
 
 	i, err := f.Read(header)
-	if err != nil && err != io.EOF {
+	if err != nil && !errors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -267,6 +270,29 @@ func (*OsDirLister) ListFiles(name string) ([]string, error) {
 
 func cfgDirLister() DirLister {
 	return &OsDirLister{}
+}
+
+type StdinOpener struct {
+	data []byte
+}
+
+func (o *StdinOpener) Open(string) (io.ReadCloser, error) {
+	if len(o.data) > 0 {
+		return io.NopCloser(bytes.NewReader(o.data)), nil
+	}
+
+	r := bufio.NewReader(os.Stdin)
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+
+	o.data = data
+	return io.NopCloser(bytes.NewReader(o.data)), nil
+}
+
+func cfgStdinOpener() Opener {
+	return &StdinOpener{}
 }
 
 type FileOpener struct{}

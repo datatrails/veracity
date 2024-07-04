@@ -37,6 +37,9 @@ func NewApp() *cli.App {
 			&cli.StringFlag{
 				Name: "logdir", Usage: "local directory containing log files",
 			},
+			&cli.StringFlag{
+				Name: "logfile", Usage: "local log file",
+			},
 		},
 	}
 	return app

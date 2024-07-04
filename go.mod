@@ -14,7 +14,10 @@ require (
 	github.com/zeebo/bencode v1.0.0
 )
 
-require github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
+require (
+	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
+)
 
 require (
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible // indirect

@@ -159,7 +159,7 @@ func TailSeal(
 // TailMassif returns the active massif for the tenant
 func TailMassif(
 	ctx context.Context,
-	massifReader massifs.MassifReader,
+	massifReader MassifReader,
 	tenantIdentity string,
 ) (MassifTail, error) {
 	var err error

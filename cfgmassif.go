@@ -24,8 +24,15 @@ func cfgMassifReader(cmd *CmdCtx, cCtx *cli.Context) error {
 		}
 	}
 
-	if cCtx.String("logdir") != "" {
+	logdir := cCtx.String("logdir")
+	logfile := cCtx.String("logfile")
 
+	if logdir != "" || logfile != "" {
+		mr, err := NewLocalMassifReader(logger.Sugar, cfgOpener(), cfgDirLister(), logdir, logfile)
+		if err != nil {
+			return err
+		}
+		cmd.massifReader = mr
 	} else {
 		reader, err := cfgReader(cmd, cCtx)
 		if err != nil {

@@ -18,7 +18,18 @@ func TestNewLocalMassifReader(t *testing.T) {
 	defer logger.OnExit()
 
 	dl := mocks.NewDirLister(t)
-	dl.On("ListFiles", mock.Anything).Return()
+	dl.On("ListFiles", mock.Anything).Return(
+		func(name string) ([]string, error) {
+			switch name {
+			case "/same/log":
+				return []string{"/same/log/0.log", "/same/log/1.log"}, nil
+			case "/logs/validiinglid/":
+				return []string{"/logs/validiinglid/0.log", "/logs/validiinglid/invalid.log"}, nil
+			default:
+				return []string{}, nil
+			}
+		},
+	)
 
 	op := mocks.NewOpener(t)
 	op.On("Open", mock.Anything).Return(
@@ -28,6 +39,18 @@ func TestNewLocalMassifReader(t *testing.T) {
 				return nil, fmt.Errorf("bad file log.log")
 			case "/log/massif/0.log":
 				b, _ := hex.DecodeString("000000000000000090757516a9086b0000000000000000000000010e00000000")
+				return io.NopCloser(bytes.NewReader(b)), nil
+			case "/same/log/0.log":
+				b, _ := hex.DecodeString("000000000000000090757516a9086b0000000000000000000000010e00000000")
+				return io.NopCloser(bytes.NewReader(b)), nil
+			case "/same/log/1.log":
+				b, _ := hex.DecodeString("000000000000000090757515a9086b0000000000000000000000010e00000000")
+				return io.NopCloser(bytes.NewReader(b)), nil
+			case "/logs/validiinglid/0.log":
+				b, _ := hex.DecodeString("000000000000000090757515a9086b0000000000000000000000010e00000000")
+				return io.NopCloser(bytes.NewReader(b)), nil
+			case "/logs/validiinglid/invalid.log":
+				b, _ := hex.DecodeString("000000000000000090757515a9086b0000000000000000000000010e00000000")
 				return io.NopCloser(bytes.NewReader(b)), nil
 			default:
 				return nil, nil
@@ -47,23 +70,35 @@ func TestNewLocalMassifReader(t *testing.T) {
 		{
 			name:      "log 0 valid",
 			opener:    op,
+			dirlister: dl,
 			expectErr: false,
 			logfile:   "/log/massif/0.log",
 			outcome:   map[uint64]string{0: "/log/massif/0.log"},
 		},
 		{
-			name:      "fail both args specified",
+			name:       "fail both args specified",
+			opener:     op,
+			dirlister:  dl,
+			logdir:     "/some/dir",
+			logfile:    "/log/massif/0.log",
+			expectErr:  true,
+			errMessage: "logfile and logdir can't be used together",
+		},
+		{
+			name:       "fail two logs same index",
+			opener:     op,
+			dirlister:  dl,
+			logdir:     "/same/log",
+			expectErr:  true,
+			errMessage: "found two log files with the same massif index: /same/log/0.log and /same/log/1.log",
+		},
+		{
+			name:      "valid + invalid height not default",
 			opener:    op,
 			dirlister: dl,
-			outcome:   map[uint64]string{},
-		},
-		{
-			name:    "fail two logs same index",
-			outcome: map[uint64]string{},
-		},
-		{
-			name:    "valid + invalid height not default",
-			outcome: map[uint64]string{},
+			expectErr: false,
+			logdir:    "/logs/validiinglid/",
+			outcome:   map[uint64]string{0: "/logs/validiinglid/0.log"},
 		},
 		{
 			name:    "valid + short file",

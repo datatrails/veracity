@@ -74,10 +74,7 @@ to produce the desired information computationaly produce`,
 			mmrIndex := cCtx.Uint64("mmrindex")
 			massifIndex := cCtx.Uint64("first-massif")
 			if mmrIndex > uint64(0) {
-				massifIndex, err = massifs.MassifIndexFromMMRIndex(height, mmrIndex)
-				if err != nil {
-					return err
-				}
+				massifIndex = massifs.MassifIndexFromMMRIndex(height, mmrIndex)
 			}
 
 			count := cCtx.Uint64("count")

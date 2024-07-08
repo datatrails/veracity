@@ -23,7 +23,10 @@ func NewApp() *cli.App {
 			},
 
 			&cli.StringFlag{
-				Name: "url", Aliases: []string{"u"},
+				Name: "data-url", Aliases: []string{"u"},
+			},
+			&cli.StringFlag{
+				Name: "data-local", Aliases: []string{"l"},
 			},
 			&cli.StringFlag{
 				Name: "tenant", Aliases: []string{"t"},
@@ -33,12 +36,6 @@ func NewApp() *cli.App {
 			},
 			&cli.BoolFlag{
 				Name: "envauth", Usage: "set to enable authorization from the environment (not all commands support this)",
-			},
-			&cli.StringFlag{
-				Name: "logdir", Usage: "set to a path to directory containing log files belonging to single mmr to use that data instead of remote logs",
-			},
-			&cli.StringFlag{
-				Name: "logfile", Usage: "set to a path to file or '-' for stdin to use specific mmr log instead of remote logs",
 			},
 		},
 	}

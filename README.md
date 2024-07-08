@@ -75,7 +75,7 @@ URL=https://app.datatrails.ai/verifiabledata
 TENANT=tenant/7dfaa5ef-226f-4f40-90a5-c015e59998a8
 LEAF=2b8ecdee967d976a31bac630036d6b183bd40913f969b47b438d4614ce7fa155
 
-veracity --url $URL --tenant=$TENANT nodescan -v $LEAF
+veracity --data-url $URL --tenant=$TENANT nodescan -v $LEAF
 ```
 
 This command will report the MMR index of that leaf as `10`
@@ -122,7 +122,7 @@ We use a publicly attested event so that you can check the event details directl
     PUBLIC_TENANT_ID=tenant/6ea5cd00-c711-3649-6914-7b125928bbb4
 
     curl -sL $DATATRAILS_URL/archivist/v2/$EVENT_ID | \
-        veracity --url $DATATRAILS_URL/verifiabledata --tenant=$PUBLIC_TENANT_ID events-verify
+        veracity --data-url $DATATRAILS_URL/verifiabledata --tenant=$PUBLIC_TENANT_ID events-verify
 
 **By default there will be no output. If the verification has succeeded an exit code of 0 will be returned.**
 
@@ -148,7 +148,7 @@ The elided proof path nodes will be:
 The same command accepts the result of a DataTrails list events call. And the event data can be supplied as local file if desired.
 
     curl -sL $DATATRAILS_URL/archivist/v2/$EVENT_ID > event.json
-    veracity --url $DATATRAILS_URL/verifiabledata --tenant=$PUBLIC_TENANT_ID events-verify event.json
+    veracity --data-url $DATATRAILS_URL/verifiabledata --tenant=$PUBLIC_TENANT_ID events-verify event.json
 
 # General use commands
 

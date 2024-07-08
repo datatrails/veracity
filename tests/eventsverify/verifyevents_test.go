@@ -22,7 +22,7 @@ func (s *VerifyEventsSuite) TestVerifyOneEventStdIn() {
 		"veracity",
 		"--loglevel", "INFO",
 		"--tenant", s.Env.PublicTenantId,
-		"--url", s.Env.VerifiableDataURL,
+		"--data-url", s.Env.VerifiableDataURL,
 		"events-verify",
 	})
 	assert.NoErrorf(err, "the event is a known good event from the public production tenant, yet verification has failed")
@@ -41,7 +41,7 @@ func (s *VerifyEventsSuite) TestOneTamperEventStdIn() {
 		"veracity",
 		"--loglevel", "INFO",
 		"--tenant", s.Env.PublicTenantId,
-		"--url", s.Env.VerifiableDataURL,
+		"--data-url", s.Env.VerifiableDataURL,
 		"events-verify",
 	})
 	assert.Errorf(err, "the event should not have verified, its data was purposefully tampered")

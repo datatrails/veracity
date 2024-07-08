@@ -89,36 +89,38 @@ func TestNewLocalMassifReader(t *testing.T) {
 	)
 
 	tests := []struct {
-		name            string
-		opener          Opener
-		dirlister       DirLister
-		logdir, logfile string
-		outcome         map[uint64]string
-		expectErr       bool
-		errMessage      string
+		name       string
+		opener     Opener
+		dirlister  DirLister
+		logs       string
+		isdir      bool
+		outcome    map[uint64]string
+		expectErr  bool
+		errMessage string
 	}{
 		{
 			name:      "log 0 valid",
 			opener:    op,
 			dirlister: dl,
 			expectErr: false,
-			logfile:   "/log/massif/0.log",
+			logs:      "/log/massif/0.log",
+			isdir:     false,
 			outcome:   map[uint64]string{0: "/log/massif/0.log"},
 		},
 		{
 			name:       "fail both args specified",
 			opener:     op,
 			dirlister:  dl,
-			logdir:     "/some/dir",
-			logfile:    "/log/massif/0.log",
+			logs:       "",
 			expectErr:  true,
-			errMessage: "logfile and logdir can't be used together",
+			errMessage: "--data-local must be specified",
 		},
 		{
 			name:       "fail two logs same index",
 			opener:     op,
 			dirlister:  dl,
-			logdir:     "/same/log",
+			logs:       "/same/log",
+			isdir:      true,
 			expectErr:  true,
 			errMessage: "found two log files with the same massif index: /same/log/0.log and /same/log/1.log",
 		},
@@ -127,7 +129,8 @@ func TestNewLocalMassifReader(t *testing.T) {
 			opener:    op,
 			dirlister: dl,
 			expectErr: false,
-			logdir:    "/logs/invalid/",
+			logs:      "/logs/invalid/",
+			isdir:     true,
 			outcome:   map[uint64]string{0: "/logs/invalid/0.log"},
 		},
 		{
@@ -135,7 +138,8 @@ func TestNewLocalMassifReader(t *testing.T) {
 			opener:    op,
 			dirlister: dl,
 			expectErr: false,
-			logdir:    "/logs/short",
+			logs:      "/logs/short",
+			isdir:     true,
 			outcome:   map[uint64]string{0: "/logs/short/0.log"},
 		},
 		{
@@ -143,7 +147,8 @@ func TestNewLocalMassifReader(t *testing.T) {
 			opener:    op,
 			dirlister: dl,
 			expectErr: false,
-			logdir:    "/logs/valid",
+			logs:      "/logs/valid",
+			isdir:     true,
 			outcome: map[uint64]string{
 				0: "/logs/valid/0.log",
 				7: "/logs/valid/1.log",
@@ -154,7 +159,8 @@ func TestNewLocalMassifReader(t *testing.T) {
 			opener:    op,
 			dirlister: dl,
 			expectErr: false,
-			logdir:    "/logs/valid3",
+			logs:      "/logs/valid3",
+			isdir:     true,
 			outcome: map[uint64]string{
 				0:   "/logs/valid3/0.log",
 				7:   "/logs/valid3/1.log",
@@ -164,21 +170,22 @@ func TestNewLocalMassifReader(t *testing.T) {
 		{
 			name:       "fail empty config",
 			expectErr:  true,
-			errMessage: "one of logfile or logdir must be specified",
+			errMessage: "--data-local must be specified",
 		},
 		{
 			name:       "fail on bad file",
 			opener:     op,
 			dirlister:  dl,
 			expectErr:  true,
-			logfile:    "/foo/bar/log.log",
+			isdir:      false,
+			logs:       "/foo/bar/log.log",
 			errMessage: "bad file log.log",
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			r, err := NewLocalMassifReader(logger.Sugar, tc.opener, tc.dirlister, tc.logdir, tc.logfile)
+			r, err := NewLocalMassifReader(logger.Sugar, tc.opener, tc.dirlister, tc.logs, tc.isdir)
 
 			if tc.expectErr {
 				assert.NotNil(t, err, "expected error got nil")

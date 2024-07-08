@@ -103,11 +103,11 @@ func (mr *LocalMassifReader) GetFirstMassif(
 // as we assume all the logs on the disc are for the tenant one is
 // interested in - but it's still valid to pass tenant ID here
 func NewLocalMassifReader(
-	log logger.Logger, opener Opener, dirLister DirLister, logdir string, logfile string, opts ...massifs.MassifReaderOption,
+	log logger.Logger, opener Opener, dirLister DirLister, logLocation string, directory bool, opts ...massifs.MassifReaderOption,
 ) (*LocalMassifReader, error) {
 
-	if logdir == "" && logfile == "" {
-		return nil, fmt.Errorf("one of logfile or logdir must be specified")
+	if logLocation == "" {
+		return nil, fmt.Errorf("--data-local must be specified")
 	}
 
 	r := LocalMassifReader{
@@ -122,22 +122,17 @@ func NewLocalMassifReader(
 		o(&r.opts)
 	}
 
-	if logdir != "" && logfile != "" {
-		return nil, fmt.Errorf("logfile and logdir can't be used together")
-	}
-
-	if logdir != "" {
-		err := r.findLogfiles(logdir)
+	if directory {
+		err := r.findLogfiles(logLocation)
 		if err != nil {
 			return nil, err
 		}
+		return &r, nil
 	}
 
-	if logfile != "" {
-		err := r.loadLogfile(logfile)
-		if err != nil {
-			return nil, err
-		}
+	err := r.loadLogfile(logLocation)
+	if err != nil {
+		return nil, err
 	}
 
 	return &r, nil

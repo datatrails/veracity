@@ -22,7 +22,7 @@ func (s *EDiagSuite) TestOneEventStdIn() {
 		"veracity",
 		"--loglevel", "INFO",
 		"--tenant", s.Env.PublicTenantId,
-		"--url", s.Env.VerifiableDataURL,
+		"--data-url", s.Env.VerifiableDataURL,
 		"ediag",
 	})
 	assert.NoErrorf(err, "the event is a known good event from the public production tenant, yet verification has failed")
@@ -41,7 +41,7 @@ func (s *EDiagSuite) TestOneTamperedEventStdIn() {
 		"veracity",
 		"--loglevel", "INFO",
 		"--tenant", s.Env.PublicTenantId,
-		"--url", s.Env.VerifiableDataURL,
+		"--data-url", s.Env.VerifiableDataURL,
 		"ediag",
 	})
 	assert.NoErrorf(err, "while the event is known to be tampered, this command should still succeed")

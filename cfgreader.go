@@ -29,7 +29,7 @@ func cfgReader(cmd *CmdCtx, cCtx *cli.Context) (azblob.Reader, error) {
 	container := cCtx.String("container")
 
 	account := cCtx.String("account")
-	url := cCtx.String("url")
+	url := cCtx.String("data-url")
 	envAuth := cCtx.Bool("envauth")
 
 	if account == "" && url == "" {

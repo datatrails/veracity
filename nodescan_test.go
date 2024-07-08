@@ -70,7 +70,7 @@ func TestNodeScanCmd(t *testing.T) {
 		// precise node is located by the mmrIndex and the leafIndex derived
 		// from that.
 		{testArgs: []string{
-			"<progname>", "-s", "devstoreaccount1", "-c", cfg.Container, "-t", tenantID,
+			"<progname>", "-u", "-", "-s", "devstoreaccount1", "-c", cfg.Container, "-t", tenantID,
 			"nodescan", "-m", "0", "-v", expectedLeafNodeValue}},
 	}
 

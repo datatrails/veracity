@@ -38,7 +38,7 @@ func TestNodeCmd(t *testing.T) {
 		testArgs []string
 	}{
 		// get node 1
-		{testArgs: []string{"<progname>", "-s", "devstoreaccount1", "-c", cfg.Container, "-t", tenantID, "node", fmt.Sprintf("%d", 1)}},
+		{testArgs: []string{"<progname>", "-u", "-", "-s", "devstoreaccount1", "-c", cfg.Container, "-t", tenantID, "node", fmt.Sprintf("%d", 1)}},
 	}
 
 	for _, tc := range tests {

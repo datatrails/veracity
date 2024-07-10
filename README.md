@@ -124,7 +124,7 @@ We use a publicly attested event so that you can check the event details directl
     curl -sL $DATATRAILS_URL/archivist/v2/$EVENT_ID | \
         veracity --url $DATATRAILS_URL/verifiabledata --tenant=$PUBLIC_TENANT_ID events-verify
 
-**By default their will be no output. If the verification has succeeded an exit code of 0 will be returned.**
+**By default there will be no output. If the verification has succeeded an exit code of 0 will be returned.**
 
 If the verification command is run with `--log-level=INFO` the output will be:
 

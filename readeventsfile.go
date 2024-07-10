@@ -9,7 +9,6 @@ import (
 	"os"
 
 	"github.com/datatrails/go-datatrails-logverification/logverification"
-	"github.com/datatrails/go-datatrails-simplehash/simplehash"
 	"github.com/urfave/cli/v2"
 )
 
@@ -78,16 +77,12 @@ func VerifiableEventsFromData(data []byte) ([]logverification.VerifiableEvent, e
 		return nil, err
 	}
 
-	// now validate the normalised events json
-	err = validateEventList(eventsJson)
-	if err != nil {
-		return nil, err
-	}
-
 	verifiableEvents, err := logverification.NewVerifiableEvents(eventsJson)
 	if err != nil {
 		return nil, err
 	}
+
+	// TODO: validate the verifiable events are not empty
 
 	return verifiableEvents, nil
 }
@@ -115,49 +110,14 @@ func DecodedEventsFromData(data []byte) ([]logverification.DecodedEvent, error) 
 		return nil, err
 	}
 
-	// now validate the normalised events json
-	err = validateEventList(eventsJson)
-	if err != nil {
-		return nil, err
-	}
-
 	decodedEvents, err := logverification.NewDecodedEvents(eventsJson)
 	if err != nil {
 		return nil, err
 	}
 
+	// TODO: validate the decoded events are not empty
+
 	return decodedEvents, nil
-}
-
-// validateEventList validates the list of events given as data
-// are valid simplehash v3 events.
-//
-// NOTE: no validation is done for the events field in data.
-func validateEventList(data []byte) error {
-
-	doc := struct {
-		Events []json.RawMessage `json:"events,omitempty"`
-	}{}
-
-	err := json.Unmarshal(data, &doc)
-	if err != nil {
-		return err
-	}
-
-	for _, event := range doc.Events {
-
-		var v3event simplehash.V3Event
-
-		err := json.Unmarshal(event, &v3event)
-		if err != nil {
-			return err
-		}
-
-		// TODO: minimum validation of fields in the V3Event
-		//       and merklelog structure
-	}
-
-	return nil
 }
 
 // eventListFromData normalises a json encoded event or *list* of events, by

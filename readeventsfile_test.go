@@ -79,26 +79,6 @@ func TestEventListFromData(t *testing.T) {
 	}
 }
 
-func Test_validateEventList(t *testing.T) {
-	type args struct {
-		eventList []byte
-	}
-	tests := []struct {
-		name     string
-		args     args
-		expected error
-	}{
-		// TODO: validation unit testing
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			actual := validateEventList(test.args.eventList)
-
-			assert.Equal(t, test.expected, actual)
-		})
-	}
-}
-
 func TestDecodedEventsFromData(t *testing.T) {
 	type args struct {
 		data []byte

@@ -13,6 +13,13 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+func WithFakeDirLister(dl DirLister) Option {
+	return func(o *LocalMassifReaderOptions) {
+		o.isDir = true
+		o.dirLister = dl
+	}
+}
+
 func TestNewLocalMassifReader(t *testing.T) {
 	logger.New("TestVerifyList")
 	defer logger.OnExit()
@@ -185,7 +192,11 @@ func TestNewLocalMassifReader(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			r, err := NewLocalMassifReader(logger.Sugar, tc.opener, tc.dirlister, tc.logs, tc.isdir)
+			opts := []Option{}
+			if tc.isdir {
+				opts = append(opts, WithFakeDirLister(tc.dirlister))
+			}
+			r, err := NewLocalMassifReader(logger.Sugar, tc.opener, tc.logs, opts...)
 
 			if tc.expectErr {
 				assert.NotNil(t, err, "expected error got nil")

@@ -27,12 +27,11 @@ type DirLister interface {
 
 type LocalMassifReader struct {
 	log              logger.Logger
-	opts             massifs.MassifReaderOptions
+	opts             LocalMassifReaderOptions
 	massifs          map[uint64]string
 	headMassifIndex  uint64
 	firstMassifIndex uint64
 	opener           Opener
-	dirLister        DirLister
 }
 
 func (mr *LocalMassifReader) GetMassif(
@@ -98,12 +97,26 @@ func (mr *LocalMassifReader) GetFirstMassif(
 	return mc, nil
 }
 
+type LocalMassifReaderOptions struct {
+	dirLister DirLister
+	isDir     bool
+}
+
+type Option func(*LocalMassifReaderOptions)
+
+func WithDirectory() Option {
+	return func(o *LocalMassifReaderOptions) {
+		o.dirLister = cfgDirLister()
+		o.isDir = true
+	}
+}
+
 // NewLocalMassifReader creates MassifReader that reads from
 // local files on disc - it mostly ignores tenant identity
 // as we assume all the logs on the disc are for the tenant one is
 // interested in - but it's still valid to pass tenant ID here
 func NewLocalMassifReader(
-	log logger.Logger, opener Opener, dirLister DirLister, logLocation string, directory bool, opts ...massifs.MassifReaderOption,
+	log logger.Logger, opener Opener, logLocation string, opts ...Option,
 ) (*LocalMassifReader, error) {
 
 	if logLocation == "" {
@@ -113,7 +126,6 @@ func NewLocalMassifReader(
 	r := LocalMassifReader{
 		log:              log,
 		opener:           opener,
-		dirLister:        dirLister,
 		massifs:          map[uint64]string{},
 		firstMassifIndex: ^uint64(0), //set to max so we can lower it as we find new logs
 	}
@@ -122,7 +134,7 @@ func NewLocalMassifReader(
 		o(&r.opts)
 	}
 
-	if directory {
+	if r.opts.isDir {
 		err := r.findLogfiles(logLocation)
 		if err != nil {
 			return nil, err
@@ -140,7 +152,7 @@ func NewLocalMassifReader(
 
 func (mr *LocalMassifReader) findLogfiles(directory string) error {
 	// read all the entries in our log dir
-	entries, err := mr.dirLister.ListFiles(directory)
+	entries, err := mr.opts.dirLister.ListFiles(directory)
 	if err != nil {
 		return err
 	}

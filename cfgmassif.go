@@ -41,7 +41,7 @@ func cfgMassifReader(cmd *CmdCtx, cCtx *cli.Context) error {
 	if localLog == "" && remoteLog == "" {
 		// if we had no url and no local data supplied we try STDIN
 		opener := cfgStdinOpener()
-		mr, err := NewLocalMassifReader(logger.Sugar, opener, cfgDirLister(), "-", false)
+		mr, err := NewLocalMassifReader(logger.Sugar, opener, "-")
 		if err != nil {
 			return err
 		}
@@ -57,7 +57,11 @@ func cfgMassifReader(cmd *CmdCtx, cCtx *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		mr, err := NewLocalMassifReader(logger.Sugar, cfgOpener(), cfgDirLister(), localLog, fi.IsDir())
+		opts := []Option{}
+		if fi.IsDir() {
+			opts = append(opts, WithDirectory())
+		}
+		mr, err := NewLocalMassifReader(logger.Sugar, cfgOpener(), localLog, opts...)
 		if err != nil {
 			return err
 		}

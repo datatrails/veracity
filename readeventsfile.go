@@ -2,12 +2,19 @@ package veracity
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/datatrails/go-datatrails-logverification/logverification"
+	"github.com/datatrails/go-datatrails-simplehash/simplehash"
 	"github.com/urfave/cli/v2"
+)
+
+var (
+	ErrInvalidV3Event = errors.New(`json is not in expected v3event format`)
 )
 
 // readArgs0File assumes the first program argument is a file name and reads it
@@ -66,7 +73,13 @@ func VerifiableEventsFromData(data []byte) ([]logverification.VerifiableEvent, e
 
 	// Accept either the list events response format or a single event. Peak
 	// into the json data to pick which.
-	eventsJson, err := EventListFromData(data)
+	eventsJson, err := eventListFromData(data)
+	if err != nil {
+		return nil, err
+	}
+
+	// now validate the normalised events json
+	err = validateEventList(eventsJson)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +110,13 @@ func DecodedEventsFromData(data []byte) ([]logverification.DecodedEvent, error) 
 
 	// Accept either the list events response format or a single event. Peak
 	// into the json data to pick which.
-	eventsJson, err := EventListFromData(data)
+	eventsJson, err := eventListFromData(data)
+	if err != nil {
+		return nil, err
+	}
+
+	// now validate the normalised events json
+	err = validateEventList(eventsJson)
 	if err != nil {
 		return nil, err
 	}
@@ -110,45 +129,79 @@ func DecodedEventsFromData(data []byte) ([]logverification.DecodedEvent, error) 
 	return decodedEvents, nil
 }
 
-// EventListFromData normalises a json encoded event or *list* of events, by
-// always returning a list of json encoded events.
+// validateEventList validates the list of events given as data
+// are valid simplehash v3 events.
 //
-// Each item is a single json encoded event.
-// The data must be json and it must have a map at the top level. The data can
-// be the result of getting single event or a list of events from the datatrails
-// events api or a list of events from the datatrails events api:
-//
-//		{ events: [{event-0}, {event-1}, ..., {event-n}] }
-//	 Or just {event}
-func EventListFromData(data []byte) ([]byte, error) {
-	var err error
+// NOTE: no validation is done for the events field in data.
+func validateEventList(data []byte) error {
 
 	doc := struct {
 		Events []json.RawMessage `json:"events,omitempty"`
 	}{}
-	err = json.Unmarshal(data, &doc)
+
+	err := json.Unmarshal(data, &doc)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// if we have a list event api response, use that
-	if len(doc.Events) > 0 {
+	for _, event := range doc.Events {
+
+		var v3event simplehash.V3Event
+
+		err := json.Unmarshal(event, &v3event)
+		if err != nil {
+			return err
+		}
+
+		// TODO: minimum validation of fields in the V3Event
+		//       and merklelog structure
+	}
+
+	return nil
+}
+
+// eventListFromData normalises a json encoded event or *list* of events, by
+// always returning a list of json encoded events.
+//
+// NOTE: there is no json validation done on the event or list of events given
+// any valid json will be accepted, use validation logic after this function.
+func eventListFromData(data []byte) ([]byte, error) {
+	var err error
+
+	doc := struct {
+		Events        []json.RawMessage `json:"events,omitempty"`
+		NextPageToken json.RawMessage   `json:"next_page_token,omitempty"`
+	}{}
+
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	err = decoder.Decode(&doc)
+
+	// if we can decode the events json
+	//  we know its in the form of a list events json response from
+	//  the list events api, so just return data
+	if err == nil {
 		return data, nil
 	}
 
-	// otherwise we will create a list event api response based on the point get
-	// event api response.
+	// if we get here we know that the given data doesn't represent
+	//  a list events json response
+	// so we can assume its a single event response from the events api.
 
 	var event json.RawMessage
-
 	err = json.Unmarshal(data, &event)
 	if err != nil {
 		return nil, err
 	}
 
-	doc.Events = append(doc.Events, event)
+	// purposefully omit the next page token for response
+	listEvents := struct {
+		Events []json.RawMessage `json:"events,omitempty"`
+	}{}
 
-	events, err := json.Marshal(&doc)
+	listEvents.Events = []json.RawMessage{event}
+
+	events, err := json.Marshal(&listEvents)
 	if err != nil {
 		return nil, err
 	}

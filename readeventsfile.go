@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 
 	"github.com/datatrails/go-datatrails-logverification/logverification"
@@ -16,18 +15,7 @@ var (
 	ErrInvalidV3Event = errors.New(`json is not in expected v3event format`)
 )
 
-// readArgs0File assumes the first program argument is a file name and reads it
-func readArgs0File(cCtx *cli.Context) ([]logverification.VerifiableEvent, error) {
-	if cCtx.Args().Len() < 1 {
-		return nil, fmt.Errorf("filename expected as first positional command argument")
-	}
-	return ReadVerifiableEventsFromFile(cCtx.Args().Get(0))
-}
-
-func readArgs0FileOrStdIoToVerifiableEvent(cCtx *cli.Context) ([]logverification.VerifiableEvent, error) {
-	if cCtx.Args().Len() > 0 {
-		return ReadVerifiableEventsFromFile(cCtx.Args().Get(0))
-	}
+func stdinToVerifiableEvent(cCtx *cli.Context) ([]logverification.VerifiableEvent, error) {
 	scanner := bufio.NewScanner(os.Stdin)
 	var data []byte
 	for scanner.Scan() {
@@ -39,10 +27,7 @@ func readArgs0FileOrStdIoToVerifiableEvent(cCtx *cli.Context) ([]logverification
 	return VerifiableEventsFromData(data)
 }
 
-func readArgs0FileOrStdIoToDecodedEvent(cCtx *cli.Context) ([]logverification.DecodedEvent, error) {
-	if cCtx.Args().Len() > 0 {
-		return ReadDecodedEventsFromFile(cCtx.Args().Get(0))
-	}
+func stdinToDecodedEvent(cCtx *cli.Context) ([]logverification.DecodedEvent, error) {
 	scanner := bufio.NewScanner(os.Stdin)
 	var data []byte
 	for scanner.Scan() {
@@ -52,20 +37,6 @@ func readArgs0FileOrStdIoToDecodedEvent(cCtx *cli.Context) ([]logverification.De
 		return nil, err
 	}
 	return DecodedEventsFromData(data)
-}
-
-// ReadVerifiableEventsFromFile reads datatrails events from a file and returns a
-// normalized list of raw binary items.
-//
-// See EventListFromData for the content expectations (must be a list of events
-// or single event from datatrails api)
-func ReadVerifiableEventsFromFile(fileName string) ([]logverification.VerifiableEvent, error) {
-
-	data, err := os.ReadFile(fileName)
-	if err != nil {
-		return nil, err
-	}
-	return VerifiableEventsFromData(data)
 }
 
 func VerifiableEventsFromData(data []byte) ([]logverification.VerifiableEvent, error) {
@@ -82,23 +53,14 @@ func VerifiableEventsFromData(data []byte) ([]logverification.VerifiableEvent, e
 		return nil, err
 	}
 
-	// TODO: validate the verifiable events are not empty
+	for _, event := range verifiableEvents {
+		validationErr := event.Validate()
+		if validationErr != nil {
+			return nil, validationErr
+		}
+	}
 
 	return verifiableEvents, nil
-}
-
-// ReadDecodedEventsFromFile reads datatrails events from a file and returns a
-// normalized list of raw binary items.
-//
-// See EventListFromData for the content expectations (must be a list of events
-// or single event from datatrails api)
-func ReadDecodedEventsFromFile(fileName string) ([]logverification.DecodedEvent, error) {
-
-	data, err := os.ReadFile(fileName)
-	if err != nil {
-		return nil, err
-	}
-	return DecodedEventsFromData(data)
 }
 
 func DecodedEventsFromData(data []byte) ([]logverification.DecodedEvent, error) {
@@ -115,7 +77,12 @@ func DecodedEventsFromData(data []byte) ([]logverification.DecodedEvent, error) 
 		return nil, err
 	}
 
-	// TODO: validate the decoded events are not empty
+	for _, event := range decodedEvents {
+		validationErr := event.Validate()
+		if validationErr != nil {
+			return nil, validationErr
+		}
+	}
 
 	return decodedEvents, nil
 }

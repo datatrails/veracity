@@ -29,7 +29,7 @@ func NewEventDiagCmd() *cli.Command {
 			},
 		},
 		Action: func(cCtx *cli.Context) error {
-			decodedEvents, err := readArgs0FileOrStdIoToDecodedEvent(cCtx)
+			decodedEvents, err := stdinToDecodedEvent(cCtx)
 			if err != nil {
 				return err
 			}

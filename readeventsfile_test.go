@@ -98,6 +98,25 @@ func TestDecodedEventsFromData(t *testing.T) {
 			err:      nil,
 		},
 		{
+			name: "list with invalid v3 event returns a validation error",
+			args: args{
+				data: []byte(`{
+	"events":[
+		{
+			"merklelog_entry": {
+			  "commit": {
+					"index": "0",
+					"idtimestamp": "018e3f48610b089800"
+			  }
+			}
+		}
+	]
+}`),
+			},
+			expected: nil,
+			err:      logverification.ErrNonEmptyEventIDRequired,
+		},
+		{
 			name: "single event list",
 			args: args{
 				data: []byte(`{
@@ -328,6 +347,25 @@ func TestVerifiableEventsFromData(t *testing.T) {
 			},
 			expected: []logverification.VerifiableEvent{},
 			err:      nil,
+		},
+		{
+			name: "list with invalid v3 event returns a validation error",
+			args: args{
+				data: []byte(`{
+	"events":[
+		{
+			"merklelog_entry": {
+			  "commit": {
+					"index": "0",
+					"idtimestamp": "018e3f48610b089800"
+			  }
+			}
+		}
+	]
+}`),
+			},
+			expected: nil,
+			err:      logverification.ErrNonEmptyEventIDRequired,
 		},
 		{
 			name: "single event list",

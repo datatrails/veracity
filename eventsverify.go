@@ -58,7 +58,7 @@ Note: for publicly attested events, or shared protected events, you must use --t
 
 			log("verifying events dir: %s", cCtx.String("logdir"))
 
-			verifiableEvents, err := readArgs0FileOrStdIoToVerifiableEvent(cCtx)
+			verifiableEvents, err := stdinToVerifiableEvent(cCtx)
 			if err != nil {
 				return err
 			}

@@ -7,7 +7,7 @@ import (
 	"github.com/datatrails/veracity/tests/katdata"
 )
 
-// VerifyOneEventStdIn tests that the veracity sub command events-verify
+// VerifyOneEventStdIn tests that the veracity sub command verify-included
 // can verify a single event in the format returned from a direct get.
 // The event is provided on standard input
 func (s *EDiagSuite) TestOneEventStdIn() {

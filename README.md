@@ -122,7 +122,7 @@ We use a publicly attested event so that you can check the event details directl
     PUBLIC_TENANT_ID=tenant/6ea5cd00-c711-3649-6914-7b125928bbb4
 
     curl -sL $DATATRAILS_URL/archivist/v2/$EVENT_ID | \
-        veracity --data-url $DATATRAILS_URL/verifiabledata --tenant=$PUBLIC_TENANT_ID events-verify
+        veracity --data-url $DATATRAILS_URL/verifiabledata --tenant=$PUBLIC_TENANT_ID verify-included
 
 **By default there will be no output. If the verification has succeeded an exit code of 0 will be returned.**
 
@@ -148,14 +148,14 @@ The elided proof path nodes will be:
 The same command accepts the result of a DataTrails list events call. And the event data can be supplied as local file if desired.
 
     curl -sL $DATATRAILS_URL/archivist/v2/$EVENT_ID > event.json
-    veracity --data-url $DATATRAILS_URL/verifiabledata --tenant=$PUBLIC_TENANT_ID events-verify event.json
+    veracity --data-url $DATATRAILS_URL/verifiabledata --tenant=$PUBLIC_TENANT_ID verify-included event.json
 
 # General use commands
 
 * `node` - read a merklelog node
 * `nodescan` - scan a log for a particular node value
 * `diag` - print diagnostics about a massif, identified by massif index or by an mmr index
-* `events-verify` - verify the inclusion of an event, or list of events, in the tenant's merkle log
+* `verify-included` - verify the inclusion of an event, or list of events, in the tenant's merkle log
 * `event-log-info` - print diagnostics about an events entry in the log (currently only supports events on protected assets)
 * `massifs` - Generate pre-calculated tables for navigating massif raw storage with maximum convenience
 

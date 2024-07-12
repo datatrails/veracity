@@ -7,7 +7,7 @@ import (
 	"github.com/datatrails/veracity/tests/katdata"
 )
 
-// VerifyOneEventStdIn tests that the veracity sub command events-verify
+// VerifyOneEventStdIn tests that the veracity sub command verify-included
 // can verify a single event in the format returned from a direct get.
 // The event is provided on standard input
 func (s *VerifyEventsSuite) TestVerifyOneEventStdIn() {
@@ -23,7 +23,7 @@ func (s *VerifyEventsSuite) TestVerifyOneEventStdIn() {
 		"--loglevel", "INFO",
 		"--tenant", s.Env.PublicTenantId,
 		"--data-url", s.Env.VerifiableDataURL,
-		"events-verify",
+		"verify-included",
 	})
 	assert.NoErrorf(err, "the event is a known good event from the public production tenant, yet verification has failed")
 }
@@ -42,7 +42,7 @@ func (s *VerifyEventsSuite) TestOneTamperEventStdIn() {
 		"--loglevel", "INFO",
 		"--tenant", s.Env.PublicTenantId,
 		"--data-url", s.Env.VerifiableDataURL,
-		"events-verify",
+		"verify-included",
 	})
 	assert.Errorf(err, "the event should not have verified, its data was purposefully tampered")
 }

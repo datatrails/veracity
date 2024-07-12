@@ -18,13 +18,13 @@ const (
 // with maximum convenience
 func NewMassifsCmd() *cli.Command {
 	return &cli.Command{Name: "massifs",
-		Usage: `
-Generate pre-calculated tables for navigating massif blobs with maximum convenience.
+		Usage: `Generate pre-calculated tables for navigating massif blobs with maximum convenience.
 
 Note that this command does not need to read any blobs. It simply applies the
 MMR algorithms to produce the desired information computationaly Note that this
 command does not need to read any blobs. It simply applies the MMR algorithms
-to produce the desired information computationaly produce`,
+to produce the desired information computationaly produce
+		`,
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
 				Name: "first-massif", Aliases: []string{"m"},

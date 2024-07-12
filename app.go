@@ -6,21 +6,12 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func NewApp() *cli.App {
+func NewApp(ikwid bool) *cli.App {
 	app := &cli.App{
 		Usage: "common read only operations on datatrails merklelog verifiable data",
 		Flags: []cli.Flag{
 			&cli.StringFlag{Name: "loglevel", Value: "NOOP"},
 			&cli.Int64Flag{Name: "height", Value: 14, Usage: "override the massif height"},
-			&cli.StringFlag{
-				Name: "account", Aliases: []string{"s"},
-				Usage: fmt.Sprintf("the azure storage account. defaults to `%s' and triggers use of emulator url", AzuriteStorageAccount),
-			},
-			&cli.StringFlag{
-				Name: "container", Aliases: []string{"c"},
-				Usage: "the azure storage container. this is necessary when using the azurite storage emulator",
-				Value: DefaultContainer,
-			},
 			&cli.StringFlag{
 				Name: "data-url", Aliases: []string{"u"},
 				Usage: "url to download merkle log data from. mutually exclusive with data-local; if neither option is supplied, DataTrails' live log data will be used",
@@ -32,28 +23,38 @@ func NewApp() *cli.App {
 			&cli.StringFlag{
 				Name: "tenant", Aliases: []string{"t"},
 			},
-			&cli.StringFlag{
-				Name: "bug", Usage: "specify a bug number to enable a work around or special behaviour",
-			},
-			&cli.BoolFlag{
-				Name: "envauth", Usage: "set to enable authorization from the environment (not all commands support this)",
-			},
 		},
 	}
+
+	if ikwid {
+		app.Flags = append(app.Flags, &cli.BoolFlag{
+			Name: "envauth", Usage: "set to enable authorization from the environment (not all commands support this)",
+		})
+		app.Flags = append(app.Flags, &cli.StringFlag{
+			Name: "account", Aliases: []string{"s"},
+			Usage: fmt.Sprintf("the azure storage account. defaults to `%s' and triggers use of emulator url", AzuriteStorageAccount),
+		})
+		app.Flags = append(app.Flags, &cli.StringFlag{
+			Name: "container", Aliases: []string{"c"},
+			Usage: "the azure storage container. this is necessary when using the azurite storage emulator",
+			Value: DefaultContainer,
+		})
+	}
+
 	return app
 }
 
-func AddCommands(app *cli.App) *cli.App {
-	app.Commands = append(app.Commands, NewNodeCmd())
+func AddCommands(app *cli.App, ikwid bool) *cli.App {
 	app.Commands = append(app.Commands, NewEventsVerifyCmd())
-
-	// Note: this command is not implemented
-	// app.Commands = append(app.Commands, NewProveCmd())
-	app.Commands = append(app.Commands, NewNodeScanCmd())
-	app.Commands = append(app.Commands, NewDiagCmd())
-	app.Commands = append(app.Commands, NewEventDiagCmd())
 	app.Commands = append(app.Commands, NewMassifsCmd())
-	app.Commands = append(app.Commands, NewLogWatcherCmd())
-	app.Commands = append(app.Commands, NewLogTailCmd())
+	app.Commands = append(app.Commands, NewNodeCmd())
+
+	if ikwid {
+		app.Commands = append(app.Commands, NewLogWatcherCmd())
+		app.Commands = append(app.Commands, NewLogTailCmd())
+		app.Commands = append(app.Commands, NewEventDiagCmd())
+		app.Commands = append(app.Commands, NewDiagCmd())
+		app.Commands = append(app.Commands, NewNodeScanCmd())
+	}
 	return app
 }

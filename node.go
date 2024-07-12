@@ -9,7 +9,10 @@ import (
 // NewNodeCmd prints out the identified mmr node
 func NewNodeCmd() *cli.Command {
 	return &cli.Command{Name: "node",
-		Usage: "read a merklelog node",
+		Usage: `read a merklelog node
+
+			provide --mmrindex or -i to specify the node to read
+		`,
 		Flags: []cli.Flag{
 			&cli.Int64Flag{
 				Name: "mmrindex", Aliases: []string{"i"},

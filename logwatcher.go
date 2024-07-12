@@ -43,6 +43,7 @@ func NewWatchConfig(cCtx *cli.Context, cmd *CmdCtx) (watcher.WatchConfig, error)
 func NewLogWatcherCmd() *cli.Command {
 	return &cli.Command{Name: "watch",
 		Usage: `report logs changed in each watch interval
+		
 		Provide --horizon OR provide either of --since or --idsince
 
 		horizon is always inferred from the since arguments if they are provided

@@ -126,7 +126,7 @@ We use a publicly attested event so that you can check the event details directl
 
 **By default there will be no output. If the verification has succeeded an exit code of 0 will be returned.**
 
-If the verification command is run with `--log-level=INFO` the output will be:
+If the verification command is run with `--loglevel=INFO` the output will be:
 
     verifying for tenant: tenant/6ea5cd00-c711-3649-6914-7b125928bbb4
     verifying: 663 334 018fa97ef269039b00 2024-05-24T08:27:00.2+01:00 publicassets/87dd2e5a-42b4-49a5-8693-97f40a5af7f8/events/a022f458-8e55-4d63-a200-4172a42fc2aa
@@ -134,7 +134,7 @@ If the verification command is run with `--log-level=INFO` the output will be:
     OK|663 334|[aea799fb2a8..., proof path nodes, ...f0a52d2256c235]
 
 
-The elided proof path nodes will be:
+The elided proof path at time of writing was:
 
     [9f0183c7f79fd81966e104520af0f90c8447f1a73d4e38e7f2f23a0602ceb617,
      da21cb383d63896a9811f06ebd2094921581d8eb72f7fbef566b730958dc35f1,
@@ -145,7 +145,14 @@ The elided proof path nodes will be:
      4b6dc2ff8d608faee7be16f900d58f7ff02360db319dc68f76035890d65c8c05,
      7fafc7edc434225afffc19b0582efa2a71b06a2d035358356df0a52d2256c235]
 
-The same command accepts the result of a DataTrails list events call.
+The same command accepts the result of a DataTrails list events call, e.g.
+
+    DATATRAILS_URL=https://app.datatrails.ai
+    PUBLIC_TENANT_ID=tenant/6ea5cd00-c711-3649-6914-7b125928bbb4
+    PUBLIC_ASSET_ID=publicassets/87dd2e5a-42b4-49a5-8693-97f40a5af7f8
+
+    curl -sL $DATATRAILS_URL/archivist/v2/$PUBLIC_ASSET_ID/events | \
+      veracity --data-url $DATATRAILS_URL/verifiabledata --tenant=$PUBLIC_TENANT_ID verify-included 
 
 # General use commands
 

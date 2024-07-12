@@ -52,7 +52,15 @@ func TestVerifyEvent(t *testing.T) {
 	event := []byte(`{
 		"identity": "publicassets/87dd2e5a-42b4-49a5-8693-97f40a5af7f8/events/a022f458-8e55-4d63-a200-4172a42fc2aa", 
 		"asset_identity": "publicassets/87dd2e5a-42b4-49a5-8693-97f40a5af7f8", 
-		"event_attributes": {"arc_access_policy_asset_attributes_read":  [ {"attribute" :"*","0x4609ea6bbe85F61bc64760273ce6D89A632B569f" :"wallet","SmL4PHAHXLdpkj/c6Xs+2br+hxqLmhcRk75Hkj5DyEQ=" :"tessera"}], "arc_access_policy_event_arc_display_type_read":  [ {"SmL4PHAHXLdpkj/c6Xs+2br+hxqLmhcRk75Hkj5DyEQ=" :"tessera","value" :"*","0x4609ea6bbe85F61bc64760273ce6D89A632B569f" :"wallet"}], "arc_access_policy_always_read":  [ {"wallet" :"0x0E29670b420B7f2E8E699647b632cdE49D868dA7","tessera" :"SmL4PHAHXLdpkj/c6Xs+2br+hxqLmhcRk75Hkj5DyEQ="}]}, "asset_attributes": {"arc_display_name": "Dava Derby", "arc_display_type": "public-test"}, 
+		"event_attributes": {
+			"arc_access_policy_asset_attributes_read":  [ 
+				{"attribute" :"*","0x4609ea6bbe85F61bc64760273ce6D89A632B569f" :"wallet","SmL4PHAHXLdpkj/c6Xs+2br+hxqLmhcRk75Hkj5DyEQ=" :"tessera"}], 
+			"arc_access_policy_event_arc_display_type_read":  [ 
+				{"SmL4PHAHXLdpkj/c6Xs+2br+hxqLmhcRk75Hkj5DyEQ=" :"tessera","value" :"*","0x4609ea6bbe85F61bc64760273ce6D89A632B569f" :"wallet"}], 
+			"arc_access_policy_always_read":  [ 
+				{"wallet" :"0x0E29670b420B7f2E8E699647b632cdE49D868dA7","tessera" :"SmL4PHAHXLdpkj/c6Xs+2br+hxqLmhcRk75Hkj5DyEQ="}]
+		}, 
+		"asset_attributes": {"arc_display_name": "Dava Derby", "arc_display_type": "public-test"}, 
 		"operation": "NewAsset", 
 		"behaviour": "AssetCreator", 
 		"timestamp_declared": "2024-05-24T07:26:58Z", 
@@ -67,7 +75,12 @@ func TestVerifyEvent(t *testing.T) {
 		"from": "0x0E29670b420B7f2E8E699647b632cdE49D868dA7", 
 		"tenant_identity": "tenant/7dfaa5ef-226f-4f40-90a5-c015e59998a8", 
 		"merklelog_entry": {"commit":{"index":"0", "idtimestamp":"018fa97ef269039b00"}, 
-		"confirm":{"mmr_size":"7", "root":"/rlMNJhlay9CUuO3LgX4lSSDK6dDhtKesCO50CtrHr4=", "timestamp":"1716535620409", "idtimestamp":"", "signed_tree_head":""}, 
+		"confirm":{
+			"mmr_size":"7", 
+			"root":"/rlMNJhlay9CUuO3LgX4lSSDK6dDhtKesCO50CtrHr4=", 
+			"timestamp":"1716535620409", 
+			"idtimestamp":"", 
+			"signed_tree_head":""}, 
 		"unequivocal":null}
 	}`)
 

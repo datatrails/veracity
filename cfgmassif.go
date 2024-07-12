@@ -39,13 +39,14 @@ func cfgMassifReader(cmd *CmdCtx, cCtx *cli.Context) error {
 	}
 
 	if localLog == "" && remoteLog == "" {
-		// if we had no url and no local data supplied we try STDIN
-		opener := cfgStdinOpener()
-		mr, err := NewLocalMassifReader(logger.Sugar, opener, "-")
+		// If we had no url and no local data supplied we default to the production data source.
+		reader, err := cfgReader(cmd, cCtx, true)
 		if err != nil {
 			return err
 		}
-		cmd.massifReader = mr
+		mr := massifs.NewMassifReader(logger.Sugar, reader, massifs.WithoutGetRootSupport())
+		cmd.massifReader = &mr
+
 	} else if localLog != "" {
 		// if we have local log then we try to figure out if it's a dir or
 		// a file and we go with that
@@ -69,7 +70,7 @@ func cfgMassifReader(cmd *CmdCtx, cCtx *cli.Context) error {
 
 	} else {
 		// otherwise configure for reading from remote blobs
-		reader, err := cfgReader(cmd, cCtx)
+		reader, err := cfgReader(cmd, cCtx, false)
 		if err != nil {
 			return err
 		}

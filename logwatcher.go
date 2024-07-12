@@ -109,7 +109,7 @@ func NewLogWatcherCmd() *cli.Command {
 
 			tagsFilter := w.FirstFilter()
 
-			reader, err := cfgReader(cmd, cCtx)
+			reader, err := cfgReader(cmd, cCtx, false)
 			if err != nil {
 				return err
 			}

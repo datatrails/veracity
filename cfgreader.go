@@ -15,8 +15,8 @@ const (
 )
 
 // cfgReader establishes the blob read only data accessor
-// only azure blob storage is supported. Both emulated and produciton.
-func cfgReader(cmd *CmdCtx, cCtx *cli.Context) (azblob.Reader, error) {
+// only azure blob storage is supported. Both emulated and production.
+func cfgReader(cmd *CmdCtx, cCtx *cli.Context, forceProdUrl bool) (azblob.Reader, error) {
 	var err error
 	var reader azblob.Reader
 
@@ -26,10 +26,18 @@ func cfgReader(cmd *CmdCtx, cCtx *cli.Context) (azblob.Reader, error) {
 		}
 	}
 
-	container := cCtx.String("container")
-
-	account := cCtx.String("account")
+	// We prefer loading this from the command line argument, but if upstream code requests we default
+	// to the production URL we inject that here.
 	url := cCtx.String("data-url")
+	if forceProdUrl {
+		url = DefaultRemoteMassifURL
+	}
+
+	// These values are relevant for direct connection to Azure blob store (or emulator), but are
+	// harmlessly irrelevant for standard remote connections that connect via public proxy. Potential
+	// to simplify this function in future.
+	container := cCtx.String("container")
+	account := cCtx.String("account")
 	envAuth := cCtx.Bool("envauth")
 
 	if account == "" && url == "" {

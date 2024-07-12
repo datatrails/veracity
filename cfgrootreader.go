@@ -16,7 +16,9 @@ func cfgRootReader(cmd *CmdCtx, cCtx *cli.Context) error {
 	if cmd.cborCodec, err = massifs.NewRootSignerCodec(); err != nil {
 		return err
 	}
-	reader, err := cfgReader(cmd, cCtx)
+
+	// TODO: We'll probably want to update this in future, in order to have a helpful default route.
+	reader, err := cfgReader(cmd, cCtx, false)
 	if err != nil {
 		return err
 	}

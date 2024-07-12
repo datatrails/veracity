@@ -8,14 +8,13 @@ import (
 	"os"
 
 	"github.com/datatrails/go-datatrails-logverification/logverification"
-	"github.com/urfave/cli/v2"
 )
 
 var (
 	ErrInvalidV3Event = errors.New(`json is not in expected v3event format`)
 )
 
-func stdinToVerifiableEvent(cCtx *cli.Context) ([]logverification.VerifiableEvent, error) {
+func stdinToVerifiableEvents() ([]logverification.VerifiableEvent, error) {
 	scanner := bufio.NewScanner(os.Stdin)
 	var data []byte
 	for scanner.Scan() {
@@ -27,7 +26,7 @@ func stdinToVerifiableEvent(cCtx *cli.Context) ([]logverification.VerifiableEven
 	return VerifiableEventsFromData(data)
 }
 
-func stdinToDecodedEvent(cCtx *cli.Context) ([]logverification.DecodedEvent, error) {
+func stdinToDecodedEvents() ([]logverification.DecodedEvent, error) {
 	scanner := bufio.NewScanner(os.Stdin)
 	var data []byte
 	for scanner.Scan() {

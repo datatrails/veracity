@@ -145,10 +145,7 @@ The elided proof path nodes will be:
      4b6dc2ff8d608faee7be16f900d58f7ff02360db319dc68f76035890d65c8c05,
      7fafc7edc434225afffc19b0582efa2a71b06a2d035358356df0a52d2256c235]
 
-The same command accepts the result of a DataTrails list events call. And the event data can be supplied as local file if desired.
-
-    curl -sL $DATATRAILS_URL/archivist/v2/$EVENT_ID > event.json
-    veracity --data-url $DATATRAILS_URL/verifiabledata --tenant=$PUBLIC_TENANT_ID verify-included event.json
+The same command accepts the result of a DataTrails list events call.
 
 # General use commands
 

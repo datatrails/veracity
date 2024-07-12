@@ -44,7 +44,7 @@ func cfgMassifReader(cmd *CmdCtx, cCtx *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		mr := massifs.NewMassifReader(logger.Sugar, reader, massifs.WithoutGetRootSupport())
+		mr := massifs.NewMassifReader(logger.Sugar, reader)
 		cmd.massifReader = &mr
 
 	} else if localLog != "" {
@@ -74,7 +74,7 @@ func cfgMassifReader(cmd *CmdCtx, cCtx *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		mr := massifs.NewMassifReader(logger.Sugar, reader, massifs.WithoutGetRootSupport())
+		mr := massifs.NewMassifReader(logger.Sugar, reader)
 		cmd.massifReader = &mr
 	}
 

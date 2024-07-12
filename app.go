@@ -21,12 +21,13 @@ func NewApp() *cli.App {
 				Usage: "the azure storage container. this is necessary when using the azurite storage emulator",
 				Value: DefaultContainer,
 			},
-
 			&cli.StringFlag{
 				Name: "data-url", Aliases: []string{"u"},
+				Usage: "url to download merkle log data from. mutually exclusive with data-local; if neither option is supplied, DataTrails' live log data will be used",
 			},
 			&cli.StringFlag{
 				Name: "data-local", Aliases: []string{"l"},
+				Usage: "filesystem location to load merkle log data from. can be a directory of massifs or a single file. mutually exclusive with data-url; if neither option is supplied, DataTrails' live log data will be used",
 			},
 			&cli.StringFlag{
 				Name: "tenant", Aliases: []string{"t"},

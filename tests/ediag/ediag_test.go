@@ -12,8 +12,8 @@ import (
 // The event is provided on standard input
 func (s *EDiagSuite) TestOneEventStdIn() {
 	assert := s.Assert()
-	app := veracity.NewApp()
-	veracity.AddCommands(app)
+	app := veracity.NewApp(true)
+	veracity.AddCommands(app, true)
 
 	// note: the suite does a before & after pipe for Stdin
 	s.StdinWriteAndClose(katdata.KnownGoodPublicEvent)
@@ -31,8 +31,8 @@ func (s *EDiagSuite) TestOneEventStdIn() {
 func (s *EDiagSuite) TestOneTamperedEventStdIn() {
 
 	assert := s.Assert()
-	app := veracity.NewApp()
-	veracity.AddCommands(app)
+	app := veracity.NewApp(true)
+	veracity.AddCommands(app, true)
 
 	// note: the suite does a before & after pipe for Stdin
 	s.StdinWriteAndClose(katdata.KnownTamperedPublicEvent)

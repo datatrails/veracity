@@ -46,10 +46,10 @@ func NewApp(ikwid bool) *cli.App {
 
 func AddCommands(app *cli.App, ikwid bool) *cli.App {
 	app.Commands = append(app.Commands, NewEventsVerifyCmd())
-	app.Commands = append(app.Commands, NewMassifsCmd())
 	app.Commands = append(app.Commands, NewNodeCmd())
 
 	if ikwid {
+		app.Commands = append(app.Commands, NewMassifsCmd())
 		app.Commands = append(app.Commands, NewLogWatcherCmd())
 		app.Commands = append(app.Commands, NewLogTailCmd())
 		app.Commands = append(app.Commands, NewEventDiagCmd())

@@ -41,6 +41,7 @@ PLATFORM=Darwin
 ARCH=arm64
 VERSION=0.0.1
 curl -sLO https://github.com/datatrails/veracity/releases/download/v${VERSION}/veracity_${PLATFORM}_${ARCH}.tar.gz
+tar -xf veracity_${PLATFORM}_${ARCH}.tar.gz
 chmod +x ./veracity
 ./veracity --help
 ```
@@ -147,19 +148,20 @@ The same command accepts the result of a DataTrails list events call, e.g.
     curl -sL $DATATRAILS_URL/archivist/v2/$PUBLIC_ASSET_ID/events | \
       veracity --data-url $DATATRAILS_URL/verifiabledata --tenant=$PUBLIC_TENANT_ID verify-included 
 
+# Read selected node from log
+
+An example of reading node associated with specific event, it's possible to visit merkle log entry page https://app.datatrails.ai/merklelogentry/87dd2e5a-42b4-49a5-8693-97f40a5af7f8/999773ed-cc92-4d9c-863f-b418418705ea?public=true for event https://app.datatrails.ai/archivist/publicassets/87dd2e5a-42b4-49a5-8693-97f40a5af7f8/events/999773ed-cc92-4d9c-863f-b418418705ea
+
+On the Merkle log entry page we can see `MMR Index` field with value `916` which can be used with `node` command to retrieve the leaf directly from merklelog by using following command
+
+    PUBLIC_TENANT_ID=tenant/6ea5cd00-c711-3649-6914-7b125928bbb4
+    DATATRAILS_URL=https://app.datatrails.ai
+ 
+    veracity --data-url $DATATRAILS_URL/verifiabledata --tenant=$PUBLIC_TENANT_ID node --mmrindex 916
+
+Above command will output `c3323019fd1d325ac068d203c62007b504c5fa762446a9fe5d88e392ec96914b` which will match the value from the merkle log enty page.
+
 # General use commands
 
 * `node` - read a merklelog node
 * `verify-included` - verify the inclusion of an event, or list of events, in the tenant's merkle log
-* `massifs` - Generate pre-calculated tables for navigating massif raw storage with maximum convenience
-
-# Developer commands
-
-The following sub commands are used in development or by contributors. Or
-currently require an authenticated connection
-
-* `tail` - report most recent end of log
-* `watch` - report logs changes in each watch interval
-* `event-log-info` - print diagnostics about an events entry in the log (currently only supports events on protected assets)
-* `nodescan` - scan a log for a particular node value
-* `diag` - print diagnostics about a massif, identified by massif index or by an mmr index

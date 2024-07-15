@@ -150,10 +150,7 @@ The same command accepts the result of a DataTrails list events call, e.g.
 # General use commands
 
 * `node` - read a merklelog node
-* `nodescan` - scan a log for a particular node value
-* `diag` - print diagnostics about a massif, identified by massif index or by an mmr index
 * `verify-included` - verify the inclusion of an event, or list of events, in the tenant's merkle log
-* `event-log-info` - print diagnostics about an events entry in the log (currently only supports events on protected assets)
 * `massifs` - Generate pre-calculated tables for navigating massif raw storage with maximum convenience
 
 # Developer commands
@@ -161,4 +158,8 @@ The same command accepts the result of a DataTrails list events call, e.g.
 The following sub commands are used in development or by contributors. Or
 currently require an authenticated connection
 
-* tail, watch
+* `tail` - report most recent end of log
+* `watch` - report logs changes in each watch interval
+* `event-log-info` - print diagnostics about an events entry in the log (currently only supports events on protected assets)
+* `nodescan` - scan a log for a particular node value
+* `diag` - print diagnostics about a massif, identified by massif index or by an mmr index

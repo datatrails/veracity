@@ -39,8 +39,7 @@ For example, for the Linux or Darwin OS the following steps would be conventiona
 ```
 PLATFORM=Darwin
 ARCH=arm64
-VERSION=0.0.1
-curl -sLO https://github.com/datatrails/veracity/releases/download/v${VERSION}/veracity_${PLATFORM}_${ARCH}.tar.gz
+curl -sLO https://github.com/datatrails/veracity/releases/latest/download/veracity_${PLATFORM}_${ARCH}.tar.gz
 tar -xf veracity_${PLATFORM}_${ARCH}.tar.gz
 chmod +x ./veracity
 ./veracity --help

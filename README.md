@@ -30,8 +30,8 @@ Or, follow these commands to install the latest build.
 ### Mac Install
 
 ```console
-PLATFORM=darwin
-ARCH=arm64
+PLATFORM=$(uname -s | tr [:upper:] [:lower:])
+ARCH=$(uname -m)
 cd $TMPDIR
 curl -sLO https://github.com/datatrails/veracity/releases/latest/download/veracity_${PLATFORM}_${ARCH}.tar.gz
 tar -xf veracity_${PLATFORM}_${ARCH}.tar.gz
@@ -43,14 +43,34 @@ veracity --help
 ### Linux/WSL Install
 
 ```console
-PLATFORM=linux
-ARCH=x86_64
+PLATFORM=$(uname -s | tr [:upper:] [:lower:])
+ARCH=$(uname -m)
 cd /tmp
 curl -sLO https://github.com/datatrails/veracity/releases/latest/download/veracity_${PLATFORM}_${ARCH}.tar.gz
 tar -xf veracity_${PLATFORM}_${ARCH}.tar.gz
 chmod +x ./veracity
 mv ./veracity $HOME/.local/bin/
 veracity --help
+```
+
+#### Troubleshooting
+
+If `veracity --help` fails, check the following:
+
+confirm `` includes `.local/bin`.
+Either add to the path, or place in an alternate location
+
+```console
+# Check veracity exists in your $PATH
+echo $PATH
+
+# Add to the path
+export PATH="$HOME/.local/bin:$PATH"
+# reload the configuration
+source ~/.bashrc
+
+# Confirm which veracity binary is being used
+which veracity
 ```
 
 ## Example Usage
@@ -86,6 +106,7 @@ Check the event details directly.
         --loglevel=INFO \
         verify-included
     ```
+
 1. View the output, noting there are no verification errors
 
     ```output

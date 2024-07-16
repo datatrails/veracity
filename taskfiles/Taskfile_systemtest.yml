@@ -1,0 +1,33 @@
+version: '3'
+
+tasks:
+  setup:
+    desc: Clones the shunit test framework and installs it into the correct folder
+    cmds:
+      - |
+        downloadDir=$(mktemp -d)
+        installDir={{.ROOT_DIR}}/tests/systemtest/shunit
+        mkdir -p ${installDir}
+
+        # We need to get the master branch of shunit2 to get junit output
+        wget -q -O ${downloadDir}/shunit2.zip https://github.com/kward/shunit2/archive/refs/heads/master.zip
+        unzip -q ${downloadDir}/shunit2.zip -d ${downloadDir}
+
+        cp ${downloadDir}/shunit2-master/shunit2 ${installDir}
+        cp ${downloadDir}/shunit2-master/shunit2_test_helpers ${installDir}
+        cp ${downloadDir}/shunit2-master/test_runner ${installDir}
+        cp -r ${downloadDir}/shunit2-master/lib ${installDir}
+
+        rm -rf ${downloadDir}
+    sources:
+      - "{{.ROOT_DIR}}/tests/systemtest"
+
+  test:
+    deps:
+      - setup
+    desc: Runs the system tests
+    cmds:
+      - |
+        pushd {{.ROOT_DIR}}/tests/systemtest
+        ./shunit/shunit2 ./test.sh --output-junit-xml=res.xml
+        popd

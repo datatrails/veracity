@@ -3,3 +3,6 @@
 /veracity
 **/test_results
 dist/
+tests/systemtest/shunit/
+tests/systemtest/res.xml
+.task/

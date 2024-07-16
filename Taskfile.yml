@@ -28,6 +28,9 @@ includes:
   gotest:
     taskfile: ./taskfiles/Taskfile_gotest.yml
     dir: ./taskfiles
+  systemtest:
+    taskfile: ./taskfiles/Taskfile_systemtest.yml
+    dir: .
 
 tasks:
 
@@ -49,16 +52,16 @@ tasks:
   format:
     desc: formats the code correctly
     cmds:
-      - task: codequality:format 
+      - task: codequality:format
 
   lint:
     desc: lints the go code
     cmds:
-      - task: codequality:lint 
+      - task: codequality:lint
 
   go:modules:
     desc: tidies the go modules
-    cmds: 
+    cmds:
       - task: codequality:modules
 
   test:unit:
@@ -72,3 +75,9 @@ tasks:
      - task: azurite:preflight
      - task: gotest:go:azurite
      - task: gotest:go:prodpublic
+
+  test:system:
+    desc: run the system tests
+    cmds:
+      - task: systemtest:setup
+      - task: systemtest:test

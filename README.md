@@ -6,7 +6,7 @@ A general familiarity with _verifiable data structures_, and in particular binar
 
 ## Installation
 
-Veracity provides native binaries for [Mac OS](#mac-install) and [Linux](#linuxwsl-install) on the [releases](https://github.com/datatrails/veracity/releases) page.
+Veracity provides native binaries for [Mac OS](#mac-install), [Linux](#linuxwsl-install) and Windows (WSL) on the [releases](https://github.com/datatrails/veracity/releases) page.
 
 _Note_: For The Windows Subsystem for Linux (WSL), use the Linux binaries.
 

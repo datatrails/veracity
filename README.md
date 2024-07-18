@@ -164,7 +164,7 @@ One of the many scenarios DataTrails prevents is tampering if and when informati
 ## Verify All Events
 
 The `veracity verify-included` command accepts the result of a DataTrails list events call.
-This verifies inclusion of each single even in the returned list.
+This verifies the inclusion of each event in the returned list.
 
 1. Pipe the `events` to veracity:
 

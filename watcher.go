@@ -169,9 +169,6 @@ func NewLogWatcherCmd() *cli.Command {
 					filterDuration,
 				)
 
-				// On log level info, emit a format indication
-				log("TENANT | MASSIF | LAST ID COMMITTED | LAST ID SEALED | LAST ACTIVITY UTC")
-
 				switch cCtx.String("mode") {
 				default:
 				case "tenants":

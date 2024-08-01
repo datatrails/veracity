@@ -53,7 +53,9 @@ func cfgReader(cmd *CmdCtx, cCtx *cli.Context, forceProdUrl bool) (azblob.Reader
 	if account == AzuriteStorageAccount {
 		cmd.log.Infof("using the emulator and authorizing with the well known private key (for production no authorization is required)")
 		// reader, err := azblob.NewAzurite(url, container)
-		reader, err = azblob.NewDev(azblob.NewDevConfigFromEnv(), container)
+		devCfg := azblob.NewDevConfigFromEnv()
+		cmd.readerURL = devCfg.URL
+		reader, err = azblob.NewDev(devCfg, container)
 		if err != nil {
 			return nil, err
 		}
@@ -68,13 +70,16 @@ func cfgReader(cmd *CmdCtx, cCtx *cli.Context, forceProdUrl bool) (azblob.Reader
 	}
 
 	if envAuth {
-		reader, err = azblob.NewDev(azblob.NewDevConfigFromEnv(), container)
+		devCfg := azblob.NewDevConfigFromEnv()
+		cmd.readerURL = devCfg.URL
+		reader, err = azblob.NewDev(devCfg, container)
 		if err != nil {
 			return nil, err
 		}
 		return reader, nil
 	}
 
+	cmd.readerURL = url
 	reader, err = azblob.NewReaderNoAuth(url, azblob.WithContainer(container), azblob.WithAccountName(account))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to blob store: %v", err)

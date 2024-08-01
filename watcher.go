@@ -5,11 +5,14 @@ package veracity
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"time"
 
+	"github.com/datatrails/go-datatrails-merklelog/massifs"
+	"github.com/datatrails/go-datatrails-merklelog/massifs/snowflakeid"
 	"github.com/datatrails/go-datatrails-merklelog/massifs/watcher"
 
 	// "github.com/datatrails/go-datatrails-common/azblob"
@@ -17,8 +20,12 @@ import (
 )
 
 const (
-	currentEpoch = uint8(1) // good until the end of the first unix epoch
-	tenantPrefix = "tenant/"
+	currentEpoch   = uint8(1) // good until the end of the first unix epoch
+	tenantPrefix   = "tenant/"
+	sealIDNotFound = "NOT-FOUND"
+	// maxPollCount is the maximum number of times to poll for *some* activity.
+	// Polling always terminates as soon as the first activity is detected.
+	maxPollCount = 15
 )
 
 // NewWatchConfig derives a configuration from the options set on the command line context
@@ -68,11 +75,12 @@ func NewLogWatcherCmd() *cli.Command {
 			},
 			&cli.DurationFlag{
 				Name: "interval", Aliases: []string{"d"},
-				Value: time.Second,
-				Usage: "The default polling interval is one second, setting the interval to zero disables polling",
+				Value: 3 * time.Second,
+				Usage: "The default polling interval is once every three seconds, setting the interval to zero disables polling",
 			},
 			&cli.IntFlag{
-				Name: "count", Usage: "Number of intervals. Zero means forever. Defaults to single poll",
+				Name: "count", Usage: fmt.Sprintf(
+					"Number of intervals to poll. Polling is terminated once the first activity is seen or after %d attempts regardless", maxPollCount),
 				Value: 1,
 			},
 			&cli.StringFlag{
@@ -92,6 +100,13 @@ func NewLogWatcherCmd() *cli.Command {
 			cfg, err := NewWatchConfig(cCtx, cmd)
 			if err != nil {
 				return err
+			}
+			if cfg.Interval < time.Second {
+				return fmt.Errorf("polling more than once per second is not currently supported")
+			}
+
+			log := func(m string, args ...any) {
+				cmd.log.Infof(m, args...)
 			}
 
 			var watchTenants map[string]bool
@@ -114,7 +129,10 @@ func NewLogWatcherCmd() *cli.Command {
 			if err != nil {
 				return err
 			}
-			count := cCtx.Int("count")
+
+			// enforce the maximum poll count, and require at least 1
+			count := min(max(1, cCtx.Int("count")), maxPollCount)
+
 			for {
 				filterStart := time.Now()
 				filtered, err := reader.FilteredList(ctx, tagsFilter)
@@ -136,52 +154,127 @@ func NewLogWatcherCmd() *cli.Command {
 					return err
 				}
 
-				fmt.Printf(
-					"%d active logs since %v (%s). qt: %v\n",
+				log(
+					"%d active logs since %v (%s). qt: %v",
 					len(c.Massifs),
 					w.LastSince.Format(time.RFC3339),
 					w.LastIDSince,
 					filterDuration,
 				)
-				fmt.Printf(
-					"%d tenants sealed since %v (%s). qt: %v\n",
+				log(
+					"%d tenants sealed since %v (%s). qt: %v",
 					len(c.Seals),
 					w.LastSince.Format(time.RFC3339),
 					w.LastIDSince,
 					filterDuration,
 				)
 
+				// On log level info, emit a format indication
+				log("TENANT | MASSIF | LAST ID COMMITTED | LAST ID SEALED | LAST ACTIVITY UTC")
+
 				switch cCtx.String("mode") {
 				default:
 				case "tenants":
+
+					var activity []TenantActivity
+
 					for _, tenant := range c.SortedMassifTenants() {
 						if watchTenants != nil && !watchTenants[tenant] {
 							continue
 						}
 						lt := c.Massifs[tenant]
-						fmt.Printf(" %s massif %d\n", tenant, lt.Number)
-					}
-					for _, tenant := range c.SortedSealedTenants() {
-						if watchTenants != nil && !watchTenants[tenant] {
-							continue
+						sealLastID := lastSealID(c, tenant)
+						// This is console mode output
+
+						a := TenantActivity{
+							Tenant:      tenant,
+							Massif:      int(lt.Number),
+							IDCommitted: lt.LastID, IDConfirmed: sealLastID,
+							LastModified: lastActivityRFC3339(lt.LastID, sealLastID),
+							MassifURL:    fmt.Sprintf("%s%s", cmd.readerURL, lt.Path),
 						}
-						lt := c.Seals[tenant]
-						fmt.Printf(" %s seal %d\n", tenant, lt.Number)
+
+						if sealLastID != sealIDNotFound {
+							a.SealURL = fmt.Sprintf("%s%s", cmd.readerURL, c.Seals[tenant].Path)
+						}
+
+						activity = append(activity, a)
 					}
+
+					if activity != nil {
+						jd, err := json.MarshalIndent(activity, "", "  ")
+						if err != nil {
+							return err
+						}
+						fmt.Println(string(jd))
+					}
+				}
+
+				// Terminate immediately once we have results
+				if len(c.Massifs) != 0 {
+					return nil
 				}
 
 				// Note we don't allow a zero interval
 				if count == 1 || w.Cfg.Interval == 0 {
-					break
+
+					// exit non zero if nothing is found
+					return fmt.Errorf("no changes found")
 				}
-				// count == 0 is infinite
+				// count is forced to 1 <= count <= maxPollCount
 				if count > 1 {
 					count--
 				}
 				tagsFilter = w.NextFilter()
 				time.Sleep(w.Cfg.Interval)
 			}
-			return nil
 		},
 	}
+}
+
+type TenantActivity struct {
+	Massif       int    `json:"massifindex"`
+	Tenant       string `json:"tenant"`
+	IDCommitted  string `json:"idcommitted"`
+	IDConfirmed  string `json:"idconfirmed"`
+	LastModified string `json:"lastmodified"`
+	MassifURL    string `json:"massif"`
+	SealURL      string `json:"seal"`
+}
+
+func lastSealID(c watcher.LogTailCollator, tenant string) string {
+	if _, ok := c.Seals[tenant]; ok {
+		return c.Seals[tenant].LastID
+	}
+	return sealIDNotFound
+}
+
+func lastActivityRFC3339(idmassif, idseal string) string {
+	tmassif, err := lastActivity(idmassif)
+	if err != nil {
+		return ""
+	}
+	if idseal == sealIDNotFound {
+		return tmassif.UTC().Format(time.RFC3339)
+	}
+	tseal, err := lastActivity(idseal)
+	if err != nil {
+		return tmassif.UTC().Format(time.RFC3339)
+	}
+	if tmassif.After(tseal) {
+		return tmassif.UTC().Format(time.RFC3339)
+	}
+	return tseal.UTC().Format(time.RFC3339)
+}
+
+func lastActivity(idTimstamp string) (time.Time, error) {
+	id, epoch, err := massifs.SplitIDTimestampHex(idTimstamp)
+	if err != nil {
+		return time.Time{}, err
+	}
+	ms, err := snowflakeid.IDUnixMilli(id, epoch)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return time.UnixMilli(ms), nil
 }

@@ -22,6 +22,7 @@ type CmdCtx struct {
 	// storer *azblob.Storer
 	//reader       azblob.Reader
 	massifReader MassifReader
+	readerURL    string
 	cborCodec    cbor.CBORCodec
 	rootReader   massifs.SignedRootReader
 	massif       massifs.MassifContext

@@ -41,7 +41,7 @@ type TestEnv struct {
 	MerkelogURLPrefix    string
 	PublicKey            string
 
-	UknownTenantId string
+	UnknownTenantId string
 }
 
 // NewTestEnv generates retrieves values from the environment.
@@ -66,7 +66,7 @@ func NewTestEnv() (TestEnv, error) {
 		VerifiableDataURL: verifiableDataURL,
 		PublicTenantId:    publicTenantId,
 		PublicKey:         os.Getenv(publicKeyPrefixEnvKey),
-		UknownTenantId:    fmt.Sprintf("tenant/%s", uuid.New().String()),
+		UnknownTenantId:   fmt.Sprintf("tenant/%s", uuid.New().String()),
 	}
 
 	return env, nil

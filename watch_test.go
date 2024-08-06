@@ -3,6 +3,7 @@ package veracity
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"reflect"
 	"strings"
 	"testing"
@@ -344,7 +345,8 @@ func TestWatchForChanges(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := WatchForChanges(context.TODO(), tt.args.cfg, tt.args.reader, tt.args.reporter); err != tt.wantErr {
+
+			if err := WatchForChanges(context.TODO(), tt.args.cfg, tt.args.reader, tt.args.reporter); !errors.Is(err, tt.wantErr) {
 				t.Errorf("WatchForChanges() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if tt.wantOutputs != nil {

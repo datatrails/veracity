@@ -1,8 +1,11 @@
 package tests
 
 import (
+	"fmt"
 	"net/url"
 	"os"
+
+	"github.com/google/uuid"
 )
 
 /**
@@ -37,6 +40,8 @@ type TestEnv struct {
 	PublicTenantId       string
 	MerkelogURLPrefix    string
 	PublicKey            string
+
+	UknownTenantId string
 }
 
 // NewTestEnv generates retrieves values from the environment.
@@ -61,6 +66,7 @@ func NewTestEnv() (TestEnv, error) {
 		VerifiableDataURL: verifiableDataURL,
 		PublicTenantId:    publicTenantId,
 		PublicKey:         os.Getenv(publicKeyPrefixEnvKey),
+		UknownTenantId:    fmt.Sprintf("tenant/%s", uuid.New().String()),
 	}
 
 	return env, nil

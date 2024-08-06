@@ -7,3 +7,5 @@ tests/systemtest/shunit/
 tests/systemtest/res.xml
 .task/
 .env.secret
+.env.local
+.envrc

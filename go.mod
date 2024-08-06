@@ -6,7 +6,7 @@ require (
 	github.com/datatrails/go-datatrails-common v0.16.1
 	github.com/datatrails/go-datatrails-common-api-gen v0.4.6
 	github.com/datatrails/go-datatrails-logverification v0.1.7
-	github.com/datatrails/go-datatrails-merklelog/massifs v0.0.10
+	github.com/datatrails/go-datatrails-merklelog/massifs v0.0.11
 	github.com/datatrails/go-datatrails-merklelog/mmr v0.0.2
 	github.com/datatrails/go-datatrails-merklelog/mmrtesting v0.0.1
 	github.com/datatrails/go-datatrails-simplehash v0.0.5
@@ -42,7 +42,7 @@ require (
 	github.com/fxamacker/cbor/v2 v2.6.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
-	github.com/google/uuid v1.6.0 // indirect
+	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1 // indirect
 	github.com/ldclabs/cose/go v0.0.0-20221214142927-d22c1cfc2154 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect

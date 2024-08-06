@@ -4,7 +4,6 @@ package watch
 
 import (
 	"github.com/datatrails/veracity"
-	"github.com/datatrails/veracity/tests/katdata"
 )
 
 // Test that the watch command returns no error or that the error is "no changes"
@@ -39,7 +38,7 @@ func (s *WatchCmdSuite) TestNoChangesForFictitiousTenant() {
 		"veracity",
 		"--data-url", s.Env.VerifiableDataURL,
 		"watch",
-		"--tenant" s.Env.UknownTenantId
+		"--tenant", s.Env.UknownTenantId,
 	})
 	assert.Equal(err, veracity.ErrNoChanges)
 }

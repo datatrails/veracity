@@ -75,7 +75,7 @@ func (r defaultReporter) Outf(message string, args ...any) {
 // NewLogWatcherCmd watches for changes on any log
 func NewLogWatcherCmd() *cli.Command {
 	return &cli.Command{Name: "watch",
-		Usage: `report logs changed in each watch interval
+		Usage: `discover recently active logs
 		
 		Provide --horizon OR provide either of --since or --idsince
 
@@ -183,65 +183,49 @@ func NewWatchConfig(cCtx cliContext, cmd *CmdCtx) (WatchConfig, error) {
 	return cfg, nil
 }
 
+type Watcher struct {
+	watcher.Watcher
+	cfg      WatchConfig
+	reader   azblob.Reader
+	reporter watchReporter
+	collator watcher.LogTailCollator
+}
+
 // WatchForChanges watches for tenant log chances according to the provided config
 func WatchForChanges(
 	ctx context.Context,
-	cfg WatchConfig, reader azblob.Reader, reporter watchReporter,
+	_cfg WatchConfig, reader azblob.Reader, reporter watchReporter,
 ) error {
 
-	w := watcher.Watcher{Cfg: cfg.WatchConfig}
+	w := &Watcher{
+		Watcher:  watcher.Watcher{Cfg: _cfg.WatchConfig},
+		cfg:      _cfg,
+		reader:   reader,
+		reporter: reporter,
+		collator: watcher.NewLogTailCollator(),
+	}
 	tagsFilter := w.FirstFilter()
 
-	count := cfg.WatchCount
+	count := w.cfg.WatchCount
 
 	for {
-		filterStart := time.Now()
-		filtered, err := reader.FilteredList(ctx, tagsFilter)
-		if err != nil {
-			return err
-		}
-		filterDuration := time.Since(filterStart)
 
-		if filtered.Marker != nil && *filtered.Marker != "" {
-			reporter.Outf("more results pages not shown")
-			// NOTE: Future work will deal with the pages. The initial
-			// case for this is to show that we don't have performance
-			// or cost issues.
-		}
-
-		c := watcher.NewLogTailCollator()
-		err = c.CollatePage(filtered.Items)
+		// For each count, collate all the pages
+		err := collectPages(ctx, w, tagsFilter)
 		if err != nil {
 			return err
 		}
 
-		reporter.Logf(
-			"%d active logs since %v (%s). qt: %v",
-			len(c.Massifs),
-			w.LastSince.Format(time.RFC3339),
-			w.LastIDSince,
-			filterDuration,
-		)
-		reporter.Logf(
-			"%d tenants sealed since %v (%s). qt: %v",
-			len(c.Seals),
-			w.LastSince.Format(time.RFC3339),
-			w.LastIDSince,
-			filterDuration,
-		)
-
-		switch cfg.Mode {
+		switch w.cfg.Mode {
 		default:
 		case watchModeTenants:
-
 			var activity []TenantActivity
-
-			for _, tenant := range c.SortedMassifTenants() {
-				if cfg.WatchTenants != nil && !cfg.WatchTenants[tenant] {
+			for _, tenant := range w.collator.SortedMassifTenants() {
+				if w.cfg.WatchTenants != nil && !w.cfg.WatchTenants[tenant] {
 					continue
 				}
-				lt := c.Massifs[tenant]
-				sealLastID := lastSealID(c, tenant)
+				lt := w.collator.Massifs[tenant]
+				sealLastID := lastSealID(w.collator, tenant)
 				// This is console mode output
 
 				a := TenantActivity{
@@ -249,28 +233,39 @@ func WatchForChanges(
 					Massif:      int(lt.Number),
 					IDCommitted: lt.LastID, IDConfirmed: sealLastID,
 					LastModified: lastActivityRFC3339(lt.LastID, sealLastID),
-					MassifURL:    fmt.Sprintf("%s%s", cfg.ReaderURL, lt.Path),
+					MassifURL:    fmt.Sprintf("%s%s", w.cfg.ReaderURL, lt.Path),
 				}
 
 				if sealLastID != sealIDNotFound {
-					a.SealURL = fmt.Sprintf("%s%s", cfg.ReaderURL, c.Seals[tenant].Path)
+					a.SealURL = fmt.Sprintf("%s%s", w.cfg.ReaderURL, w.collator.Seals[tenant].Path)
 				}
 
 				activity = append(activity, a)
 			}
 
 			if activity != nil {
+				reporter.Logf(
+					"%d active logs since %v (%s).",
+					len(w.collator.Massifs),
+					w.LastSince.Format(time.RFC3339),
+					w.LastIDSince,
+				)
+				reporter.Logf(
+					"%d tenants sealed since %v (%s).",
+					len(w.collator.Seals),
+					w.LastSince.Format(time.RFC3339),
+					w.LastIDSince,
+				)
+
 				marshaledJson, err := json.MarshalIndent(activity, "", "  ")
 				if err != nil {
 					return err
 				}
 				reporter.Outf(string(marshaledJson))
-			}
-		}
 
-		// Terminate immediately once we have results
-		if len(c.Massifs) != 0 {
-			return nil
+				// Terminate immediately once we have results
+				return nil
+			}
 		}
 
 		// Note we don't allow a zero interval
@@ -284,6 +279,50 @@ func WatchForChanges(
 		tagsFilter = w.NextFilter()
 		time.Sleep(w.Cfg.Interval)
 	}
+}
+
+// collectPages collects all pages of a single filterList invocation
+// and keeps things happy left
+func collectPages(
+	ctx context.Context,
+	w *Watcher,
+	tagsFilter string,
+	filterOpts ...azblob.Option,
+) error {
+
+	var lastMarker azblob.ListMarker
+
+	for {
+		filtered, err := filteredList(ctx, w.reader, tagsFilter, lastMarker, filterOpts...)
+		if err != nil {
+			return err
+		}
+
+		err = w.collator.CollatePage(filtered.Items)
+		if err != nil {
+			return err
+		}
+		lastMarker = filtered.Marker
+		if lastMarker == nil || *lastMarker == "" {
+			break
+		}
+	}
+	return nil
+}
+
+// filteredList makes adding the lastMarker option to the FilteredList call 'happy to the left'
+func filteredList(
+	ctx context.Context,
+	reader azblob.Reader,
+	tagsFilter string,
+	marker azblob.ListMarker,
+	filterOpts ...azblob.Option,
+) (*azblob.FilterResponse, error) {
+
+	if marker == nil || *marker == "" {
+		return reader.FilteredList(ctx, tagsFilter)
+	}
+	return reader.FilteredList(ctx, tagsFilter, append(filterOpts, azblob.WithListMarker(marker))...)
 }
 
 func lastSealID(c watcher.LogTailCollator, tenant string) string {

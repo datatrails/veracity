@@ -188,6 +188,9 @@ func watchParseIDRFC3339(t *testing.T, idtimestamp string) string {
 
 func TestWatchForChanges(t *testing.T) {
 
+	// this needs to be as long as the maximum number of pages used in any single test.
+	pageTokens := []string{"0", "1", "2", "3"}
+
 	logger.New("NOOP")
 	type args struct {
 		cfg      WatchConfig
@@ -200,6 +203,64 @@ func TestWatchForChanges(t *testing.T) {
 		wantErr     error
 		wantOutputs []string
 	}{
+		{
+			name: "three results, two pages",
+			args: args{
+				cfg: WatchConfig{
+					Mode: "tenants",
+				},
+				reader: &mockReader{
+					results: []*azblob.FilterResponse{
+						{
+							Items: newFilterBlobItems(
+								"v1/mmrs/tenant/{tenant-1}/massifs/0/0000000000000001.log", watchMakeId(Unix20231215T1344120000+1),
+								"v1/mmrs/tenant/{tenant-1}/massifseals/0/0000000000000001.sth", watchMakeId(Unix20231215T1344120000),
+								"v1/mmrs/tenant/{tenant-2}/massifs/0/0000000000000001.log", watchMakeId(Unix20231215T1344120000+1),
+								"v1/mmrs/tenant/{tenant-2}/massifseals/0/0000000000000001.sth", watchMakeId(Unix20231215T1344120000),
+							),
+						},
+						{
+							Items: newFilterBlobItems(
+								"v1/mmrs/tenant/{tenant-3}/massifs/0/0000000000000002.log", watchMakeId(Unix20231215T1344120000+1),
+								"v1/mmrs/tenant/{tenant-3}/massifseals/0/0000000000000002.sth", watchMakeId(Unix20231215T1344120000),
+							),
+						},
+					},
+					// note return page token for page 0, but not for page 1
+					pageTokens: []azblob.ListMarker{&pageTokens[0]},
+				},
+				reporter: &mockReporter{},
+			},
+			wantOutputs: []string{string(marshalActivity(t,
+				TenantActivity{
+					Massif:       1,
+					Tenant:       "{tenant-1}",
+					MassifURL:    "v1/mmrs/tenant/{tenant-1}/massifs/0/0000000000000001.log",
+					SealURL:      "v1/mmrs/tenant/{tenant-1}/massifseals/0/0000000000000001.sth",
+					IDCommitted:  watchMakeId(Unix20231215T1344120000 + 1),
+					IDConfirmed:  watchMakeId(Unix20231215T1344120000),
+					LastModified: watchParseIDRFC3339(t, watchMakeId(Unix20231215T1344120000+1)),
+				},
+				TenantActivity{
+					Massif:       1,
+					Tenant:       "{tenant-2}",
+					MassifURL:    "v1/mmrs/tenant/{tenant-2}/massifs/0/0000000000000001.log",
+					SealURL:      "v1/mmrs/tenant/{tenant-2}/massifseals/0/0000000000000001.sth",
+					IDCommitted:  watchMakeId(Unix20231215T1344120000 + 1),
+					IDConfirmed:  watchMakeId(Unix20231215T1344120000),
+					LastModified: watchParseIDRFC3339(t, watchMakeId(Unix20231215T1344120000+1)),
+				},
+				TenantActivity{
+					Massif:       2,
+					Tenant:       "{tenant-3}",
+					MassifURL:    "v1/mmrs/tenant/{tenant-3}/massifs/0/0000000000000002.log",
+					SealURL:      "v1/mmrs/tenant/{tenant-3}/massifseals/0/0000000000000002.sth",
+					IDCommitted:  watchMakeId(Unix20231215T1344120000 + 1),
+					IDConfirmed:  watchMakeId(Unix20231215T1344120000),
+					LastModified: watchParseIDRFC3339(t, watchMakeId(Unix20231215T1344120000+1)),
+				},
+			))},
+		},
 		{
 			name: "three results, two tenants explicitly selected",
 			args: args{
@@ -394,6 +455,7 @@ func newFilterBlobItems(nameAndLastIdPairs ...string) []*azStorageBlob.FilterBlo
 
 type mockReader struct {
 	resultIndex int
+	pageTokens  []azblob.ListMarker
 	results     []*azblob.FilterResponse
 }
 
@@ -411,8 +473,18 @@ func (r *mockReader) FilteredList(ctx context.Context, tagsFilter string, opts .
 	if i >= len(r.results) {
 		return &azblob.FilterResponse{}, nil
 	}
+
+	// Note: when paging, because the values on StorerOptions are needlessly
+	// private we can't check we got the expected option back
+
 	r.resultIndex++
-	return r.results[i], nil
+
+	res := *r.results[i]
+	if i < len(r.pageTokens) {
+		res.Marker = r.pageTokens[i]
+	}
+
+	return &res, nil
 }
 func (r *mockReader) List(ctx context.Context, opts ...azblob.Option) (*azblob.ListerResponse, error) {
 	return nil, nil

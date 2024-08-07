@@ -194,12 +194,12 @@ type Watcher struct {
 // WatchForChanges watches for tenant log chances according to the provided config
 func WatchForChanges(
 	ctx context.Context,
-	_cfg WatchConfig, reader azblob.Reader, reporter watchReporter,
+	cfg WatchConfig, reader azblob.Reader, reporter watchReporter,
 ) error {
 
 	w := &Watcher{
-		Watcher:  watcher.Watcher{Cfg: _cfg.WatchConfig},
-		cfg:      _cfg,
+		Watcher:  watcher.Watcher{Cfg: cfg.WatchConfig},
+		cfg:      cfg,
 		reader:   reader,
 		reporter: reporter,
 		collator: watcher.NewLogTailCollator(),

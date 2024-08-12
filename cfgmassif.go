@@ -3,8 +3,6 @@ package veracity
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/datatrails/go-datatrails-common/logger"
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
@@ -48,25 +46,19 @@ func cfgMassifReader(cmd *CmdCtx, cCtx *cli.Context) error {
 		cmd.massifReader = &mr
 
 	} else if localLog != "" {
-		// if we have local log then we try to figure out if it's a dir or
-		// a file and we go with that
-		absLocal, err := filepath.Abs(localLog)
+
+		codec, err := massifs.NewRootSignerCodec()
 		if err != nil {
 			return err
 		}
-		fi, err := os.Stat(absLocal)
-		if err != nil {
-			return err
-		}
-		opts := []Option{}
-		if fi.IsDir() {
-			opts = append(opts, WithDirectory())
-		}
-		mr, err := NewLocalMassifReader(logger.Sugar, cfgOpener(), localLog, opts...)
-		if err != nil {
-			return err
-		}
-		cmd.massifReader = mr
+
+		mr := massifs.NewLocalReader(
+			logger.Sugar, NewFileOpener(),
+			massifs.WithLocalMassifLister(NewDirLister()),
+			massifs.WithLocalSealLister(NewDirLister()),
+			massifs.WithLocalCBORCodec(codec),
+		)
+		cmd.massifReader = &mr
 
 	} else {
 		// otherwise configure for reading from remote blobs

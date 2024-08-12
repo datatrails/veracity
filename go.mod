@@ -14,6 +14,10 @@ require (
 	github.com/zeebo/bencode v1.0.0
 )
 
+replace (
+	github.com/datatrails/go-datatrails-merklelog/massifs => ../go-datatrails-merklelog/massifs
+)
+
 require (
 	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect

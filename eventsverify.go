@@ -30,7 +30,12 @@ func proofPath(proof [][]byte) string {
 	return fmt.Sprintf("[%s]", strings.Join(hexProof, ", "))
 }
 
-func verifyEvent(event *logverification.VerifiableEvent, massifHeight uint8, massifReader MassifReader, forTenant string) ([][]byte, error) {
+func verifyEvent(
+	event *logverification.VerifiableEvent, massifHeight uint8, massifReader MassifReader,
+	forTenant string,
+	tenantLogPath string,
+) ([][]byte, error) {
+
 	// Get the mmrIndex from the request and then compute the massif
 	// it implies based on the massifHeight command line option.
 	mmrIndex := event.MerkleLog.Commit.Index
@@ -45,9 +50,12 @@ func verifyEvent(event *logverification.VerifiableEvent, massifHeight uint8, mas
 		// the logs of all tenants they were shared with.
 		tenantIdentity = event.TenantID
 	}
+	if tenantLogPath == "" {
+		tenantLogPath = tenantIdentity
+	}
 
 	// read the massif blob
-	massif, err := massifReader.GetMassif(context.Background(), tenantIdentity, massifIndex)
+	massif, err := massifReader.GetMassif(context.Background(), tenantLogPath, massifIndex)
 	if err != nil {
 		return nil, err
 	}
@@ -111,9 +119,12 @@ Note: for publicly attested events, or shared protected events, you must use --t
 				cmd.log.Infof(m, args...)
 			}
 
-			log("verifying events dir: %s", cCtx.String("logdir"))
-
-			verifiableEvents, err := stdinToVerifiableEvents()
+			var verifiableEvents []logverification.VerifiableEvent
+			if cCtx.Args().Len() > 0 {
+				verifiableEvents, err = filePathToVerifiableEvents(cCtx.Args().Get(0))
+			} else {
+				verifiableEvents, err = stdinToVerifiableEvents()
+			}
 			if err != nil {
 				return err
 			}
@@ -132,6 +143,12 @@ Note: for publicly attested events, or shared protected events, you must use --t
 			var countNotCommitted int
 			var countVerifyFailed int
 
+			// If we are reading the massif log locally, the log path is the
+			// data-local path. The reader does the right thing regardless of
+			// whether the option is a directory or a file.
+			// verifyEvent defaults it to tenantIdentity for the benefit of the remote reader implementation
+			tenantLogPath := cCtx.String("data-local")
+
 			for _, event := range verifiableEvents {
 
 				// don't try if we don't even have any merkle log entries on this event
@@ -144,7 +161,7 @@ Note: for publicly attested events, or shared protected events, you must use --t
 				mmrIndex := event.MerkleLog.Commit.Index
 				leafIndex := mmr.LeafIndex(mmrIndex)
 				log("verifying: %d %d %s %s", mmrIndex, leafIndex, event.MerkleLog.Commit.Idtimestamp, event.EventID)
-				proof, err := verifyEvent(&event, cmd.massifHeight, cmd.massifReader, tenantIdentity)
+				proof, err := verifyEvent(&event, cmd.massifHeight, cmd.massifReader, tenantIdentity, tenantLogPath)
 				if err != nil {
 					countVerifyFailed += 1
 					log("XX|%d %d\n", mmrIndex, leafIndex)

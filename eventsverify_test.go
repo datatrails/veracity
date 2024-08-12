@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/datatrails/go-datatrails-common/azblob"
 	"github.com/datatrails/go-datatrails-common/logger"
 	"github.com/datatrails/go-datatrails-logverification/logverification"
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
@@ -17,16 +16,16 @@ type MockMR struct {
 	data map[uint64][]byte
 }
 
-func (*MockMR) GetFirstMassif(ctx context.Context, tenantIdentity string, opts ...azblob.Option) (massifs.MassifContext, error) {
+func (*MockMR) GetFirstMassif(ctx context.Context, tenantIdentity string, opts ...massifs.ReaderOption) (massifs.MassifContext, error) {
 	return massifs.MassifContext{}, fmt.Errorf("not implemented")
 }
-func (*MockMR) GetHeadMassif(ctx context.Context, tenantIdentity string, opts ...azblob.Option) (massifs.MassifContext, error) {
+func (*MockMR) GetHeadMassif(ctx context.Context, tenantIdentity string, opts ...massifs.ReaderOption) (massifs.MassifContext, error) {
 	return massifs.MassifContext{}, fmt.Errorf("not implemented")
 }
-func (*MockMR) GetLazyContext(ctx context.Context, tenantIdentity string, which massifs.LogicalBlob, opts ...azblob.Option) (massifs.LogBlobContext, uint64, error) {
+func (*MockMR) GetLazyContext(ctx context.Context, tenantIdentity string, which massifs.LogicalBlob, opts ...massifs.ReaderOption) (massifs.LogBlobContext, uint64, error) {
 	return massifs.LogBlobContext{}, 0, fmt.Errorf("not implemented")
 }
-func (m *MockMR) GetMassif(ctx context.Context, tenantIdentity string, massifIndex uint64, opts ...azblob.Option) (massifs.MassifContext, error) {
+func (m *MockMR) GetMassif(ctx context.Context, tenantIdentity string, massifIndex uint64, opts ...massifs.ReaderOption) (massifs.MassifContext, error) {
 	mc := massifs.MassifContext{}
 	data, ok := m.data[massifIndex]
 	if !ok {
@@ -168,7 +167,7 @@ func TestVerifyEvent(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			proof, err := verifyEvent(tc.event, defaultMassifHeight, tc.massifReader, "")
+			proof, err := verifyEvent(tc.event, defaultMassifHeight, tc.massifReader, "", "")
 
 			if tc.expectedError {
 				assert.NotNil(t, err, "expected error got nil")

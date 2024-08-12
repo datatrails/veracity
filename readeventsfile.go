@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"path/filepath"
 
 	"github.com/datatrails/go-datatrails-logverification/logverification"
 )
@@ -15,19 +16,26 @@ var (
 )
 
 func stdinToVerifiableEvents() ([]logverification.VerifiableEvent, error) {
-	scanner := bufio.NewScanner(os.Stdin)
-	var data []byte
-	for scanner.Scan() {
-		data = append(data, scanner.Bytes()...)
-	}
-	if err := scanner.Err(); err != nil {
+	return scannerToVerifiableEvents(bufio.NewScanner(os.Stdin))
+}
+
+func filePathToVerifiableEvents(filePath string) ([]logverification.VerifiableEvent, error) {
+	filePath, err := filepath.Abs(filePath)
+	if err != nil {
 		return nil, err
 	}
-	return VerifiableEventsFromData(data)
+	f, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	return scannerToVerifiableEvents(bufio.NewScanner(f))
 }
 
 func stdinToDecodedEvents() ([]logverification.DecodedEvent, error) {
-	scanner := bufio.NewScanner(os.Stdin)
+	return scannerToDecodedEvents(bufio.NewScanner(os.Stdin))
+}
+
+func scannerToDecodedEvents(scanner *bufio.Scanner) ([]logverification.DecodedEvent, error) {
 	var data []byte
 	for scanner.Scan() {
 		data = append(data, scanner.Bytes()...)
@@ -36,6 +44,17 @@ func stdinToDecodedEvents() ([]logverification.DecodedEvent, error) {
 		return nil, err
 	}
 	return DecodedEventsFromData(data)
+}
+
+func scannerToVerifiableEvents(scanner *bufio.Scanner) ([]logverification.VerifiableEvent, error) {
+	var data []byte
+	for scanner.Scan() {
+		data = append(data, scanner.Bytes()...)
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+	return VerifiableEventsFromData(data)
 }
 
 func VerifiableEventsFromData(data []byte) ([]logverification.VerifiableEvent, error) {

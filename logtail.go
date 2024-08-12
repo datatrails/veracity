@@ -171,7 +171,7 @@ func TailMassif(
 		},
 	}
 
-	tailMassif, err := massifReader.GetHeadMassif(ctx, tenantIdentity, azblob.WithGetTags())
+	tailMassif, err := massifReader.GetHeadMassif(ctx, tenantIdentity, massifs.WithListBlobOption(azblob.WithGetTags()))
 	if err != nil {
 		return MassifTail{}, fmt.Errorf(
 			"error reading head massif for tenant %s: %w",

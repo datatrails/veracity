@@ -10,9 +10,9 @@ import (
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
 )
 
-type FileOpener struct{}
+type ReadOpener struct{}
 
-func (*FileOpener) Open(name string) (io.ReadCloser, error) {
+func (*ReadOpener) Open(name string) (io.ReadCloser, error) {
 	fpath, err := filepath.Abs(name)
 	if err != nil {
 		return nil, err
@@ -21,7 +21,7 @@ func (*FileOpener) Open(name string) (io.ReadCloser, error) {
 }
 
 func NewFileOpener() massifs.Opener {
-	return &FileOpener{}
+	return &ReadOpener{}
 }
 
 type StdinOpener struct {

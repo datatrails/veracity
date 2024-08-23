@@ -60,6 +60,7 @@ func cfgMassifReader(cmd *CmdCtx, cCtx *cli.Context) error {
 			NewFileOpener(),
 			massifs.WithDirCacheMassifLister(NewDirLister()),
 			massifs.WithDirCacheSealLister(NewDirLister()),
+			massifs.WithReaderOption(massifs.WithMassifHeight(cmd.massifHeight)),
 			massifs.WithReaderOption(massifs.WithCBORCodec(codec)),
 		)
 		if err != nil {

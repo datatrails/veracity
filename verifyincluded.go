@@ -86,10 +86,10 @@ func verifyEvent(
 	return nil, fmt.Errorf("event not included")
 }
 
-// NewEventsVerifyCmd verifies inclusion of a DataTrails event in the tenants Merkle Log
+// NewVerifyIncludedCmd verifies inclusion of a DataTrails event in the tenants Merkle Log
 //
 //nolint:gocognit
-func NewEventsVerifyCmd() *cli.Command {
+func NewVerifyIncludedCmd() *cli.Command {
 	return &cli.Command{
 		Name:    "verify-included",
 		Aliases: []string{"included"},

@@ -74,7 +74,9 @@ having obtained its value from a source you trust`,
 			if err != nil {
 				return err
 			}
-			cfgRootReader(cmd, cCtx)
+			if err = cfgRootReader(cmd, cCtx); err != nil {
+				return err
+			}
 
 			massifHeight := cCtx.Int64("height")
 			if massifHeight > 255 {

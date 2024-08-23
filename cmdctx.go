@@ -9,6 +9,11 @@ import (
 )
 
 type MassifReader interface {
+	GetVerifiedContext(
+		ctx context.Context, tenantIdentity string, massifIndex uint64,
+		opts ...massifs.ReaderOption,
+	) (*massifs.VerifiedContext, error)
+
 	GetFirstMassif(
 		ctx context.Context, tenantIdentity string, opts ...massifs.ReaderOption,
 	) (massifs.MassifContext, error)

@@ -3,6 +3,7 @@ package veracity
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -33,6 +34,20 @@ func (m *MockMR) GetMassif(ctx context.Context, tenantIdentity string, massifInd
 	}
 	mc.Data = data
 	return mc, nil
+}
+
+func (m *MockMR) GetHeadVerifiedContext(
+	ctx context.Context, tenantIdentity string,
+	opts ...massifs.ReaderOption,
+) (*massifs.VerifiedContext, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (m *MockMR) GetVerifiedContext(
+	ctx context.Context, tenantIdentity string, massifIndex uint64,
+	opts ...massifs.ReaderOption,
+) (*massifs.VerifiedContext, error) {
+	return nil, errors.New("not implemented")
 }
 
 func NewMockMR(massifIndex uint64, data string) *MockMR {

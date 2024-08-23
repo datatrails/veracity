@@ -47,11 +47,8 @@ func NewApp(ikwid bool) *cli.App {
 func AddCommands(app *cli.App, ikwid bool) *cli.App {
 	app.Commands = append(app.Commands, NewEventsVerifyCmd())
 	app.Commands = append(app.Commands, NewNodeCmd())
-<<<<<<< HEAD
 	app.Commands = append(app.Commands, NewLogWatcherCmd())
-=======
-	app.Commands = append(app.Commands, NewVerifyConsistencyCmd())
->>>>>>> e3f7f53 (feat: re-worked local massif reader)
+	app.Commands = append(app.Commands, NewUpdateReplicaCmd())
 
 	if ikwid {
 		app.Commands = append(app.Commands, NewMassifsCmd())

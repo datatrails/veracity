@@ -52,12 +52,24 @@ func cfgMassifReader(cmd *CmdCtx, cCtx *cli.Context) error {
 			return err
 		}
 
-		mr := massifs.NewLocalReader(
-			logger.Sugar, NewFileOpener(),
-			massifs.WithLocalMassifLister(NewDirLister()),
-			massifs.WithLocalSealLister(NewDirLister()),
-			massifs.WithLocalCBORCodec(codec),
+		// This configures the dir cache and local reader for single tenant use,
+		// InReplicaMode is false, meaning tenant specific filesystem paths are
+		// not automatically derived.
+		cache, err := massifs.NewLogDirCache(
+			logger.Sugar,
+			NewFileOpener(),
+			massifs.WithDirCacheMassifLister(NewDirLister()),
+			massifs.WithDirCacheSealLister(NewDirLister()),
+			massifs.WithReaderOption(massifs.WithCBORCodec(codec)),
 		)
+		if err != nil {
+			return err
+		}
+
+		mr, err := massifs.NewLocalReader(logger.Sugar, cache)
+		if err != nil {
+			return err
+		}
 		cmd.massifReader = &mr
 
 	} else {

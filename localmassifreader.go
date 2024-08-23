@@ -251,6 +251,13 @@ func (mr *LocalMassifReader) readAndPrepareContext(mc *massifs.MassifContext, ma
 		return err
 	}
 
+	// Note: Where the regular massif reader has an option WithoutGetRootSupport, that is not useful
+	// for simply reading local massifs so we omit the conditional guard and always create the peak
+	// stack map.
+	if err = mc.CreatePeakStackMap(); err != nil {
+		return err
+	}
+
 	return nil
 }
 

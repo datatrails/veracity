@@ -146,10 +146,6 @@ Note: for publicly attested events, or shared protected events, you must use --t
 				log("verifying: %d %d %s %s", mmrIndex, leafIndex, event.MerkleLog.Commit.Idtimestamp, event.EventID)
 				proof, err := verifyEvent(&event, cmd.massifHeight, cmd.massifReader, tenantIdentity)
 				if err != nil {
-					if !errors.Is(err, ErrVerifyInclusionFailed) {
-						return err
-					}
-
 					countVerifyFailed += 1
 					log("XX|%d %d\n", mmrIndex, leafIndex)
 					continue

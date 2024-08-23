@@ -83,7 +83,7 @@ func verifyEvent(
 		return proof, nil
 	}
 
-	return nil, fmt.Errorf("event not included")
+	return nil, ErrVerifyInclusionFailed
 }
 
 // NewVerifyIncludedCmd verifies inclusion of a DataTrails event in the tenants Merkle Log
@@ -163,6 +163,13 @@ Note: for publicly attested events, or shared protected events, you must use --t
 				log("verifying: %d %d %s %s", mmrIndex, leafIndex, event.MerkleLog.Commit.Idtimestamp, event.EventID)
 				proof, err := verifyEvent(&event, cmd.massifHeight, cmd.massifReader, tenantIdentity, tenantLogPath)
 				if err != nil {
+
+					// We keep going if the error is a verification failure, as
+					// this supports reporting "gaps". All other errors are
+					// imediately terminal
+					if !errors.Is(err, ErrVerifyInclusionFailed) {
+						return err
+					}
 					countVerifyFailed += 1
 					log("XX|%d %d\n", mmrIndex, leafIndex)
 					continue

@@ -26,6 +26,8 @@ const (
 	// can test it regularly against the production instance.
 	productionVerifiableDataUrl = "https://app.datatrails.ai/verifiabledata"
 	productionPublicTenantId    = "tenant/6ea5cd00-c711-3649-6914-7b125928bbb4"
+
+	azuriteVerifiableDataUrl = "http://127.0.0.1:10000/devstoreaccount1"
 )
 
 type TestEnv struct {
@@ -33,6 +35,8 @@ type TestEnv struct {
 	// FQDN of the deployment to test against
 	FQDN              string
 	VerifiableDataURL string
+
+	AzuriteVerifiableDataURL string
 
 	// azure blob storage variable
 	MerklelogAccountName string
@@ -62,11 +66,12 @@ func NewTestEnv() (TestEnv, error) {
 	}
 
 	env := TestEnv{
-		FQDN:              u.Hostname(),
-		VerifiableDataURL: verifiableDataURL,
-		PublicTenantId:    publicTenantId,
-		PublicKey:         os.Getenv(publicKeyPrefixEnvKey),
-		UnknownTenantId:   fmt.Sprintf("tenant/%s", uuid.New().String()),
+		FQDN:                     u.Hostname(),
+		VerifiableDataURL:        verifiableDataURL,
+		AzuriteVerifiableDataURL: azuriteVerifiableDataUrl,
+		PublicTenantId:           publicTenantId,
+		PublicKey:                os.Getenv(publicKeyPrefixEnvKey),
+		UnknownTenantId:          fmt.Sprintf("tenant/%s", uuid.New().String()),
 	}
 
 	return env, nil

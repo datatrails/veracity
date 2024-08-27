@@ -36,6 +36,13 @@ func NewUpdateReplicaCmd() *cli.Command {
 			&cli.IntFlag{
 				Name: "massif", Aliases: []string{"m"},
 			},
+			&cli.UintFlag{
+				Usage: `The number of massif 'ancestors' to retain in the local replica.
+This many massifs, prior to the requested, will be verified and retained localy.
+If more exist locally, they are not removed (or reverified). If set to 0, a full replica is requested.`,
+				Value: 0,
+				Name:  "ancestors", Aliases: []string{"a"},
+			},
 			&cli.StringFlag{
 				Name: "replicadir",
 				Usage: `the root directory for all tenant log replicas,
@@ -69,6 +76,7 @@ having obtained its value from a source you trust`,
 
 			tenantIdentity := cCtx.String("tenant")
 			headMassifIndex := cCtx.Int("massif")
+			ancestorCount := int(cCtx.Uint("ancestors"))
 			dataUrl := cCtx.String("data-url")
 			reader, err := cfgReader(cmd, cCtx, dataUrl == "")
 			if err != nil {
@@ -123,6 +131,13 @@ having obtained its value from a source you trust`,
 				massifs.WithSealGetter(&cmd.rootReader),
 			)
 
+			// Note: we could use GetHeadMassif to provide a default for
+			// --massif. But that issues a list blobs query, and those are 10x
+			// more expensive. We don't wan that being the default. The watch
+			// command provides the latest massif index, and the output of the
+			// watch command is the expected source of the options to this
+			// command.
+
 			v := &ConsistentReplica{
 				log:          logger.Sugar,
 				writeOpener:  NewFileWriteOpener(),
@@ -131,7 +146,8 @@ having obtained its value from a source you trust`,
 				cborCodec:    cmd.cborCodec,
 			}
 
-			return v.ReplicateVerifiedUpdates(context.Background(), tenantIdentity, uint32(headMassifIndex))
+			return v.ReplicateVerifiedUpdates(
+				context.Background(), tenantIdentity, uint32(headMassifIndex), uint32(ancestorCount))
 		},
 	}
 }
@@ -155,7 +171,7 @@ type ConsistentReplica struct {
 // interesting.
 func (v *ConsistentReplica) ReplicateVerifiedUpdates(
 	ctx context.Context,
-	tenantIdentity string, headMassifIndex uint32) error {
+	tenantIdentity string, headMassifIndex uint32, ancestorCount uint32) error {
 
 	isNilOrNotFound := func(err error) bool {
 		if err == nil {
@@ -182,52 +198,85 @@ func (v *ConsistentReplica) ReplicateVerifiedUpdates(
 		return err
 	}
 
-	// Read the most recently verified state from the local store. The
-	// verification ensures the local replica has not been corrupted, but this
+	// Read the most recently verified state from the lastLocal store. The
+	// verification ensures the lastLocal replica has not been corrupted, but this
 	// check trusts the seal stored locally with the head massif
-	local, err := v.localReader.GetHeadVerifiedContext(ctx, tenantIdentity)
+	lastLocal, err := v.localReader.GetHeadVerifiedContext(ctx, tenantIdentity)
 	if !isNilOrNotFound(err) {
 		return err
 	}
 
-	// each time round the loop below we always read and verify the remote.
-	// after each remote, we will always have a local as it will be the replica
-	// of the last remote. on the first time round, we may be initializing an
-	// empty replica, so in that case, we will not have a local and we will be
-	// starting at the requested headMassifIndex.
-	//
-	// In all cases where we do have a local, even where we just read and
-	// verified it on a previous iteration, we provide its state as the trusted
-	// base for the next remote read.
+	var local *massifs.VerifiedContext
 
-	// if we don't yet have a local replica, we start at the requested head and just replicate the verified remote state.
-	i := headMassifIndex
-	if local != nil {
-		i = local.Start.MassifIndex
+	// We always verify up to the requested massif.
+	// ancestorCount is used to ensure there is a minimum number of verified massifs replicated locally.
+	// Our verification always reads the remote massifs starting from requested - ancestorCount.
+	// In the loop below we ensure three key things:
+	// 	1. If there is a local replica of the remote, we ensure the remote is consistent with the replica.
+	//	2. If the remote starts a new massif, and we locally have its predecessor, we ensure the remote is consistent with the local.
+	// 	3. If there is no local replica, we create one from the remote.
+	//
+	// In call cases we first verify the remote against the remote seal
+
+	i := headMassifIndex - ancestorCount
+	if ancestorCount == 0 {
+		// a full replica is requested
+		i = 0
+	}
+	if lastLocal != nil {
+
+		// In the case where the requested head is 2 or more ahead of the local
+		// state we do not attempt to automaticaly back fill. This is so it is
+		// possible to ensure a bounded number of requests (and copies) in
+		// situations where verifiers have been off line for a long time.
+		//
+		// Explicit back filling is always possible by running with --ancestor=0
+		// or by running the command multiple times with increasing --massif
+
+		// With that accounted for, we then want to avoid re-verifying the state
+		// we have already verified locally, hence the use of `max`.
+		// We make no attempt to deal with "sparse" collections of massifs, the
+		// most recent locally available is what we verify the remote against.
+
+		i = max(lastLocal.Start.MassifIndex, i)
+		if i > lastLocal.Start.MassifIndex+1 {
+			// if the start of the ancestors is more than one massif ahead of
+			// the local, then we start afresh.
+			lastLocal = nil
+		}
 	}
 
 	for ; i <= headMassifIndex; i++ {
 
-		// note: err is from the first local read above, or the local read at the end of the loop body
-
-		// Read the remote massif corresponding to last local, providing our locally trusted (and just re-verified) state as the trusted base
-		// This will cause the remote massif to be verified against the remote seal and the seal we have locally replicated.
+		// Read the remote massif, providing our locally trusted (and just
+		// re-verified) state as the trusted base This will cause the remote
+		// massif to be verified against the remote seal and the seal we have
+		// locally replicated. On the first iteration, lastLocal will be nil or
+		// it will corespond to the remote masssif i or i-1.
 		remote, err := v.remoteReader.GetVerifiedContext(
 			ctx, tenantIdentity, uint64(i),
-			append(remoteOptionsFromLocal(local), massifs.WithCBORCodec(v.cborCodec))...)
+			append(remoteOptionsFromLocal(lastLocal), massifs.WithCBORCodec(v.cborCodec))...)
 		if err != nil {
+			// both the remote massif and it's seal must be present for the
+			// verification to succeed, so we don't filter using isBlobNotFound
+			// here.
 			return err
 		}
 
+		// read the local massif, if it exists
+		local, err = v.localReader.GetVerifiedContext(ctx, tenantIdentity, uint64(i))
+		if !isNilOrNotFound(err) {
+			return err
+		}
+
+		// copy the remote locally, safely replacing the coresponding local if one exists
 		err = v.replicateVerifiedContext(ctx, local, remote)
 		if err != nil {
 			return err
 		}
 
-		local, err = v.localReader.GetVerifiedContext(ctx, tenantIdentity, uint64(i))
-		if !isNilOrNotFound(err) {
-			return err
-		}
+		// next round, use the just replicated remote as the trusted base for verification
+		lastLocal = local
 	}
 
 	return nil

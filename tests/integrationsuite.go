@@ -4,7 +4,23 @@ import (
 	"os"
 
 	"github.com/datatrails/go-datatrails-common/logger"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+)
+
+const (
+	// These constants are well known and described here:
+	// See: https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite
+
+	AzureStorageAccountVar    string = "AZURE_STORAGE_ACCOUNT"
+	AzureStorageKeyVar        string = "AZURE_STORAGE_KEY"
+	AzuriteBlobEndpointURLVar string = "AZURITE_BLOB_ENDPOINT_URL"
+
+	AzuriteWellKnownKey             string = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
+	AzuriteWellKnownAccount         string = "devstoreaccount1"
+	AzuriteWellKnownBlobEndpointURL string = "http://127.0.0.1:10000/devstoreaccount1/"
+	AzuriteResourceGroup            string = "azurite-emulator"
+	AzuriteSubscription             string = "azurite-emulator"
 )
 
 /**
@@ -43,6 +59,26 @@ func (s *IntegrationTestSuite) StdinWriteAndClose(b []byte) (int, error) {
 func (s *IntegrationTestSuite) SetupSuite() {
 	// capture this as early as possible
 	s.origStdin = os.Stdin
+}
+
+// EnsureAzuriteEnv ensures the environment variables for azurite are set
+// But respects any that are already set
+func (s *IntegrationTestSuite) EnsureAzuriteEnv() {
+
+	for _, varval := range []struct {
+		key   string
+		value string
+	}{
+		{"VERACITY_IKWID", "1"},
+		{AzureStorageAccountVar, AzuriteWellKnownAccount},
+		{AzureStorageKeyVar, AzuriteWellKnownKey},
+		{AzuriteBlobEndpointURLVar, AzuriteWellKnownBlobEndpointURL},
+	} {
+		if os.Getenv(varval.key) == "" {
+			err := os.Setenv(varval.key, varval.value)
+			require.NoError(s.T(), err)
+		}
+	}
 }
 
 // BeforeTest is run before the test

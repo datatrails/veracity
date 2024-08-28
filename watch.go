@@ -109,16 +109,14 @@ func NewLogWatcherCmd() *cli.Command {
 			cmd := &CmdCtx{}
 			ctx := context.Background()
 
-			if err = cfgMassifReader(cmd, cCtx); err != nil {
-				return err
-			}
-
 			cfg, err := NewWatchConfig(cCtx, cmd)
 			if err != nil {
 				return err
 			}
 
-			reader, err := cfgReader(cmd, cCtx, false)
+			forceProdUrl := cCtx.String("data-url") == ""
+
+			reader, err := cfgReader(cmd, cCtx, forceProdUrl)
 			if err != nil {
 				return err
 			}

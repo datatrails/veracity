@@ -48,7 +48,7 @@ func AddCommands(app *cli.App, ikwid bool) *cli.App {
 	app.Commands = append(app.Commands, NewVerifyIncludedCmd())
 	app.Commands = append(app.Commands, NewNodeCmd())
 	app.Commands = append(app.Commands, NewLogWatcherCmd())
-	app.Commands = append(app.Commands, NewUpdateReplicaCmd())
+	app.Commands = append(app.Commands, NewVerifyConsistencyCmd())
 
 	if ikwid {
 		app.Commands = append(app.Commands, NewMassifsCmd())

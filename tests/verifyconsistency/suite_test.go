@@ -1,4 +1,4 @@
-package updatereplica
+package verifyconsistency
 
 import (
 	"testing"
@@ -7,17 +7,17 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type UpdateReplicaCmdSuite struct {
+type VerifyConsistencyCmdSuite struct {
 	tests.IntegrationTestSuite
 }
 
-func (s *UpdateReplicaCmdSuite) SetupSuite() {
+func (s *VerifyConsistencyCmdSuite) SetupSuite() {
 	s.IntegrationTestSuite.SetupSuite()
 	// ensure we have the azurite config in the env for all the tests so that --envauth always uses the emulator
 	s.EnsureAzuriteEnv()
 }
 
-func TestUpdateReplicaCmdSuite(t *testing.T) {
+func TestVerifyConsistencyCmdSuite(t *testing.T) {
 
-	suite.Run(t, new(UpdateReplicaCmdSuite))
+	suite.Run(t, new(VerifyConsistencyCmdSuite))
 }

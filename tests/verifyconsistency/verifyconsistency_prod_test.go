@@ -1,4 +1,4 @@
-package updatereplica
+package verifyconsistency
 
 import (
 	"path/filepath"
@@ -8,7 +8,7 @@ import (
 )
 
 // Test that the watch command returns no error or that the error is "no changes"
-func (s *UpdateReplicaCmdSuite) TestReplicateFirstPublicMassif() {
+func (s *VerifyConsistencyCmdSuite) TestReplicateFirstPublicMassif() {
 
 	replicaDir := s.T().TempDir()
 
@@ -20,7 +20,7 @@ func (s *UpdateReplicaCmdSuite) TestReplicateFirstPublicMassif() {
 		"veracity",
 		"--data-url", s.Env.VerifiableDataURL,
 		"--tenant", s.Env.PublicTenantId,
-		"update-replica",
+		"verify-consistency",
 		"--replicadir", replicaDir,
 		"--massif", "0",
 	})

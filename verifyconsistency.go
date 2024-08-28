@@ -23,14 +23,14 @@ var (
 	ErrRemoteLogInconsistentRootState = errors.New("the local replica root state disagrees with the remote")
 )
 
-// NewUpdateReplicaCmd updates a local replica of a remote log, verifying the mutual consistency of the two before making any changes.
+// NewVerifyConsistencyCmd updates a local replica of a remote log, verifying the mutual consistency of the two before making any changes.
 //
 //nolint:gocognit
-func NewUpdateReplicaCmd() *cli.Command {
+func NewVerifyConsistencyCmd() *cli.Command {
 	return &cli.Command{
-		Name:    "update-replica",
+		Name:    "verify-consistency",
 		Aliases: []string{"consistent"},
-		Usage:   `updates a local replica of a remote log, verifying the mutual consistency of the two before making any changes.`,
+		Usage:   `verifies the remote log and replicates it locally, ensuring the remote changes are consistent with the trusted local replica.`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{Name: skipUncommittedFlagName, Value: false},
 			&cli.IntFlag{

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/datatrails/go-datatrails-common/cbor"
 	"github.com/datatrails/go-datatrails-common/logger"
@@ -13,6 +14,7 @@ import (
 )
 
 var (
+	ErrChangesFlagIsExclusive         = errors.New("use --changes Or --massif and --tenant, not both")
 	ErrNewReplicaNotEmpty             = errors.New("the local directory for a new replica already exists")
 	ErrSealNotFound                   = errors.New("seal not found")
 	ErrSealVerifyFailed               = errors.New("the seal signature verification failed")
@@ -58,6 +60,14 @@ key, set this to the public datatrails sealing key,
 having obtained its value from a source you trust`,
 				Aliases: []string{"pub"},
 			},
+			&cli.StringFlag{
+				Name: "changes",
+				Usage: `
+provide the path to a file enumerating the tenant massifs with changes you want
+to verify and replicate.  This is mutually exclusive with the --massif and
+--tenant flags. If none of --massif, --tenant or --changes are provided, the
+changes are read from standard input.`,
+			},
 		},
 		Action: func(cCtx *cli.Context) error {
 			cmd := &CmdCtx{}
@@ -83,10 +93,64 @@ having obtained its value from a source you trust`,
 				return err
 			}
 
-			replicator, err := NewVerifiedReplica(cCtx, cmd.Clone(), tenantIdentity, uint32(changedMassifIndex))
+			changesFile := cCtx.String("changes")
 
-			return replicator.ReplicateVerifiedUpdates(
-				context.Background(), tenantIdentity, uint32(changedMassifIndex), uint32(cCtx.Uint("ancestors")))
+			var changes []TenantMassif
+
+			if changesFile != "" {
+				if tenantIdentity != "" || changedMassifIndex != 0 {
+					return ErrChangesFlagIsExclusive
+				}
+				changes, err = filePathToTenantMassifs(changesFile)
+				if err != nil {
+					return err
+				}
+			} else {
+				changes = []TenantMassif{{Tenant: tenantIdentity, Massif: changedMassifIndex}}
+				if tenantIdentity == "" && changedMassifIndex == 0 {
+					changes, err = stdinToDecodedTenantMassifs()
+					if err != nil {
+						return err
+					}
+				}
+			}
+
+			var wg sync.WaitGroup
+			errChan := make(chan error, len(changes)) // buffered so it doesn't block
+
+			for _, change := range changes {
+				wg.Add(1)
+				go func(change TenantMassif, errChan chan<- error) {
+					defer wg.Done()
+					replicator, err := NewVerifiedReplica(
+						cCtx, cmd.Clone())
+					if err != nil {
+						errChan <- err
+						return
+					}
+					err = replicator.ReplicateVerifiedUpdates(
+						context.Background(),
+						change.Tenant, uint32(change.Massif), uint32(cCtx.Uint("ancestors")),
+					)
+					if err != nil {
+						errChan <- err
+					}
+				}(change, errChan)
+			}
+
+			// the error channel is buffered enough for each tenant, so this will not get deadlockedc:w
+			wg.Wait()
+			close(errChan)
+
+			var errs []error
+			for err := range errChan {
+				cmd.log.Infof(err.Error())
+				errs = append(errs, err)
+			}
+			if len(errs) > 0 {
+				return errs[0]
+			}
+			return nil
 		},
 	}
 }
@@ -104,7 +168,7 @@ type VerifiedReplica struct {
 }
 
 func NewVerifiedReplica(
-	cCtx *cli.Context, cmd *CmdCtx, tenantIdentity string, changedMassifIndex uint32,
+	cCtx *cli.Context, cmd *CmdCtx,
 ) (*VerifiedReplica, error) {
 
 	dataUrl := cCtx.String("data-url")

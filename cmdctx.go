@@ -43,3 +43,13 @@ type CmdCtx struct {
 
 	bugs map[string]bool
 }
+
+// Clone returns a copy of the CmdCtx with only those members that are safe to share copied.
+// Those are:
+//   - log - the result of cfgLogging
+//
+// All other members need to be initialzed by the caller if they are required in
+// a specific go routine context.
+func (c *CmdCtx) Clone() *CmdCtx {
+	return &CmdCtx{log: c.log}
+}

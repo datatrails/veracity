@@ -62,12 +62,6 @@ having obtained its value from a source you trust`,
 		Action: func(cCtx *cli.Context) error {
 			cmd := &CmdCtx{}
 
-			var err error
-
-			if err = cfgLogging(cmd, cCtx); err != nil {
-				return err
-			}
-
 			// note: we don't use cfgMassifReader here because it does not
 			// support setting replicaDir for the local reader, and infact we
 			// need to configure both a local and a remote reader.
@@ -75,79 +69,24 @@ having obtained its value from a source you trust`,
 			// It could make sense in future to support local <- local for re-verification purposes.
 
 			tenantIdentity := cCtx.String("tenant")
-			headMassifIndex := cCtx.Int("massif")
-			ancestorCount := int(cCtx.Uint("ancestors"))
-			dataUrl := cCtx.String("data-url")
-			reader, err := cfgReader(cmd, cCtx, dataUrl == "")
-			if err != nil {
-				return err
-			}
-			if err = cfgRootReader(cmd, cCtx); err != nil {
-				return err
-			}
+			changedMassifIndex := cCtx.Int("massif")
+			// Note: we could use GetHeadMassif to provide a default for --massif. But
+			// that issues a list blobs query, and those are 10x more expensive. We have
+			// aranged it so that verify-consistency does not issue *any* list blobs,
+			// and so can reasonably be run in parallel. The watch command provides the
+			// latest massif index, and the output of the watch command is the expected
+			// source of the options to this command.
 
-			massifHeight := cCtx.Int64("height")
-			if massifHeight > 255 {
-				return fmt.Errorf("massif height must be less than 256")
-			}
-
-			cache, err := massifs.NewLogDirCache(logger.Sugar, NewFileOpener())
-			if err != nil {
-				return err
-			}
-			localReader, err := massifs.NewLocalReader(logger.Sugar, cache)
-			if err != nil {
+			var err error
+			// The loggin configuration is safe to share accross go routines.
+			if err = cfgLogging(cmd, cCtx); err != nil {
 				return err
 			}
 
-			opts := []massifs.DirCacheOption{
-				massifs.WithDirCacheReplicaDir(cCtx.String("replicadir")),
-				massifs.WithDirCacheMassifLister(NewDirLister()),
-				massifs.WithDirCacheSealLister(NewDirLister()),
-				massifs.WithReaderOption(massifs.WithMassifHeight(uint8(massifHeight))),
-				massifs.WithReaderOption(massifs.WithSealGetter(&localReader)),
-				massifs.WithReaderOption(massifs.WithCBORCodec(cmd.cborCodec)),
-			}
+			replicator, err := NewVerifiedReplica(cCtx, cmd.Clone(), tenantIdentity, uint32(changedMassifIndex))
 
-			// This will require that the remote seal is signed by the key
-			// provided here. If it is not, even if the seal is valid, the
-			// verification will fail with a suitable error.
-			pemString := cCtx.String("sealer-key")
-			if pemString != "" {
-				pem, err := DecodeECDSAPublicString(pemString)
-				if err != nil {
-					return err
-				}
-				opts = append(opts, massifs.WithReaderOption(massifs.WithTrustedSealerPub(pem)))
-			}
-
-			// For the localreader, the seal getter is the local reader itself.
-			// So we need to make use of ReplaceOptions on the cache, so we can
-			// provide the options after we have created the local reader.
-			cache.ReplaceOptions(opts...)
-
-			remoteReader := massifs.NewMassifReader(
-				logger.Sugar, reader,
-				massifs.WithSealGetter(&cmd.rootReader),
-			)
-
-			// Note: we could use GetHeadMassif to provide a default for
-			// --massif. But that issues a list blobs query, and those are 10x
-			// more expensive. We don't wan that being the default. The watch
-			// command provides the latest massif index, and the output of the
-			// watch command is the expected source of the options to this
-			// command.
-
-			v := &ConsistentReplica{
-				log:          logger.Sugar,
-				writeOpener:  NewFileWriteOpener(),
-				localReader:  &localReader,
-				remoteReader: &remoteReader,
-				cborCodec:    cmd.cborCodec,
-			}
-
-			return v.ReplicateVerifiedUpdates(
-				context.Background(), tenantIdentity, uint32(headMassifIndex), uint32(ancestorCount))
+			return replicator.ReplicateVerifiedUpdates(
+				context.Background(), tenantIdentity, uint32(changedMassifIndex), uint32(cCtx.Uint("ancestors")))
 		},
 	}
 }
@@ -156,7 +95,7 @@ type VerifiedContextReader interface {
 	massifs.VerifiedContextReader
 }
 
-type ConsistentReplica struct {
+type VerifiedReplica struct {
 	log          logger.Logger
 	writeOpener  massifs.WriteAppendOpener
 	localReader  massifs.ReplicaReader
@@ -164,12 +103,79 @@ type ConsistentReplica struct {
 	cborCodec    cbor.CBORCodec
 }
 
+func NewVerifiedReplica(
+	cCtx *cli.Context, cmd *CmdCtx, tenantIdentity string, changedMassifIndex uint32,
+) (*VerifiedReplica, error) {
+
+	dataUrl := cCtx.String("data-url")
+	reader, err := cfgReader(cmd, cCtx, dataUrl == "")
+	if err != nil {
+		return nil, err
+	}
+	if err = cfgRootReader(cmd, cCtx); err != nil {
+		return nil, err
+	}
+
+	massifHeight := cCtx.Int64("height")
+	if massifHeight > 255 {
+		return nil, fmt.Errorf("massif height must be less than 256")
+	}
+
+	cache, err := massifs.NewLogDirCache(logger.Sugar, NewFileOpener())
+	if err != nil {
+		return nil, err
+	}
+	localReader, err := massifs.NewLocalReader(logger.Sugar, cache)
+	if err != nil {
+		return nil, err
+	}
+
+	opts := []massifs.DirCacheOption{
+		massifs.WithDirCacheReplicaDir(cCtx.String("replicadir")),
+		massifs.WithDirCacheMassifLister(NewDirLister()),
+		massifs.WithDirCacheSealLister(NewDirLister()),
+		massifs.WithReaderOption(massifs.WithMassifHeight(uint8(massifHeight))),
+		massifs.WithReaderOption(massifs.WithSealGetter(&localReader)),
+		massifs.WithReaderOption(massifs.WithCBORCodec(cmd.cborCodec)),
+	}
+
+	// This will require that the remote seal is signed by the key
+	// provided here. If it is not, even if the seal is valid, the
+	// verification will fail with a suitable error.
+	pemString := cCtx.String("sealer-key")
+	if pemString != "" {
+		pem, err := DecodeECDSAPublicString(pemString)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, massifs.WithReaderOption(massifs.WithTrustedSealerPub(pem)))
+	}
+
+	// For the localreader, the seal getter is the local reader itself.
+	// So we need to make use of ReplaceOptions on the cache, so we can
+	// provide the options after we have created the local reader.
+	cache.ReplaceOptions(opts...)
+
+	remoteReader := massifs.NewMassifReader(
+		logger.Sugar, reader,
+		massifs.WithSealGetter(&cmd.rootReader),
+	)
+
+	return &VerifiedReplica{
+		log:          logger.Sugar,
+		writeOpener:  NewFileWriteOpener(),
+		localReader:  &localReader,
+		remoteReader: &remoteReader,
+		cborCodec:    cmd.cborCodec,
+	}, nil
+}
+
 // ReplicateVerifiedUpdates confirms that any additions to the remote log are
 // consistent with the local replica Only the most recent local massif and seal
 // need be retained for verification purposes.  If independent, off line,
 // verification of inclusion is desired, retain as much of the log as is
 // interesting.
-func (v *ConsistentReplica) ReplicateVerifiedUpdates(
+func (v *VerifiedReplica) ReplicateVerifiedUpdates(
 	ctx context.Context,
 	tenantIdentity string, headMassifIndex uint32, ancestorCount uint32) error {
 
@@ -293,7 +299,7 @@ func (v *ConsistentReplica) ReplicateVerifiedUpdates(
 //
 // This method has no side effects in the case where the remote and the local
 // are verified to be identical, the original local instance is retained.
-func (v *ConsistentReplica) replicateVerifiedContext(
+func (v *VerifiedReplica) replicateVerifiedContext(
 	ctx context.Context,
 	local *massifs.VerifiedContext, remote *massifs.VerifiedContext) error {
 

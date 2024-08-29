@@ -76,43 +76,15 @@ changes are read from standard input.`,
 			// support setting replicaDir for the local reader, and infact we
 			// need to configure both a local and a remote reader.
 
-			// It could make sense in future to support local <- local for re-verification purposes.
-
-			tenantIdentity := cCtx.String("tenant")
-			changedMassifIndex := cCtx.Int("massif")
-			// Note: we could use GetHeadMassif to provide a default for --massif. But
-			// that issues a list blobs query, and those are 10x more expensive. We have
-			// aranged it so that verify-consistency does not issue *any* list blobs,
-			// and so can reasonably be run in parallel. The watch command provides the
-			// latest massif index, and the output of the watch command is the expected
-			// source of the options to this command.
-
 			var err error
 			// The loggin configuration is safe to share accross go routines.
 			if err = cfgLogging(cmd, cCtx); err != nil {
 				return err
 			}
 
-			changesFile := cCtx.String("changes")
-
-			var changes []TenantMassif
-
-			if changesFile != "" {
-				if tenantIdentity != "" || changedMassifIndex != 0 {
-					return ErrChangesFlagIsExclusive
-				}
-				changes, err = filePathToTenantMassifs(changesFile)
-				if err != nil {
-					return err
-				}
-			} else {
-				changes = []TenantMassif{{Tenant: tenantIdentity, Massif: changedMassifIndex}}
-				if tenantIdentity == "" && changedMassifIndex == 0 {
-					changes, err = stdinToDecodedTenantMassifs()
-					if err != nil {
-						return err
-					}
-				}
+			changes, err := readTenantMassifChanges(cCtx)
+			if err != nil {
+				return err
 			}
 
 			var wg sync.WaitGroup
@@ -138,7 +110,7 @@ changes are read from standard input.`,
 				}(change, errChan)
 			}
 
-			// the error channel is buffered enough for each tenant, so this will not get deadlockedc:w
+			// the error channel is buffered enough for each tenant, so this will not get deadlocked
 			wg.Wait()
 			close(errChan)
 
@@ -153,6 +125,37 @@ changes are read from standard input.`,
 			return nil
 		},
 	}
+}
+
+func readTenantMassifChanges(cCtx *cli.Context) ([]TenantMassif, error) {
+	changesFile := cCtx.String("changes")
+	tenantIdentity := cCtx.String("tenant")
+	changedMassifIndex := cCtx.Int("massif")
+	// Note: we could use GetHeadMassif to provide a default for --massif. But
+	// that issues a list blobs query, and those are 10x more expensive. We have
+	// aranged it so that verify-consistency does not issue *any* list blobs,
+	// and so can reasonably be run in parallel. The watch command provides the
+	// latest massif index, and the output of the watch command is the expected
+	// source of the options to this command.
+
+	var err error
+	var changes []TenantMassif
+
+	if changesFile != "" {
+		if tenantIdentity != "" || changedMassifIndex != 0 {
+			return nil, ErrChangesFlagIsExclusive
+		}
+		return filePathToTenantMassifs(changesFile)
+	}
+
+	changes = []TenantMassif{{Tenant: tenantIdentity, Massif: changedMassifIndex}}
+	if tenantIdentity == "" && changedMassifIndex == 0 {
+		changes, err = stdinToDecodedTenantMassifs()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return changes, nil
 }
 
 type VerifiedContextReader interface {
@@ -282,11 +285,17 @@ func (v *VerifiedReplica) ReplicateVerifiedUpdates(
 	// ancestorCount is used to ensure there is a minimum number of verified massifs replicated locally.
 	// Our verification always reads the remote massifs starting from requested - ancestorCount.
 	// In the loop below we ensure three key things:
-	// 	1. If there is a local replica of the remote, we ensure the remote is consistent with the replica.
-	//	2. If the remote starts a new massif, and we locally have its predecessor, we ensure the remote is consistent with the local.
-	// 	3. If there is no local replica, we create one from the remote.
+	// 1. If there is a local replica of the remote, we ensure the remote is
+	//    consistent with the replica.
+	// 2. If the remote starts a new massif, and we locally have its
+	//    predecessor, we ensure the remote is consistent with the local.
+	// 3. If there is no local replica, we create one from the remote.
 	//
-	// In call cases we first verify the remote against the remote seal
+	// In call cases we first verify the remote against the remote seal.  The
+	// --ancestors can be used to limit the number of predecesor massifs that
+	// are verified before the changed massifs. In the case, consistency with
+	// the local replica is only checked if the local replica is sufficiently up
+	// to date. If it is not, no attempt is made to "fill the gap".
 
 	i := headMassifIndex - ancestorCount
 	if ancestorCount == 0 {

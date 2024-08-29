@@ -58,6 +58,7 @@ func cfgMassifReader(cmd *CmdCtx, cCtx *cli.Context) error {
 		cache, err := massifs.NewLogDirCache(
 			logger.Sugar,
 			NewFileOpener(),
+			massifs.WithDirCacheTenant(cCtx.String("tenant")), // may be empty string
 			massifs.WithDirCacheMassifLister(NewDirLister()),
 			massifs.WithDirCacheSealLister(NewDirLister()),
 			massifs.WithReaderOption(massifs.WithMassifHeight(cmd.massifHeight)),

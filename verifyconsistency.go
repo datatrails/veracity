@@ -286,7 +286,7 @@ func (v *VerifiedReplica) ReplicateVerifiedUpdates(
 	// Our verification always reads the remote massifs starting from requested - ancestorCount.
 	// In the loop below we ensure three key things:
 	// 1. If there is a local replica of the remote, we ensure the remote is
-	//    consistent with the replica.
+	//   consistent with the replica.
 	// 2. If the remote starts a new massif, and we locally have its
 	//    predecessor, we ensure the remote is consistent with the local.
 	// 3. If there is no local replica, we create one from the remote.
@@ -377,7 +377,7 @@ func (v *VerifiedReplica) replicateVerifiedContext(
 	local *massifs.VerifiedContext, remote *massifs.VerifiedContext) error {
 
 	if local == nil {
-		return v.localReader.ReplaceVerifiedContext(ctx, remote, v.writeOpener)
+		return v.localReader.ReplaceVerifiedContext(remote, v.writeOpener)
 	}
 
 	if local.TenantIdentity != remote.TenantIdentity {
@@ -406,5 +406,5 @@ func (v *VerifiedReplica) replicateVerifiedContext(
 		return nil
 	}
 
-	return v.localReader.ReplaceVerifiedContext(ctx, remote, v.writeOpener)
+	return v.localReader.ReplaceVerifiedContext(remote, v.writeOpener)
 }

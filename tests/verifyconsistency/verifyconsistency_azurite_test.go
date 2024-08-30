@@ -439,6 +439,7 @@ func (s *VerifyConsistencyCmdSuite) Test4MassifsForThreeTenants() {
 	}
 
 	data, err := json.Marshal(changes)
+	s.NoError(err)
 	// note: the suite does a before & after pipe for Stdin
 	s.StdinWriteAndClose(data)
 
@@ -488,7 +489,7 @@ func newTestLocalReader(
 		massifs.WithDirCacheReplicaDir(replicaDir),
 		massifs.WithDirCacheMassifLister(veracity.NewDirLister()),
 		massifs.WithDirCacheSealLister(veracity.NewDirLister()),
-		massifs.WithReaderOption(massifs.WithMassifHeight(uint8(massifHeight))),
+		massifs.WithReaderOption(massifs.WithMassifHeight(massifHeight)),
 		massifs.WithReaderOption(massifs.WithSealGetter(&localReader)),
 		massifs.WithReaderOption(massifs.WithCBORCodec(cborCodec)),
 	}

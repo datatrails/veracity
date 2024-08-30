@@ -3,14 +3,18 @@
 package verifyconsistency
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
+	"testing"
 
 	"github.com/datatrails/go-datatrails-common/logger"
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
 	"github.com/datatrails/go-datatrails-merklelog/mmr"
 	"github.com/datatrails/veracity"
+	"github.com/stretchr/testify/require"
 )
 
 // TestReplicatingMassifLogsForOneTenant test that by default af full replica is made
@@ -289,9 +293,125 @@ func (s *VerifyConsistencyCmdSuite) TestFullReplicaByDefault() {
 	}
 }
 
-// Test4AzuriteMassifsForThreeTenants multiple massifs are replicated
+// TestLocalTamperDetected tests that a localy tampered masif is detected
+//
+// In this case, an attacker changes a remotely replicated massif in an attempt to
+// include, exclude or change some element. In order for such a change to be
+// provable, the attacker has to re-build the log from the point of the tamper
+// forward, otherwise the inclusion proof for the changed element will fail.  We
+// can simulate this situation without re-building the log simply by changing
+// one of the peaks, as a re-build will necessarily always result in a different
+// peak value.
+//
+// Attacks where the leaves are changed or remove and the log is not re-built
+// can only be deteceted by full audit anyway. But these attacks are essentially
+// equivalent to data corruption. And they do not result in a log which includes
+// a different thing, just a single entry (or pair of) in the log which can't be
+// proven
+func (s *VerifyConsistencyCmdSuite) TestLocalTamperDetected() {
+
+	logger.New("TestFullReplicaByDefault")
+	defer logger.OnExit()
+
+	tc := massifs.NewLocalMassifReaderTestContext(
+		s.T(), logger.Sugar, "TestFullReplicaByDefault")
+
+	massifCount := uint32(4)
+	massifHeight := uint8(8)
+
+	// This test requires two invocations. For the first invocation, we make ony
+	// one massif available.  Then after that is successfully replicated, we
+	// tamper a peak in the local replica, then attempt to replicate the
+	// subsequent log - this should fail due to the local data being unable to
+	// re-produce the root needed for the local seal to verify.
+
+	tenantId0 := tc.G.NewTenantIdentity()
+	tc.CreateLog(tenantId0, massifHeight, 1)
+
+	replicaDir := s.T().TempDir()
+
+	// note: VERACITY_IKWID is set in main, we need it to enable --envauth so we force it here
+	app := veracity.NewApp(true)
+	veracity.AddCommands(app, true)
+
+	err := app.Run([]string{
+		"veracity",
+		"--envauth", // uses the emulator
+		"--container", tc.TestConfig.Container,
+		"--data-url", s.Env.AzuriteVerifiableDataURL,
+		"--tenant", tenantId0,
+		"--height", fmt.Sprintf("%d", massifHeight),
+		"verify-consistency",
+		//  --ancestors defaults to 0 which means "all", but only massif is available
+		"--replicadir", replicaDir,
+		"--massif", "0",
+	})
+	s.NoError(err)
+
+	localReader := newTestLocalReader(s.T(), replicaDir, massifHeight)
+
+	massifLeafCount := mmr.HeightIndexLeafCount(uint64(massifHeight) - 1)
+	LastLeafIndex := massifLeafCount - 1
+	mmrSize0 := mmr.FirstMMRSize(mmr.TreeIndex(LastLeafIndex))
+	peaks := mmr.Peaks(mmrSize0)
+	// this simulates the effect of changing a leaf then re-building the log so
+	// that a proof of inclusion can be produced for the new element, this
+	// necessarily causes a peak to change. *any* peak change will cause the
+	// consistency proof to fail. And regardless of whether our seals are
+	// accumulators (all peak hashes) or a single bagged peak, the local log
+	// will be unable to produce the correct detached payload for the Sign1 seal
+	// over the root material.
+	tamperLocalReaderNode(s.T(), localReader, tenantId0,
+		massifHeight, peaks[len(peaks)-1]-1, []byte{0x0D, 0x0E, 0x0A, 0x0D, 0x0B, 0x0E, 0x0E, 0x0F})
+
+	// Note: it's actually a property of the way massifs fill that the last node
+	// added is always a peak, we could have taken that shortcut abvove. In the
+	// interests of illustrating how any peak can be found, its done the long
+	// way above.
+
+	// add the rest of the massifs
+	for i := uint32(1); i < massifCount; i++ {
+		tc.AddLeavesToLog(tenantId0, massifHeight, int(massifLeafCount))
+	}
+
+	// This call, due to the --ancestors=0 default, should replicate all the new massifs.
+	// The previously replicated massifs should not be re-verified.
+	// The first new replicaetd massif should be verified as consistent with the
+	// last local massif. This last point isn't assured by this test, but if
+	// debugging it, that behviour can be observed.
+	err = app.Run([]string{
+		"veracity",
+		"--envauth", // uses the emulator
+		"--container", tc.TestConfig.Container,
+		"--data-url", s.Env.AzuriteVerifiableDataURL,
+		"--tenant", tenantId0,
+		"--height", fmt.Sprintf("%d", massifHeight),
+		"verify-consistency",
+		//  --ancestors defaults to 0 which means "all", but only massif is available
+		"--replicadir", replicaDir,
+		"--massif", fmt.Sprintf("%d", massifCount-1),
+	})
+
+	s.ErrorIs(err, massifs.ErrSealVerifyFailed)
+
+	// check the 0'th massifs and seals was replicated (by the first run of veractity)
+	expectMassifFile := filepath.Join(replicaDir, massifs.ReplicaRelativeMassifPath(tenantId0, 0))
+	s.FileExistsf(expectMassifFile, "the replicated massif should NOT exist")
+	expectSealFile := filepath.Join(replicaDir, massifs.ReplicaRelativeSealPath(tenantId0, 0))
+	s.FileExistsf(expectSealFile, "the replicated seal should NOT exist")
+
+	// check the massifs from the second veracity run were NOT replicated
+	for i := uint32(1); i < massifCount; i++ {
+		expectMassifFile := filepath.Join(replicaDir, massifs.ReplicaRelativeMassifPath(tenantId0, i))
+		s.NoFileExistsf(expectMassifFile, "the replicated massif should exist")
+		expectSealFile := filepath.Join(replicaDir, massifs.ReplicaRelativeSealPath(tenantId0, i))
+		s.NoFileExistsf(expectSealFile, "the replicated seal should exist")
+	}
+}
+
+// Test4MassifsForThreeTenants multiple massifs are replicated
 // when the output of the watch command is provided on stdin
-func (s *VerifyConsistencyCmdSuite) Test4AzuriteMassifsForThreeTenants() {
+func (s *VerifyConsistencyCmdSuite) Test4MassifsForThreeTenants() {
 
 	logger.New("Test4AzuriteMassifsForThreeTenants")
 	defer logger.OnExit()
@@ -350,4 +470,60 @@ func (s *VerifyConsistencyCmdSuite) Test4AzuriteMassifsForThreeTenants() {
 			s.FileExistsf(expectSealFile, "the replicated seal should exist")
 		}
 	}
+}
+
+// newTestLocalReader creates a new LocalReader
+// This provides a convenient way to interact with the massifs locally replicated by integration tests.
+func newTestLocalReader(
+	t *testing.T, replicaDir string, massifHeight uint8) *massifs.LocalReader {
+	cache, err := massifs.NewLogDirCache(logger.Sugar, veracity.NewFileOpener())
+	require.NoError(t, err)
+	localReader, err := massifs.NewLocalReader(logger.Sugar, cache)
+	require.NoError(t, err)
+
+	cborCodec, err := massifs.NewRootSignerCodec()
+	require.NoError(t, err)
+
+	opts := []massifs.DirCacheOption{
+		massifs.WithDirCacheReplicaDir(replicaDir),
+		massifs.WithDirCacheMassifLister(veracity.NewDirLister()),
+		massifs.WithDirCacheSealLister(veracity.NewDirLister()),
+		massifs.WithReaderOption(massifs.WithMassifHeight(uint8(massifHeight))),
+		massifs.WithReaderOption(massifs.WithSealGetter(&localReader)),
+		massifs.WithReaderOption(massifs.WithCBORCodec(cborCodec)),
+	}
+	cache.ReplaceOptions(opts...)
+	return &localReader
+}
+
+// tamperLocalReaderNode over-writes the log entry at the given mmrIndex with the provided bytes
+// This is typically used to simulate a local tamper or coruption
+//
+// The value needs to be non-empty and no longer than LogEntryBytes, a fine
+// value for this purpose is:
+//
+//	[]byte{0x0D, 0x0E, 0x0A, 0x0D, 0x0B, 0x0E, 0x0E, 0x0F}
+func tamperLocalReaderNode(
+	t *testing.T, reader *massifs.LocalReader, tenantIdentity string,
+	massifHeight uint8, mmrIndex uint64, tamperedValue []byte) {
+
+	require.NotZero(t, len(tamperedValue))
+	require.LessOrEqual(t, len(tamperedValue), massifs.LogEntryBytes)
+
+	leafIndex := mmr.LeafIndex(mmrIndex)
+	massifIndex := massifs.MassifIndexFromLeafIndex(massifHeight, leafIndex)
+	mc, err := reader.GetMassif(context.TODO(), tenantIdentity, massifIndex)
+	require.NoError(t, err)
+
+	i := mmrIndex - mc.Start.FirstIndex
+	logData := mc.Data[mc.LogStart():]
+	copy(logData[i*massifs.LogEntryBytes:i*massifs.LogEntryBytes+8], tamperedValue)
+
+	filePath := reader.GetMassifLocalPath(tenantIdentity, uint32(massifIndex))
+	f, err := os.Create(filePath) // read-write & over write
+	require.NoError(t, err)
+	defer f.Close()
+	n, err := f.Write(mc.Data)
+	require.NoError(t, err)
+	require.Equal(t, n, len(mc.Data))
 }

@@ -6,17 +6,17 @@ require (
 	github.com/datatrails/go-datatrails-common v0.16.1
 	github.com/datatrails/go-datatrails-common-api-gen v0.4.6
 	github.com/datatrails/go-datatrails-logverification v0.1.7
-	github.com/datatrails/go-datatrails-merklelog/massifs v0.0.11
+	github.com/datatrails/go-datatrails-merklelog/massifs v0.1.0
 	github.com/datatrails/go-datatrails-merklelog/mmr v0.0.2
-	github.com/datatrails/go-datatrails-merklelog/mmrtesting v0.0.1
+	github.com/datatrails/go-datatrails-merklelog/mmrtesting v0.1.0
 	github.com/datatrails/go-datatrails-simplehash v0.0.5
 	github.com/urfave/cli/v2 v2.27.1
 	github.com/zeebo/bencode v1.0.0
 )
 
-replace (
-	github.com/datatrails/go-datatrails-merklelog/massifs => ../go-datatrails-merklelog/massifs
-)
+// replace (
+// 	github.com/datatrails/go-datatrails-merklelog/massifs => ../go-datatrails-merklelog/massifs
+// )
 
 require (
 	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
@@ -28,7 +28,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.11.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.8.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/messaging/azservicebus v1.7.0 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.4.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.4.1
 	github.com/Azure/go-amqp v1.0.5 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.29 // indirect

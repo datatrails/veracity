@@ -43,6 +43,8 @@ func (s *VerifyConsistencyCmdSuite) TestReplicatingMassifLogsForOneTenant() {
 
 		s.Run(fmt.Sprintf("massifCount:%d", massifCount), func() {
 			tenantId0 := tc.G.NewTenantIdentity()
+
+			// note: CreateLog both creates the massifs *and* populates them
 			tc.CreateLog(tenantId0, massifHeight, massifCount)
 
 			replicaDir := s.T().TempDir()
@@ -88,6 +90,7 @@ func (s *VerifyConsistencyCmdSuite) TestSingleAncestorMassifsForOneTenant() {
 	massifHeight := uint8(8)
 
 	tenantId0 := tc.G.NewTenantIdentity()
+	// note: CreateLog both creates the massifs *and* populates them
 	tc.CreateLog(tenantId0, massifHeight, massifCount)
 
 	replicaDir := s.T().TempDir()
@@ -144,6 +147,7 @@ func (s *VerifyConsistencyCmdSuite) TestSparseReplicaCreatedAfterExtendedOffline
 	// Then after that is successfully replicated, we add the rest of the massifs.
 
 	tenantId0 := tc.G.NewTenantIdentity()
+	// note: CreateLog both creates the massifs *and* populates them
 	tc.CreateLog(tenantId0, massifHeight, 1)
 
 	replicaDir := s.T().TempDir()
@@ -231,6 +235,7 @@ func (s *VerifyConsistencyCmdSuite) TestFullReplicaByDefault() {
 	// Then after that is successfully replicated, we add the rest of the massifs.
 
 	tenantId0 := tc.G.NewTenantIdentity()
+	// note: CreateLog both creates the massifs *and* populates them
 	tc.CreateLog(tenantId0, massifHeight, 1)
 
 	replicaDir := s.T().TempDir()
@@ -326,6 +331,7 @@ func (s *VerifyConsistencyCmdSuite) TestLocalTamperDetected() {
 	// re-produce the root needed for the local seal to verify.
 
 	tenantId0 := tc.G.NewTenantIdentity()
+	// note: CreateLog both creates the massifs *and* populates them
 	tc.CreateLog(tenantId0, massifHeight, 1)
 
 	replicaDir := s.T().TempDir()
@@ -423,6 +429,7 @@ func (s *VerifyConsistencyCmdSuite) Test4MassifsForThreeTenants() {
 	massifHeight := uint8(8)
 
 	tenantId0 := tc.G.NewTenantIdentity()
+	// note: CreateLog both creates the massifs *and* populates them
 	tc.CreateLog(tenantId0, massifHeight, massifCount)
 	tenantId1 := tc.G.NewTenantIdentity()
 	tc.CreateLog(tenantId1, massifHeight, massifCount)
@@ -511,6 +518,7 @@ func (s *VerifyConsistencyCmdSuite) Test4MassifsForThreeTenantsFromFile() {
 	massifHeight := uint8(8)
 
 	tenantId0 := tc.G.NewTenantIdentity()
+	// note: CreateLog both creates the massifs *and* populates them
 	tc.CreateLog(tenantId0, massifHeight, massifCount)
 	tenantId1 := tc.G.NewTenantIdentity()
 	tc.CreateLog(tenantId1, massifHeight, massifCount)

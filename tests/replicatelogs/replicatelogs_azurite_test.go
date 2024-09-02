@@ -18,7 +18,7 @@ import (
 )
 
 // TestReplicatingMassifLogsForOneTenant test that by default af full replica is made
-func (s *VerifyConsistencyCmdSuite) TestReplicatingMassifLogsForOneTenant() {
+func (s *ReplicateLogsCmdSuite) TestReplicatingMassifLogsForOneTenant() {
 
 	logger.New("Test4AzuriteMassifsForOneTenant")
 	defer logger.OnExit()
@@ -78,7 +78,7 @@ func (s *VerifyConsistencyCmdSuite) TestReplicatingMassifLogsForOneTenant() {
 
 // TestSingleAncestorMassifsForOneTenant tests that the --ancestors
 // option limits the number of historical massifs that are replicated
-func (s *VerifyConsistencyCmdSuite) TestSingleAncestorMassifsForOneTenant() {
+func (s *ReplicateLogsCmdSuite) TestSingleAncestorMassifsForOneTenant() {
 
 	logger.New("Test4AzuriteSingleAncestorMassifsForOneTenant")
 	defer logger.OnExit()
@@ -132,7 +132,7 @@ func (s *VerifyConsistencyCmdSuite) TestSingleAncestorMassifsForOneTenant() {
 // the case where the verifier has been off line for a long, the resulting
 // replica is sparse. --ancestors is set what the user wants to have a bound on
 // the work done in any one run
-func (s *VerifyConsistencyCmdSuite) TestSparseReplicaCreatedAfterExtendedOffline() {
+func (s *ReplicateLogsCmdSuite) TestSparseReplicaCreatedAfterExtendedOffline() {
 
 	logger.New("TestSparseReplicaCreatedAfterExtendedOffline")
 	defer logger.OnExit()
@@ -220,7 +220,7 @@ func (s *VerifyConsistencyCmdSuite) TestSparseReplicaCreatedAfterExtendedOffline
 
 // TestFullReplicaByDefault tests that we get a full replica when
 // updating a previous replica after further massifs have been added
-func (s *VerifyConsistencyCmdSuite) TestFullReplicaByDefault() {
+func (s *ReplicateLogsCmdSuite) TestFullReplicaByDefault() {
 
 	logger.New("TestFullReplicaByDefault")
 	defer logger.OnExit()
@@ -313,7 +313,7 @@ func (s *VerifyConsistencyCmdSuite) TestFullReplicaByDefault() {
 // equivalent to data corruption. And they do not result in a log which includes
 // a different thing, just a single entry (or pair of) in the log which can't be
 // proven
-func (s *VerifyConsistencyCmdSuite) TestLocalTamperDetected() {
+func (s *ReplicateLogsCmdSuite) TestLocalTamperDetected() {
 
 	logger.New("TestFullReplicaByDefault")
 	defer logger.OnExit()
@@ -417,7 +417,7 @@ func (s *VerifyConsistencyCmdSuite) TestLocalTamperDetected() {
 
 // Test4MassifsForThreeTenants multiple massifs are replicated
 // when the output of the watch command is provided on stdin
-func (s *VerifyConsistencyCmdSuite) Test4MassifsForThreeTenants() {
+func (s *ReplicateLogsCmdSuite) Test4MassifsForThreeTenants() {
 
 	logger.New("Test4AzuriteMassifsForThreeTenants")
 	defer logger.OnExit()
@@ -506,7 +506,7 @@ func newTestLocalReader(
 
 // Test4MassifsForThreeTenantsFromFile multiple massifs are replicated
 // when the output of the watch command is provided in a file on disc
-func (s *VerifyConsistencyCmdSuite) Test4MassifsForThreeTenantsFromFile() {
+func (s *ReplicateLogsCmdSuite) Test4MassifsForThreeTenantsFromFile() {
 
 	logger.New("Test4AzuriteMassifsForThreeTenantsFromFile")
 	defer logger.OnExit()

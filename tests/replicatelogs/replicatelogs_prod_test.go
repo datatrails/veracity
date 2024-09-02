@@ -8,7 +8,7 @@ import (
 )
 
 // Test that the watch command returns no error or that the error is "no changes"
-func (s *VerifyConsistencyCmdSuite) TestReplicateFirstPublicMassif() {
+func (s *ReplicateLogsCmdSuite) TestReplicateFirstPublicMassif() {
 
 	replicaDir := s.T().TempDir()
 

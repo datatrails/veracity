@@ -60,7 +60,7 @@ func (s *ReplicateLogsCmdSuite) TestReplicatingMassifLogsForOneTenant() {
 				"--data-url", s.Env.AzuriteVerifiableDataURL,
 				"--tenant", tenantId0,
 				"--height", fmt.Sprintf("%d", massifHeight),
-				"verify-consistency",
+				"replicate-logs",
 				"--replicadir", replicaDir,
 				"--massif", fmt.Sprintf("%d", massifCount-1),
 			})
@@ -106,7 +106,7 @@ func (s *ReplicateLogsCmdSuite) TestSingleAncestorMassifsForOneTenant() {
 		"--data-url", s.Env.AzuriteVerifiableDataURL,
 		"--tenant", tenantId0,
 		"--height", fmt.Sprintf("%d", massifHeight),
-		"verify-consistency",
+		"replicate-logs",
 		"--ancestors", "1",
 		"--replicadir", replicaDir,
 		"--massif", fmt.Sprintf("%d", massifCount-1),
@@ -163,7 +163,7 @@ func (s *ReplicateLogsCmdSuite) TestSparseReplicaCreatedAfterExtendedOffline() {
 		"--data-url", s.Env.AzuriteVerifiableDataURL,
 		"--tenant", tenantId0,
 		"--height", fmt.Sprintf("%d", massifHeight),
-		"verify-consistency",
+		"replicate-logs",
 		//  --ancestors defaults to 0 which means "all", but only massif is available
 		"--replicadir", replicaDir,
 		"--massif", "0",
@@ -188,7 +188,7 @@ func (s *ReplicateLogsCmdSuite) TestSparseReplicaCreatedAfterExtendedOffline() {
 		"--data-url", s.Env.AzuriteVerifiableDataURL,
 		"--tenant", tenantId0,
 		"--height", fmt.Sprintf("%d", massifHeight),
-		"verify-consistency",
+		"replicate-logs",
 		"--ancestors", "1", // this will replicate massif 2 & 3
 		"--replicadir", replicaDir,
 		"--massif", fmt.Sprintf("%d", massifCount-1),
@@ -251,7 +251,7 @@ func (s *ReplicateLogsCmdSuite) TestFullReplicaByDefault() {
 		"--data-url", s.Env.AzuriteVerifiableDataURL,
 		"--tenant", tenantId0,
 		"--height", fmt.Sprintf("%d", massifHeight),
-		"verify-consistency",
+		"replicate-logs",
 		//  --ancestors defaults to 0 which means "all", but only massif is available
 		"--replicadir", replicaDir,
 		"--massif", "0",
@@ -276,7 +276,7 @@ func (s *ReplicateLogsCmdSuite) TestFullReplicaByDefault() {
 		"--data-url", s.Env.AzuriteVerifiableDataURL,
 		"--tenant", tenantId0,
 		"--height", fmt.Sprintf("%d", massifHeight),
-		"verify-consistency",
+		"replicate-logs",
 		//  --ancestors defaults to 0 which means "all", but only massif is available
 		"--replicadir", replicaDir,
 		"--massif", fmt.Sprintf("%d", massifCount-1),
@@ -347,7 +347,7 @@ func (s *ReplicateLogsCmdSuite) TestLocalTamperDetected() {
 		"--data-url", s.Env.AzuriteVerifiableDataURL,
 		"--tenant", tenantId0,
 		"--height", fmt.Sprintf("%d", massifHeight),
-		"verify-consistency",
+		"replicate-logs",
 		//  --ancestors defaults to 0 which means "all", but only massif is available
 		"--replicadir", replicaDir,
 		"--massif", "0",
@@ -392,7 +392,7 @@ func (s *ReplicateLogsCmdSuite) TestLocalTamperDetected() {
 		"--data-url", s.Env.AzuriteVerifiableDataURL,
 		"--tenant", tenantId0,
 		"--height", fmt.Sprintf("%d", massifHeight),
-		"verify-consistency",
+		"replicate-logs",
 		//  --ancestors defaults to 0 which means "all", but only massif is available
 		"--replicadir", replicaDir,
 		"--massif", fmt.Sprintf("%d", massifCount-1),
@@ -462,7 +462,7 @@ func (s *ReplicateLogsCmdSuite) Test4MassifsForThreeTenants() {
 		"--container", tc.TestConfig.Container,
 		"--data-url", s.Env.AzuriteVerifiableDataURL,
 		"--height", fmt.Sprintf("%d", massifHeight),
-		"verify-consistency",
+		"replicate-logs",
 		"--replicadir", replicaDir,
 	})
 	s.NoError(err)
@@ -553,7 +553,7 @@ func (s *ReplicateLogsCmdSuite) Test4MassifsForThreeTenantsFromFile() {
 		"--container", tc.TestConfig.Container,
 		"--data-url", s.Env.AzuriteVerifiableDataURL,
 		"--height", fmt.Sprintf("%d", massifHeight),
-		"verify-consistency",
+		"replicate-logs",
 		"--replicadir", replicaDir,
 		"--changes", inputFilename,
 	})

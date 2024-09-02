@@ -196,5 +196,7 @@ Additional Commands include:
 * `node` - read a merklelog node
 * `verify-included` - verify the inclusion of an event, or list of events, in the tenant's merkle log
 * `watch` - discover recently active logs
+* `replicate-logs` - create or update a local trusted replica of one more more tenants logs,
+   accepts the output of `watch` as input.
 
 For more information, please visit the [DataTrails documentation](https://docs.datatrails.ai/)

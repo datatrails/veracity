@@ -133,7 +133,7 @@ func readTenantMassifChanges(cCtx *cli.Context) ([]TenantMassif, error) {
 	changedMassifIndex := cCtx.Int("massif")
 	// Note: we could use GetHeadMassif to provide a default for --massif. But
 	// that issues a list blobs query, and those are 10x more expensive. We have
-	// aranged it so that verify-consistency does not issue *any* list blobs,
+	// aranged it so that replicate-logs does not issue *any* list blobs,
 	// and so can reasonably be run in parallel. The watch command provides the
 	// latest massif index, and the output of the watch command is the expected
 	// source of the options to this command.

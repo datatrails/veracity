@@ -20,7 +20,7 @@ func (s *ReplicateLogsCmdSuite) TestReplicateFirstPublicMassif() {
 		"veracity",
 		"--data-url", s.Env.VerifiableDataURL,
 		"--tenant", s.Env.PublicTenantId,
-		"verify-consistency",
+		"replicate-logs",
 		"--replicadir", replicaDir,
 		"--massif", "0",
 	})

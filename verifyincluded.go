@@ -121,6 +121,8 @@ Note: for publicly attested events, or shared protected events, you must use --t
 
 			var verifiableEvents []logverification.VerifiableEvent
 			if cCtx.Args().Len() > 0 {
+				// note: to be permissive in what we accept, we just require the minimum count here.
+				// we do not proces multiple files if there are more than one, though we could.
 				verifiableEvents, err = filePathToVerifiableEvents(cCtx.Args().Get(0))
 			} else {
 				verifiableEvents, err = stdinToVerifiableEvents()

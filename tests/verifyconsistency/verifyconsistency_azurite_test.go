@@ -193,9 +193,9 @@ func (s *VerifyConsistencyCmdSuite) TestSparseReplicaCreatedAfterExtendedOffline
 
 	// check the 0'th massifs and seals was replicated (by the first run of veractity)
 	expectMassifFile := filepath.Join(replicaDir, massifs.ReplicaRelativeMassifPath(tenantId0, 0))
-	s.FileExistsf(expectMassifFile, "the replicated massif should NOT exist")
+	s.FileExistsf(expectMassifFile, "the replicated massif should exist")
 	expectSealFile := filepath.Join(replicaDir, massifs.ReplicaRelativeSealPath(tenantId0, 0))
-	s.FileExistsf(expectSealFile, "the replicated seal should NOT exist")
+	s.FileExistsf(expectSealFile, "the replicated seal should exist")
 
 	// check the gap was not mistakenly filled
 	for i := uint32(1); i < massifCount-2; i++ {
@@ -280,9 +280,9 @@ func (s *VerifyConsistencyCmdSuite) TestFullReplicaByDefault() {
 
 	// check the 0'th massifs and seals was replicated (by the first run of veractity)
 	expectMassifFile := filepath.Join(replicaDir, massifs.ReplicaRelativeMassifPath(tenantId0, 0))
-	s.FileExistsf(expectMassifFile, "the replicated massif should NOT exist")
+	s.FileExistsf(expectMassifFile, "the replicated massif should exist")
 	expectSealFile := filepath.Join(replicaDir, massifs.ReplicaRelativeSealPath(tenantId0, 0))
-	s.FileExistsf(expectSealFile, "the replicated seal should NOT exist")
+	s.FileExistsf(expectSealFile, "the replicated seal should exist")
 
 	// check the massifs from the second veracity run were replicated
 	for i := uint32(1); i < massifCount; i++ {
@@ -396,16 +396,16 @@ func (s *VerifyConsistencyCmdSuite) TestLocalTamperDetected() {
 
 	// check the 0'th massifs and seals was replicated (by the first run of veractity)
 	expectMassifFile := filepath.Join(replicaDir, massifs.ReplicaRelativeMassifPath(tenantId0, 0))
-	s.FileExistsf(expectMassifFile, "the replicated massif should NOT exist")
+	s.FileExistsf(expectMassifFile, "the replicated massif should exist")
 	expectSealFile := filepath.Join(replicaDir, massifs.ReplicaRelativeSealPath(tenantId0, 0))
-	s.FileExistsf(expectSealFile, "the replicated seal should NOT exist")
+	s.FileExistsf(expectSealFile, "the replicated seal should exist")
 
 	// check the massifs from the second veracity run were NOT replicated
 	for i := uint32(1); i < massifCount; i++ {
 		expectMassifFile := filepath.Join(replicaDir, massifs.ReplicaRelativeMassifPath(tenantId0, i))
-		s.NoFileExistsf(expectMassifFile, "the replicated massif should exist")
+		s.NoFileExistsf(expectMassifFile, "the replicated massif should NOT exist")
 		expectSealFile := filepath.Join(replicaDir, massifs.ReplicaRelativeSealPath(tenantId0, i))
-		s.NoFileExistsf(expectSealFile, "the replicated seal should exist")
+		s.NoFileExistsf(expectSealFile, "the replicated seal should NOT exist")
 	}
 }
 

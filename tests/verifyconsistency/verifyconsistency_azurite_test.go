@@ -131,11 +131,11 @@ func (s *VerifyConsistencyCmdSuite) TestSingleAncestorMassifsForOneTenant() {
 // the work done in any one run
 func (s *VerifyConsistencyCmdSuite) TestSparseReplicaCreatedAfterExtendedOffline() {
 
-	logger.New("Test4AzuriteSingleAncestorMassifsForOneTenant")
+	logger.New("TestSparseReplicaCreatedAfterExtendedOffline")
 	defer logger.OnExit()
 
 	tc := massifs.NewLocalMassifReaderTestContext(
-		s.T(), logger.Sugar, "Test4AzuriteSingleAncestorMassifsForOneTenant")
+		s.T(), logger.Sugar, "TestSparseReplicaCreatedAfterExtendedOffline")
 
 	massifCount := uint32(4)
 	massifHeight := uint8(8)
@@ -495,6 +495,82 @@ func newTestLocalReader(
 	}
 	cache.ReplaceOptions(opts...)
 	return &localReader
+}
+
+// Test4MassifsForThreeTenantsFromFile multiple massifs are replicated
+// when the output of the watch command is provided in a file on disc
+func (s *VerifyConsistencyCmdSuite) Test4MassifsForThreeTenantsFromFile() {
+
+	logger.New("Test4AzuriteMassifsForThreeTenantsFromFile")
+	defer logger.OnExit()
+
+	tc := massifs.NewLocalMassifReaderTestContext(
+		s.T(), logger.Sugar, "Test4AzuriteMassifsForThreeTenantsFromFile")
+
+	massifCount := uint32(4)
+	massifHeight := uint8(8)
+
+	tenantId0 := tc.G.NewTenantIdentity()
+	tc.CreateLog(tenantId0, massifHeight, massifCount)
+	tenantId1 := tc.G.NewTenantIdentity()
+	tc.CreateLog(tenantId1, massifHeight, massifCount)
+	tenantId2 := tc.G.NewTenantIdentity()
+	tc.CreateLog(tenantId2, massifHeight, massifCount)
+
+	changes := []struct {
+		TenantIdentity string `json:"tenant"`
+		MassifIndex    int    `json:"massifindex"`
+	}{
+		{tenantId0, int(massifCount - 1)},
+		{tenantId1, int(massifCount - 1)},
+		{tenantId2, int(massifCount - 1)},
+	}
+
+	data, err := json.Marshal(changes)
+	s.NoError(err)
+	// note: the suite does a before & after pipe for Stdin
+
+	replicaDir := s.T().TempDir()
+
+	inputFilename := filepath.Join(s.T().TempDir(), "input.json")
+	createFileFromData(s.T(), data, inputFilename)
+
+	// note: VERACITY_IKWID is set in main, we need it to enable --envauth so we force it here
+	app := veracity.NewApp(true)
+	veracity.AddCommands(app, true)
+
+	err = app.Run([]string{
+		"veracity",
+		"--envauth", // uses the emulator
+		"--container", tc.TestConfig.Container,
+		"--data-url", s.Env.AzuriteVerifiableDataURL,
+		"--height", fmt.Sprintf("%d", massifHeight),
+		"verify-consistency",
+		"--replicadir", replicaDir,
+		"--changes", inputFilename,
+	})
+	s.NoError(err)
+
+	for _, change := range changes {
+		for i := range change.MassifIndex + 1 {
+			expectMassifFile := filepath.Join(
+				replicaDir, massifs.ReplicaRelativeMassifPath(change.TenantIdentity, uint32(i)))
+			s.FileExistsf(
+				expectMassifFile, "the replicated massif should exist")
+			expectSealFile := filepath.Join(
+				replicaDir, massifs.ReplicaRelativeSealPath(change.TenantIdentity, uint32(i)))
+			s.FileExistsf(expectSealFile, "the replicated seal should exist")
+		}
+	}
+}
+
+func createFileFromData(t *testing.T, data []byte, filename string) {
+	f, err := os.Create(filename)
+	require.NoError(t, err)
+	defer f.Close()
+	n, err := f.Write(data)
+	require.NoError(t, err)
+	require.Equal(t, n, len(data))
 }
 
 // tamperLocalReaderNode over-writes the log entry at the given mmrIndex with the provided bytes

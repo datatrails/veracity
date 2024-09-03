@@ -1,3 +1,5 @@
+//go:build integration && azurite
+
 package verifyconsistency
 
 import (

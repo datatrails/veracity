@@ -76,9 +76,99 @@ func (s *ReplicateLogsCmdSuite) TestReplicatingMassifLogsForOneTenant() {
 	}
 }
 
-// TestSingleAncestorMassifsForOneTenant tests that the --ancestors
-// option limits the number of historical massifs that are replicated
-func (s *ReplicateLogsCmdSuite) TestSingleAncestorMassifsForOneTenant() {
+// TestSingleAncestorMassifsForOneTenant tests that the --ancestors option
+// limits the number of historical massifs that are replicated Note that
+// --ancestors=0 still requires consistency against local replica of the remote
+func (s *ReplicateLogsCmdSuite) TestSingleAncestorMassifLogsForOneTenant() {
+
+	logger.New("Test4AzuriteMassifsForOneTenant")
+	defer logger.OnExit()
+
+	tc := massifs.NewLocalMassifReaderTestContext(
+		s.T(), logger.Sugar, "Test4AzuriteMassifsForOneTenant")
+
+	massifHeight := uint8(8)
+
+	tests := []struct {
+		massifCount uint32
+		ancestors   uint32
+	}{
+		// make sure we cover the obvious edge cases
+		{massifCount: 1, ancestors: 1},
+		{massifCount: 2, ancestors: 1},
+		{massifCount: 5, ancestors: 1},
+		{massifCount: 1, ancestors: 2},
+		{massifCount: 2, ancestors: 2},
+		{massifCount: 5, ancestors: 2},
+		{massifCount: 2, ancestors: 3},
+		{massifCount: 5, ancestors: 3},
+
+		{massifCount: 5},
+		{massifCount: 1},
+		{massifCount: 2},
+	}
+
+	for _, tt := range tests {
+
+		massifCount := tt.massifCount
+
+		s.Run(fmt.Sprintf("massifCount:%d", massifCount), func() {
+			tenantId0 := tc.G.NewTenantIdentity()
+
+			// note: CreateLog both creates the massifs *and* populates them
+			tc.CreateLog(tenantId0, massifHeight, massifCount)
+
+			replicaDir := s.T().TempDir()
+
+			// note: VERACITY_IKWID is set in main, we need it to enable --envauth so we force it here
+			app := veracity.NewApp(true)
+			veracity.AddCommands(app, true)
+
+			err := app.Run([]string{
+				"veracity",
+				"--envauth", // uses the emulator
+				"--container", tc.TestConfig.Container,
+				"--data-url", s.Env.AzuriteVerifiableDataURL,
+				"--tenant", tenantId0,
+				"--height", fmt.Sprintf("%d", massifHeight),
+				"replicate-logs",
+				"--ancestors", fmt.Sprintf("%d", tt.ancestors),
+				"--replicadir", replicaDir,
+				"--massif", fmt.Sprintf("%d", massifCount-1),
+			})
+			s.NoError(err)
+
+			if tt.ancestors >= massifCount-1 {
+				// then all massifs should be replicated
+				for i := uint32(0); i < massifCount; i++ {
+					expectMassifFile := filepath.Join(replicaDir, massifs.ReplicaRelativeMassifPath(tenantId0, i))
+					s.FileExistsf(expectMassifFile, "the replicated massif should exist")
+					expectSealFile := filepath.Join(replicaDir, massifs.ReplicaRelativeSealPath(tenantId0, i))
+					s.FileExistsf(expectSealFile, "the replicated seal should exist")
+				}
+				return
+			}
+
+			end := max(2, massifCount) - 2 - tt.ancestors
+
+			for i := range end {
+				expectMassifFile := filepath.Join(replicaDir, massifs.ReplicaRelativeMassifPath(tenantId0, i))
+				s.NoFileExistsf(expectMassifFile, "the replicated massif should NOT exist")
+				expectSealFile := filepath.Join(replicaDir, massifs.ReplicaRelativeSealPath(tenantId0, i))
+				s.NoFileExistsf(expectSealFile, "the replicated seal should NOT exist")
+			}
+
+			for i := massifCount - 1 - tt.ancestors; i < massifCount; i++ {
+				expectMassifFile := filepath.Join(replicaDir, massifs.ReplicaRelativeMassifPath(tenantId0, i))
+				s.FileExistsf(expectMassifFile, "the replicated massif should exist")
+				expectSealFile := filepath.Join(replicaDir, massifs.ReplicaRelativeSealPath(tenantId0, i))
+				s.FileExistsf(expectSealFile, "the replicated seal should exist")
+			}
+		})
+	}
+}
+
+func (s *ReplicateLogsCmdSuite) TestSingleAncestorMassifsForOneTenantx() {
 
 	logger.New("Test4AzuriteSingleAncestorMassifsForOneTenant")
 	defer logger.OnExit()

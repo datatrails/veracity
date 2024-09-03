@@ -22,6 +22,7 @@ func NewApp(ikwid bool) *cli.App {
 			},
 			&cli.StringFlag{
 				Name: "tenant", Aliases: []string{"t"},
+				Usage: "tenant or list of tenants as a `,` separated list. commands which operate on a single tenant take the first tenant in the list",
 			},
 		},
 	}

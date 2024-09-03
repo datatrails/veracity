@@ -42,6 +42,7 @@ type TestEnv struct {
 	MerklelogAccountName string
 	MerklelogURL         string
 	PublicTenantId       string
+	SynsationTenantId string
 	MerkelogURLPrefix    string
 	PublicKey            string
 
@@ -70,6 +71,7 @@ func NewTestEnv() (TestEnv, error) {
 		VerifiableDataURL:        verifiableDataURL,
 		AzuriteVerifiableDataURL: azuriteVerifiableDataUrl,
 		PublicTenantId:           publicTenantId,
+		SynsationTenantId: 	  "tenant/6a009b40-eb55-4159-81f0-69024f89f53c",
 		PublicKey:                os.Getenv(publicKeyPrefixEnvKey),
 		UnknownTenantId:          fmt.Sprintf("tenant/%s", uuid.New().String()),
 	}

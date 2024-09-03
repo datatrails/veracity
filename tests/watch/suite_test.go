@@ -1,4 +1,6 @@
-package verifyevents
+//go:build integration
+
+package watch
 
 import (
 	"testing"

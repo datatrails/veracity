@@ -206,9 +206,7 @@ func TestWatchForChanges(t *testing.T) {
 		{
 			name: "three results, two pages",
 			args: args{
-				cfg: WatchConfig{
-					Mode: "tenants",
-				},
+				cfg: WatchConfig{},
 				reader: &mockReader{
 					results: []*azblob.FilterResponse{
 						{
@@ -234,7 +232,7 @@ func TestWatchForChanges(t *testing.T) {
 			wantOutputs: []string{string(marshalActivity(t,
 				TenantActivity{
 					Massif:       1,
-					Tenant:       "{tenant-1}",
+					Tenant:       "tenant/{tenant-1}",
 					MassifURL:    "v1/mmrs/tenant/{tenant-1}/massifs/0/0000000000000001.log",
 					SealURL:      "v1/mmrs/tenant/{tenant-1}/massifseals/0/0000000000000001.sth",
 					IDCommitted:  watchMakeId(Unix20231215T1344120000 + 1),
@@ -243,7 +241,7 @@ func TestWatchForChanges(t *testing.T) {
 				},
 				TenantActivity{
 					Massif:       1,
-					Tenant:       "{tenant-2}",
+					Tenant:       "tenant/{tenant-2}",
 					MassifURL:    "v1/mmrs/tenant/{tenant-2}/massifs/0/0000000000000001.log",
 					SealURL:      "v1/mmrs/tenant/{tenant-2}/massifseals/0/0000000000000001.sth",
 					IDCommitted:  watchMakeId(Unix20231215T1344120000 + 1),
@@ -252,7 +250,7 @@ func TestWatchForChanges(t *testing.T) {
 				},
 				TenantActivity{
 					Massif:       2,
-					Tenant:       "{tenant-3}",
+					Tenant:       "tenant/{tenant-3}",
 					MassifURL:    "v1/mmrs/tenant/{tenant-3}/massifs/0/0000000000000002.log",
 					SealURL:      "v1/mmrs/tenant/{tenant-3}/massifseals/0/0000000000000002.sth",
 					IDCommitted:  watchMakeId(Unix20231215T1344120000 + 1),
@@ -265,7 +263,6 @@ func TestWatchForChanges(t *testing.T) {
 			name: "three results, two tenants explicitly selected",
 			args: args{
 				cfg: WatchConfig{
-					Mode: "tenants",
 					WatchTenants: map[string]bool{
 						"{tenant-1}": true,
 						"{tenant-3}": true,
@@ -288,7 +285,7 @@ func TestWatchForChanges(t *testing.T) {
 			wantOutputs: []string{string(marshalActivity(t,
 				TenantActivity{
 					Massif:       1,
-					Tenant:       "{tenant-1}",
+					Tenant:       "tenant/{tenant-1}",
 					MassifURL:    "v1/mmrs/tenant/{tenant-1}/massifs/0/0000000000000001.log",
 					SealURL:      "v1/mmrs/tenant/{tenant-1}/massifseals/0/0000000000000001.sth",
 					IDCommitted:  watchMakeId(Unix20231215T1344120000 + 1),
@@ -297,7 +294,7 @@ func TestWatchForChanges(t *testing.T) {
 				},
 				TenantActivity{
 					Massif:       2,
-					Tenant:       "{tenant-3}",
+					Tenant:       "tenant/{tenant-3}",
 					MassifURL:    "v1/mmrs/tenant/{tenant-3}/massifs/0/0000000000000002.log",
 					SealURL:      "v1/mmrs/tenant/{tenant-3}/massifseals/0/0000000000000002.sth",
 					IDCommitted:  watchMakeId(Unix20231215T1344120000 + 1),
@@ -314,9 +311,7 @@ func TestWatchForChanges(t *testing.T) {
 			// "activity", and fetching the respective blobs is still the right
 			// course of action so veracity allows for it
 			args: args{
-				cfg: WatchConfig{
-					Mode: "tenants",
-				},
+				cfg: WatchConfig{},
 				reader: &mockReader{
 					results: []*azblob.FilterResponse{{
 						Items: newFilterBlobItems(
@@ -329,7 +324,7 @@ func TestWatchForChanges(t *testing.T) {
 			},
 			wantOutputs: []string{string(marshalActivity(t, TenantActivity{
 				Massif:       1,
-				Tenant:       "{UUID}",
+				Tenant:       "tenant/{UUID}",
 				MassifURL:    "v1/mmrs/tenant/{UUID}/massifs/0/0000000000000001.log",
 				SealURL:      "v1/mmrs/tenant/{UUID}/massifseals/0/0000000000000001.sth",
 				IDCommitted:  watchMakeId(Unix20231215T1344120000),
@@ -340,9 +335,7 @@ func TestWatchForChanges(t *testing.T) {
 		{
 			name: "one result, seal stale, last modified from log",
 			args: args{
-				cfg: WatchConfig{
-					Mode: "tenants",
-				},
+				cfg: WatchConfig{},
 				reader: &mockReader{
 					results: []*azblob.FilterResponse{{
 						Items: newFilterBlobItems(
@@ -355,7 +348,7 @@ func TestWatchForChanges(t *testing.T) {
 			},
 			wantOutputs: []string{string(marshalActivity(t, TenantActivity{
 				Massif:       1,
-				Tenant:       "{UUID}",
+				Tenant:       "tenant/{UUID}",
 				MassifURL:    "v1/mmrs/tenant/{UUID}/massifs/0/0000000000000001.log",
 				SealURL:      "v1/mmrs/tenant/{UUID}/massifseals/0/0000000000000001.sth",
 				IDCommitted:  watchMakeId(Unix20231215T1344120000 + 1),
@@ -366,9 +359,7 @@ func TestWatchForChanges(t *testing.T) {
 		{
 			name: "one result, seal not found",
 			args: args{
-				cfg: WatchConfig{
-					Mode: "tenants",
-				},
+				cfg: WatchConfig{},
 				reader: &mockReader{
 					results: []*azblob.FilterResponse{{
 						Items: newFilterBlobItems(
@@ -380,7 +371,7 @@ func TestWatchForChanges(t *testing.T) {
 			},
 			wantOutputs: []string{string(marshalActivity(t, TenantActivity{
 				Massif:       1,
-				Tenant:       "{UUID}",
+				Tenant:       "tenant/{UUID}",
 				MassifURL:    "v1/mmrs/tenant/{UUID}/massifs/0/0000000000000001.log",
 				SealURL:      "",
 				IDCommitted:  watchMakeId(Unix20231215T1344120000 + 1),
@@ -392,9 +383,7 @@ func TestWatchForChanges(t *testing.T) {
 		{
 			name: "no results",
 			args: args{
-				cfg: WatchConfig{
-					Mode: "tenants",
-				},
+				cfg:    WatchConfig{},
 				reader: &mockReader{},
 				reporter: &defaultReporter{
 					log: logger.Sugar,

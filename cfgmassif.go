@@ -95,7 +95,7 @@ func cfgMassif(cmd *CmdCtx, cCtx *cli.Context) error {
 		return err
 	}
 
-	tenant := cCtx.String("tenant")
+	tenant := CtxGetOneTenantOption(cCtx)
 	if tenant == "" {
 		return fmt.Errorf("tenant must be provided for this command")
 	}

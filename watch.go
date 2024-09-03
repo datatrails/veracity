@@ -29,8 +29,6 @@ const (
 	// maxPollCount is the maximum number of times to poll for *some* activity.
 	// Polling always terminates as soon as the first activity is detected.
 	maxPollCount = 15
-
-	watchModeTenants = "tenants"
 )
 
 var (
@@ -41,7 +39,6 @@ type WatchConfig struct {
 	watcher.WatchConfig
 	WatchTenants map[string]bool
 	WatchCount   int
-	Mode         string
 	ReaderURL    string
 }
 
@@ -78,16 +75,14 @@ func NewLogWatcherCmd() *cli.Command {
 				Layout: time.RFC3339,
 			},
 			&cli.StringFlag{
-				Name:  "mode",
-				Usage: "Any of [summary, tenants], defaults to summary",
-				Value: "summary",
-			},
-			&cli.StringFlag{
 				Name: "idsince", Aliases: []string{"s"},
 				Usage: "Start time as an idtimestamp. Start time defaults to now. All results are >= this hex string. If provided, it is used exactly as is. Takes precedence over since",
 			},
 			&cli.DurationFlag{
-				Name: "horizon", Aliases: []string{"z"}, Value: time.Duration(0), Usage: "Infer since as now - horizon, aka 1h to onl see things in the last hour. If watching (count=0), since is re-calculated every interval",
+				Name:    "horizon",
+				Aliases: []string{"z"},
+				Value:   time.Duration(time.Hour * 24),
+				Usage:   "Infer since as now - horizon, aka 1h to onl see things in the last hour. If watching (count=0), since is re-calculated every interval",
 			},
 			&cli.DurationFlag{
 				Name: "interval", Aliases: []string{"d"},
@@ -98,10 +93,6 @@ func NewLogWatcherCmd() *cli.Command {
 				Name: "count", Usage: fmt.Sprintf(
 					"Number of intervals to poll. Polling is terminated once the first activity is seen or after %d attempts regardless", maxPollCount),
 				Value: 1,
-			},
-			&cli.StringFlag{
-				Name: "tenant", Aliases: []string{"t"},
-				Usage: "tenant to filter for, can be `,` separated list. by default all tenants are watched",
 			},
 		},
 		Action: func(cCtx *cli.Context) error {
@@ -154,20 +145,17 @@ func NewWatchConfig(cCtx cliContext, cmd *CmdCtx) (WatchConfig, error) {
 
 	cfg.WatchCount = min(max(1, cCtx.Int("count")), maxPollCount)
 
-	cfg.Mode = cCtx.String("mode")
-
 	cfg.ReaderURL = cmd.readerURL
 
-	if cCtx.String("tenant") != "" {
-		tenants := strings.Split(cCtx.String("tenant"), ",")
-		if len(tenants) > 0 {
-			cfg.WatchTenants = make(map[string]bool)
-			for _, t := range tenants {
-				cfg.WatchTenants[strings.TrimPrefix(t, tenantPrefix)] = true
-			}
-		}
+	tenants := CtxGetTenantOptions(cCtx)
+	if len(tenants) == 0 {
+		return cfg, nil
 	}
 
+	cfg.WatchTenants = make(map[string]bool)
+	for _, t := range tenants {
+		cfg.WatchTenants[strings.TrimPrefix(t, tenantPrefix)] = true
+	}
 	return cfg, nil
 }
 
@@ -177,6 +165,13 @@ type Watcher struct {
 	reader   azblob.Reader
 	reporter watchReporter
 	collator watcher.LogTailCollator
+}
+
+func normalizeTenantIdentity(tenant string) string {
+	if strings.HasPrefix(tenant, tenantPrefix) {
+		return tenant
+	}
+	return fmt.Sprintf("%s%s", tenantPrefix, tenant)
 }
 
 // WatchForChanges watches for tenant log chances according to the provided config
@@ -204,56 +199,53 @@ func WatchForChanges(
 			return err
 		}
 
-		switch w.cfg.Mode {
-		default:
-		case watchModeTenants:
-			var activity []TenantActivity
-			for _, tenant := range w.collator.SortedMassifTenants() {
-				if w.cfg.WatchTenants != nil && !w.cfg.WatchTenants[tenant] {
-					continue
-				}
-				lt := w.collator.Massifs[tenant]
-				sealLastID := lastSealID(w.collator, tenant)
-				// This is console mode output
-
-				a := TenantActivity{
-					Tenant:      tenant,
-					Massif:      int(lt.Number),
-					IDCommitted: lt.LastID, IDConfirmed: sealLastID,
-					LastModified: lastActivityRFC3339(lt.LastID, sealLastID),
-					MassifURL:    fmt.Sprintf("%s%s", w.cfg.ReaderURL, lt.Path),
-				}
-
-				if sealLastID != sealIDNotFound {
-					a.SealURL = fmt.Sprintf("%s%s", w.cfg.ReaderURL, w.collator.Seals[tenant].Path)
-				}
-
-				activity = append(activity, a)
+		var activity []TenantActivity
+		for _, tenant := range w.collator.SortedMassifTenants() {
+			if w.cfg.WatchTenants != nil && !w.cfg.WatchTenants[tenant] {
+				continue
 			}
 
-			if activity != nil {
-				reporter.Logf(
-					"%d active logs since %v (%s).",
-					len(w.collator.Massifs),
-					w.LastSince.Format(time.RFC3339),
-					w.LastIDSince,
-				)
-				reporter.Logf(
-					"%d tenants sealed since %v (%s).",
-					len(w.collator.Seals),
-					w.LastSince.Format(time.RFC3339),
-					w.LastIDSince,
-				)
+			lt := w.collator.Massifs[tenant]
+			sealLastID := lastSealID(w.collator, tenant)
+			// This is console mode output
 
-				marshaledJson, err := json.MarshalIndent(activity, "", "  ")
-				if err != nil {
-					return err
-				}
-				reporter.Outf(string(marshaledJson))
-
-				// Terminate immediately once we have results
-				return nil
+			a := TenantActivity{
+				Tenant:      normalizeTenantIdentity(tenant),
+				Massif:      int(lt.Number),
+				IDCommitted: lt.LastID, IDConfirmed: sealLastID,
+				LastModified: lastActivityRFC3339(lt.LastID, sealLastID),
+				MassifURL:    fmt.Sprintf("%s%s", w.cfg.ReaderURL, lt.Path),
 			}
+
+			if sealLastID != sealIDNotFound {
+				a.SealURL = fmt.Sprintf("%s%s", w.cfg.ReaderURL, w.collator.Seals[tenant].Path)
+			}
+
+			activity = append(activity, a)
+		}
+
+		if activity != nil {
+			reporter.Logf(
+				"%d active logs since %v (%s).",
+				len(w.collator.Massifs),
+				w.LastSince.Format(time.RFC3339),
+				w.LastIDSince,
+			)
+			reporter.Logf(
+				"%d tenants sealed since %v (%s).",
+				len(w.collator.Seals),
+				w.LastSince.Format(time.RFC3339),
+				w.LastIDSince,
+			)
+
+			marshaledJson, err := json.MarshalIndent(activity, "", "  ")
+			if err != nil {
+				return err
+			}
+			reporter.Outf(string(marshaledJson))
+
+			// Terminate immediately once we have results
+			return nil
 		}
 
 		// Note we don't allow a zero interval

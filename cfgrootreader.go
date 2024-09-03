@@ -17,8 +17,8 @@ func cfgRootReader(cmd *CmdCtx, cCtx *cli.Context) error {
 		return err
 	}
 
-	// TODO: We'll probably want to update this in future, in order to have a helpful default route.
-	reader, err := cfgReader(cmd, cCtx, false)
+	forceProdUrl := cCtx.String("data-local") == "" && cCtx.String("data-url") == ""
+	reader, err := cfgReader(cmd, cCtx, forceProdUrl)
 	if err != nil {
 		return err
 	}

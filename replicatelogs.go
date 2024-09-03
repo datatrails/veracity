@@ -31,7 +31,7 @@ var (
 func NewReplicateLogsCmd() *cli.Command {
 	return &cli.Command{
 		Name:    "replicate-logs",
-		Aliases: []string{"consistent"},
+		Aliases: []string{"replicate"},
 		Usage:   `verifies the remote log and replicates it locally, ensuring the remote changes are consistent with the trusted local replica.`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{Name: skipUncommittedFlagName, Value: false},

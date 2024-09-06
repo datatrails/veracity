@@ -5,9 +5,9 @@ import (
 	"strings"
 )
 
-// NormTenantIdentity ensures a string is prefixed with 'tenant/'
+// EnsureTenantPrefix ensures a string is prefixed with 'tenant/'
 // Note the expected input is a uuid string or a tenant/uuid string
-func NormTenantIdentity(tenant string) string {
+func EnsureTenantPrefix(tenant string) string {
 	if strings.HasPrefix(tenant, tenantPrefix) {
 		return tenant
 	}
@@ -25,7 +25,7 @@ func CtxGetTenantOptions(cCtx cliContextString) []string {
 	values := strings.Split(cCtx.String("tenant"), ",")
 	var tenants []string
 	for _, v := range values {
-		tenants = append(tenants, NormTenantIdentity(v))
+		tenants = append(tenants, EnsureTenantPrefix(v))
 	}
 	return tenants
 }

@@ -149,6 +149,7 @@ func (s *ReplicateLogsCmdSuite) TestSingleAncestorMassifLogsForOneTenant() {
 				return
 			}
 
+			// To allow testing cases where the ancestors are greater than the count, we need to guard against underflow here.
 			end := max(2, massifCount) - 2 - tt.ancestors
 
 			for i := range end {

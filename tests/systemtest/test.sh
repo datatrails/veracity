@@ -55,6 +55,26 @@ assertStringMatch() {
     assertEquals "$message" "$expected" "$actual"
 }
 
+testVeracityWatchPublicFindsActivity() {
+    local output
+    output=$($VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata --tenant=$PROD_PUBLIC_TENANT_ID watch --horizon 10000h)
+    assertEquals "watch-public should return a 0 exit code" 0 $?
+    assertContains "watch-public should find activity" "$output" "$PROD_PUBLIC_TENANT_ID"
+}
+
+testVeracityReplicateLogsPublicTenant() {
+    local output
+
+    rm -rf $TEST_TMPDIR/merkelogs
+    output=$($VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata \
+        --tenant=$PROD_PUBLIC_TENANT_ID watch --horizon 10000h \
+        | $VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata --tenant=$PROD_PUBLIC_TENANT_ID replicate-logs --ancestors=0 --replicadir=$TEST_TMPDIR/merkelogs)
+    assertEquals "watch-public should return a 0 exit code" 0 $?
+
+    COUNT=$(find $TEST_TMPDIR/merkelogs -type f | wc -l | tr -d ' ')
+    assertEquals "should replicate one massif and one seal" "2" "$COUNT"
+}
+
 testVerifySingleEvent() {
     # Check if the response status code is 200
     local response

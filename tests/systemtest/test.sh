@@ -60,8 +60,11 @@ testVeracityVersion() {
     output=$($VERACITY_INSTALL --version)
     assertEquals "veracity --version should return a 0 exit code" 0 $?
 
-    [[ "$output" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]
-    assertTrue "The output should start with a semantic version string" $?
+    if [[ "$output" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+        echo "veracity version: $output"
+    else
+        fail "The output should start with a semantic version string"
+    fi 
 }
 
 testVeracityWatchPublicFindsActivity() {

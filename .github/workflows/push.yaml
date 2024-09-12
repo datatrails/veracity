@@ -57,6 +57,9 @@ jobs:
     runs-on: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v3
+        with:
+          # make tags available for the build
+          fetch-depth: 0
 
       - name: Setup Go
         uses: actions/setup-go@v5

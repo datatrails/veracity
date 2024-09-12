@@ -23,10 +23,12 @@ type progress struct {
 	bar *uiprogress.Bar
 }
 
-func NewStagedProgress(prefix string, count int) *progress {
-	increments := count
+func NewStagedProgress(prefix string, count int) Progresser {
+	if count == 0 {
+		return NewNoopProgress()
+	}
 	return &progress{
-		bar: uiprogress.AddBar(increments).PrependElapsed().PrependFunc(func(b *uiprogress.Bar) string {
+		bar: uiprogress.AddBar(count).PrependElapsed().PrependFunc(func(b *uiprogress.Bar) string {
 			return prefix + ":"
 		}),
 	}

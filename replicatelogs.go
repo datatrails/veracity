@@ -97,7 +97,7 @@ changes are read from standard input.`,
 			if cCtx.Bool("progress") {
 				uiprogress.Start()
 			}
-			progress := newProgressor(cCtx, "tenants", len(changes)-1)
+			progress := newProgressor(cCtx, "tenants", len(changes))
 
 			var wg sync.WaitGroup
 			errChan := make(chan error, len(changes)) // buffered so it doesn't block

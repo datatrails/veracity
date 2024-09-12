@@ -35,8 +35,8 @@ func (s *WatchCmdSuite) TestNoChangesForFictitiousTenant() {
 	assert.Equal(err, veracity.ErrNoChanges)
 }
 
-// Test that the watch command returns no error or that the error is "no changes"
-func (s *WatchCmdSuite) TestReplicateFirstPublicMassif() {
+// Test that the watch command returns no error when the horizon is set longer than the age of the company
+func (s *WatchCmdSuite) TestChangesDetected() {
 
 	// NOTE: These will fail in the CI until the prod APIM principal gets the new custom role
 	app := veracity.NewApp("version", false)

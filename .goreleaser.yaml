@@ -24,6 +24,8 @@ builds:
       # testing it.
       - linux
       - darwin
+  - ldflags:
+      - "-X veracity.version={{.Version}} -X veracity.commit={{.Commit}} -X veracity.buildDate={{.Date}}"
 
 archives:
   - format: tar.gz

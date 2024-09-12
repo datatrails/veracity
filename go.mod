@@ -10,6 +10,7 @@ require (
 	github.com/datatrails/go-datatrails-merklelog/mmr v0.0.2
 	github.com/datatrails/go-datatrails-merklelog/mmrtesting v0.1.0
 	github.com/datatrails/go-datatrails-simplehash v0.0.5
+	github.com/gosuri/uiprogress v0.0.1
 	github.com/urfave/cli/v2 v2.27.1
 	github.com/zeebo/bencode v1.0.0
 )
@@ -20,6 +21,8 @@ require (
 
 require (
 	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
+	github.com/gosuri/uilive v0.0.4 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 )
 

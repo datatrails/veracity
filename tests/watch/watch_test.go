@@ -8,7 +8,7 @@ import (
 
 func (s *WatchCmdSuite) TestNoErrorOrNoChanges() {
 
-	app := veracity.NewApp(false)
+	app := veracity.NewApp("version", false)
 	veracity.AddCommands(app, false)
 
 	err := app.Run([]string{
@@ -24,7 +24,7 @@ func (s *WatchCmdSuite) TestNoErrorOrNoChanges() {
 // The watch command does not check wether the tenants to "filter" for actually have logs
 func (s *WatchCmdSuite) TestNoChangesForFictitiousTenant() {
 	assert := s.Assert()
-	app := veracity.NewApp(false)
+	app := veracity.NewApp("version", false)
 	veracity.AddCommands(app, false)
 	err := app.Run([]string{
 		"veracity",
@@ -39,7 +39,7 @@ func (s *WatchCmdSuite) TestNoChangesForFictitiousTenant() {
 func (s *WatchCmdSuite) TestReplicateFirstPublicMassif() {
 
 	// NOTE: These will fail in the CI until the prod APIM principal gets the new custom role
-	app := veracity.NewApp(false)
+	app := veracity.NewApp("version", false)
 	veracity.AddCommands(app, false)
 
 	err := app.Run([]string{

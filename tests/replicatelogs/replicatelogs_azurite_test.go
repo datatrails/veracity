@@ -50,7 +50,7 @@ func (s *ReplicateLogsCmdSuite) TestReplicatingMassifLogsForOneTenant() {
 			replicaDir := s.T().TempDir()
 
 			// note: VERACITY_IKWID is set in main, we need it to enable --envauth so we force it here
-			app := veracity.NewApp(true)
+			app := veracity.NewApp("tests", true)
 			veracity.AddCommands(app, true)
 
 			err := app.Run([]string{
@@ -121,7 +121,7 @@ func (s *ReplicateLogsCmdSuite) TestSingleAncestorMassifLogsForOneTenant() {
 			replicaDir := s.T().TempDir()
 
 			// note: VERACITY_IKWID is set in main, we need it to enable --envauth so we force it here
-			app := veracity.NewApp(true)
+			app := veracity.NewApp("tests", true)
 			veracity.AddCommands(app, true)
 
 			err := app.Run([]string{
@@ -187,7 +187,7 @@ func (s *ReplicateLogsCmdSuite) TestSingleAncestorMassifsForOneTenantx() {
 	replicaDir := s.T().TempDir()
 
 	// note: VERACITY_IKWID is set in main, we need it to enable --envauth so we force it here
-	app := veracity.NewApp(true)
+	app := veracity.NewApp("tests", true)
 	veracity.AddCommands(app, true)
 
 	err := app.Run([]string{
@@ -244,7 +244,7 @@ func (s *ReplicateLogsCmdSuite) TestSparseReplicaCreatedAfterExtendedOffline() {
 	replicaDir := s.T().TempDir()
 
 	// note: VERACITY_IKWID is set in main, we need it to enable --envauth so we force it here
-	app := veracity.NewApp(true)
+	app := veracity.NewApp("tests", true)
 	veracity.AddCommands(app, true)
 
 	err := app.Run([]string{
@@ -332,7 +332,7 @@ func (s *ReplicateLogsCmdSuite) TestFullReplicaByDefault() {
 	replicaDir := s.T().TempDir()
 
 	// note: VERACITY_IKWID is set in main, we need it to enable --envauth so we force it here
-	app := veracity.NewApp(true)
+	app := veracity.NewApp("tests", true)
 	veracity.AddCommands(app, true)
 
 	err := app.Run([]string{
@@ -428,7 +428,7 @@ func (s *ReplicateLogsCmdSuite) TestLocalTamperDetected() {
 	replicaDir := s.T().TempDir()
 
 	// note: VERACITY_IKWID is set in main, we need it to enable --envauth so we force it here
-	app := veracity.NewApp(true)
+	app := veracity.NewApp("tests", true)
 	veracity.AddCommands(app, true)
 
 	err := app.Run([]string{
@@ -544,7 +544,7 @@ func (s *ReplicateLogsCmdSuite) Test4MassifsForThreeTenants() {
 	replicaDir := s.T().TempDir()
 
 	// note: VERACITY_IKWID is set in main, we need it to enable --envauth so we force it here
-	app := veracity.NewApp(true)
+	app := veracity.NewApp("tests", true)
 	veracity.AddCommands(app, true)
 
 	err = app.Run([]string{
@@ -635,7 +635,7 @@ func (s *ReplicateLogsCmdSuite) Test4MassifsForThreeTenantsFromFile() {
 	createFileFromData(s.T(), data, inputFilename)
 
 	// note: VERACITY_IKWID is set in main, we need it to enable --envauth so we force it here
-	app := veracity.NewApp(true)
+	app := veracity.NewApp("tests", true)
 	veracity.AddCommands(app, true)
 
 	err = app.Run([]string{

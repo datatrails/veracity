@@ -15,7 +15,7 @@ func (s *ReplicateLogsCmdSuite) TestReplicateFirstPublicMassif() {
 	replicaDir := s.T().TempDir()
 
 	// NOTE: These will fail in the CI until the prod APIM principal gets the new custom role
-	app := veracity.NewApp(false)
+	app := veracity.NewApp("tests", false)
 	veracity.AddCommands(app, false)
 
 	err := app.Run([]string{
@@ -24,7 +24,8 @@ func (s *ReplicateLogsCmdSuite) TestReplicateFirstPublicMassif() {
 		"--tenant", s.Env.PublicTenantId,
 		"replicate-logs",
 		"--replicadir", replicaDir,
-		"--massif", "0",
+		"--progress",
+		"--massif", "1",
 	})
 	s.NoError(err)
 

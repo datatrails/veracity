@@ -22,4 +22,8 @@ tasks:
       - for: { var: GO_MOD_DIRS, as: MODULE}
         cmd: |
           cd $(dirname {{.MODULE}})
-          go build -ldflags="-s -w" -trimpath -o ./ ./...
+          VERSION=$(git describe --tags)
+          COMMIT=$(git rev-parse --short HEAD)
+          BUILDDATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          go build -ldflags="-s -w -X main.version=$VERSION -X main.commit=$COMMIT -X main.buildDate=$BUILDDATE" \
+            -trimpath -o ./ ./...

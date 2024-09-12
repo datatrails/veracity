@@ -10,6 +10,7 @@ import (
 	"github.com/datatrails/go-datatrails-common/cbor"
 	"github.com/datatrails/go-datatrails-common/logger"
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
+	"github.com/gosuri/uiprogress"
 	"github.com/urfave/cli/v2"
 )
 
@@ -68,6 +69,12 @@ to verify and replicate.  This is mutually exclusive with the --massif and
 --tenant flags. If none of --massif, --tenant or --changes are provided, the
 changes are read from standard input.`,
 			},
+			&cli.BoolFlag{
+				Name:    "progress",
+				Usage:   `show progress of the replication process`,
+				Value:   false,
+				Aliases: []string{"p"},
+			},
 		},
 		Action: func(cCtx *cli.Context) error {
 			cmd := &CmdCtx{}
@@ -87,6 +94,11 @@ changes are read from standard input.`,
 				return err
 			}
 
+			if cCtx.Bool("progress") {
+				uiprogress.Start()
+			}
+			progress := newProgressor(cCtx, "tenants", len(changes)-1)
+
 			var wg sync.WaitGroup
 			errChan := make(chan error, len(changes)) // buffered so it doesn't block
 
@@ -94,8 +106,9 @@ changes are read from standard input.`,
 				wg.Add(1)
 				go func(change TenantMassif, errChan chan<- error) {
 					defer wg.Done()
-					replicator, err := NewVerifiedReplica(
-						cCtx, cmd.Clone())
+					defer progress.Completed()
+
+					replicator, err := NewVerifiedReplica(cCtx, cmd.Clone())
 					if err != nil {
 						errChan <- err
 						return
@@ -128,9 +141,22 @@ changes are read from standard input.`,
 			if len(errs) > 0 {
 				return errs[0]
 			}
+			if len(changes) == 1 {
+				cmd.log.Infof("replication complete for tenant %s", changes[0].Tenant)
+			} else {
+				cmd.log.Infof("replication complete for %d tenants", len(changes))
+			}
 			return nil
 		},
 	}
+}
+
+func newProgressor(cCtx *cli.Context, barName string, increments int) Progresser {
+
+	if !cCtx.Bool("progress") {
+		return NewNoopProgress()
+	}
+	return NewStagedProgress(barName, increments)
 }
 
 func readTenantMassifChanges(cCtx *cli.Context) ([]TenantMassif, error) {
@@ -169,6 +195,7 @@ type VerifiedContextReader interface {
 }
 
 type VerifiedReplica struct {
+	cCtx         *cli.Context
 	log          logger.Logger
 	writeOpener  massifs.WriteAppendOpener
 	localReader  massifs.ReplicaReader
@@ -235,6 +262,7 @@ func NewVerifiedReplica(
 	)
 
 	return &VerifiedReplica{
+		cCtx:         cCtx,
 		log:          logger.Sugar,
 		writeOpener:  NewFileWriteOpener(),
 		localReader:  &localReader,

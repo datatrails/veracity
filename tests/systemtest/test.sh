@@ -55,6 +55,15 @@ assertStringMatch() {
     assertEquals "$message" "$expected" "$actual"
 }
 
+testVeracityVersion() {
+    local output
+    output=$($VERACITY_INSTALL --version)
+    assertEquals "veracity --version should return a 0 exit code" 0 $?
+
+    [[ "$output" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]
+    assertTrue "The output should start with a semantic version string" $?
+}
+
 testVeracityWatchPublicFindsActivity() {
     local output
     output=$($VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata --tenant=$PROD_PUBLIC_TENANT_ID watch --horizon 10000h)

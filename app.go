@@ -6,9 +6,15 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func NewApp(ikwid bool) *cli.App {
+func NewApp(version string, ikwid bool) *cli.App {
+
+	cli.VersionPrinter = func(cCtx *cli.Context) {
+		fmt.Println(cCtx.App.Version)
+	}
 	app := &cli.App{
-		Usage: "common read only operations on datatrails merklelog verifiable data",
+		Name:    "veracity",
+		Version: version,
+		Usage:   "common read only operations on datatrails merklelog verifiable data",
 		Flags: []cli.Flag{
 			&cli.StringFlag{Name: "loglevel", Value: "NOOP"},
 			&cli.Int64Flag{Name: "height", Value: 14, Usage: "override the massif height"},

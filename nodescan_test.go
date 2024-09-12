@@ -76,7 +76,7 @@ func TestNodeScanCmd(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(strings.Join(tc.testArgs, " "), func(t *testing.T) {
-			app := AddCommands(NewApp(true), true)
+			app := AddCommands(NewApp("version", true), true)
 			ctx, cancel := context.WithTimeout(context.Background(), 1500*time.Millisecond)
 			err := app.RunContext(ctx, tc.testArgs)
 			cancel()

@@ -12,7 +12,7 @@ import (
 // The event is provided on standard input
 func (s *VerifyEventsSuite) TestVerifyOneEventStdIn() {
 	assert := s.Assert()
-	app := veracity.NewApp(true)
+	app := veracity.NewApp("version", true)
 	veracity.AddCommands(app, true)
 
 	// note: the suite does a before & after pipe for Stdin
@@ -31,7 +31,7 @@ func (s *VerifyEventsSuite) TestVerifyOneEventStdIn() {
 func (s *VerifyEventsSuite) TestOneTamperEventStdIn() {
 
 	assert := s.Assert()
-	app := veracity.NewApp(true)
+	app := veracity.NewApp("version", true)
 	veracity.AddCommands(app, true)
 
 	// note: the suite does a before & after pipe for Stdin

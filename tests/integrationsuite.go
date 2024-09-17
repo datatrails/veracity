@@ -170,4 +170,5 @@ func (s *IntegrationTestSuite) BeforeTest(suiteName, testName string) {
 func (s *IntegrationTestSuite) AfterTest(suiteName, testName string) {
 
 	s.restoreStdin()
+	s.restoreStdout()
 }

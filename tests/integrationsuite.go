@@ -112,7 +112,8 @@ func (s *IntegrationTestSuite) CaptureAndCloseStdout() string {
 	s.stdoutWriter.Close()
 	s.stdoutWriter = nil
 	var buf bytes.Buffer
-	io.Copy(&buf, s.stdoutReader)
+	_, err := io.Copy(&buf, s.stdoutReader)
+	s.Require().NoError(err)
 	s.restoreStdout()
 	return buf.String()
 }

@@ -1,6 +1,6 @@
 //go:build integration && azurite
 
-package verifyevents
+package node
 
 import (
 	"fmt"
@@ -8,14 +8,16 @@ import (
 
 	"github.com/datatrails/go-datatrails-common/logger"
 	"github.com/datatrails/go-datatrails-logverification/integrationsupport"
+	"github.com/datatrails/go-datatrails-merklelog/massifs"
 	"github.com/datatrails/go-datatrails-merklelog/mmr"
 	"github.com/datatrails/go-datatrails-merklelog/mmrtesting"
 	"github.com/datatrails/go-datatrails-simplehash/simplehash"
 	"github.com/datatrails/veracity"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func (s *VerifyEventsSuite) newMMRTestingConfig(labelPrefix, tenantIdentity string) mmrtesting.TestConfig {
+func (s *NodeSuite) newMMRTestingConfig(labelPrefix, tenantIdentity string) mmrtesting.TestConfig {
 	return mmrtesting.TestConfig{
 		StartTimeMS: (1698342521) * 1000, EventRate: 500,
 		TestLabelPrefix: labelPrefix,
@@ -24,13 +26,15 @@ func (s *VerifyEventsSuite) newMMRTestingConfig(labelPrefix, tenantIdentity stri
 	}
 }
 
-// TestVerifyIncludedMultiMassif tests that the veracity sub command verify-included
+// TestNodeMultiMassif tests that the veracity sub command node
 // works for massifs beyond the first one and covers some obvious edge cases.
-func (s *VerifyEventsSuite) TestVerifyIncludedMultiMassif() {
-	logger.New("TestVerifyIncludedMultiMassif")
+// This really just tests that the correspondence between the massif index and the leaf index holds
+// regardless of the massif count.
+func (s *NodeSuite) TestVerifyIncludedMultiMassif() {
+	logger.New("TestNodeMultiMassif")
 	defer logger.OnExit()
 
-	cfg := s.newMMRTestingConfig("TestVerifyIncludedMultiMassif", "")
+	cfg := s.newMMRTestingConfig("TestNodeMultiMassif", "")
 	azurite := mmrtesting.NewTestContext(s.T(), cfg)
 
 	massifHeight := uint8(8)
@@ -39,10 +43,11 @@ func (s *VerifyEventsSuite) TestVerifyIncludedMultiMassif() {
 	tests := []struct {
 		name        string
 		massifCount uint32
-		// leaf indices to verify the inclusion of.
+		// leaf indices to check.
 		leaves []uint64
 	}{
 		// make sure we cover the obvious edge cases
+		{name: "leaf 0", massifCount: 1, leaves: []uint64{0}},
 		{name: "single massif first few and last few", massifCount: 1, leaves: []uint64{0, 1, 2, leavesPerMassif - 2, leavesPerMassif - 1}},
 		{name: "2 massifs, last of first and first of last", massifCount: 2, leaves: []uint64{leavesPerMassif - 1, leavesPerMassif}},
 		{name: "5 massifs, first and last of each", massifCount: 5, leaves: []uint64{
@@ -78,22 +83,38 @@ func (s *VerifyEventsSuite) TestVerifyIncludedMultiMassif() {
 			)
 
 			for _, iLeaf := range tt.leaves {
-				marshaler := simplehash.NewEventMarshaler()
-				eventJson, err := marshaler.Marshal(events[iLeaf])
-				require.NoError(s.T(), err)
-				s.StdinWriteAndClose(eventJson)
 
-				err = app.Run([]string{
+				s.ReplaceStdout()
+
+				mmrIndex := mmr.TreeIndex(iLeaf)
+
+				err := app.Run([]string{
 					"veracity",
 					"--envauth", // uses the emulator
 					"--container", cfg.Container,
 					"--data-url", s.Env.AzuriteVerifiableDataURL,
 					"--tenant", tenantId0,
 					"--height", fmt.Sprintf("%d", massifHeight),
-					"verify-included",
+					"node",
+					"--mmrindex", fmt.Sprintf("%d", mmrIndex),
 				})
 				s.NoError(err)
-				s.ReplaceStdin() // reset stdin for write & close
+
+				stdout := s.CaptureAndCloseStdout()
+
+				id, _, err := massifs.SplitIDTimestampHex(events[iLeaf].MerklelogEntry.Commit.Idtimestamp)
+				require.NoError(s.T(), err)
+
+				hasher := simplehash.NewHasherV3()
+				// hash the generated event
+				err = hasher.HashEvent(
+					events[iLeaf],
+					simplehash.WithPrefix([]byte{byte(integrationsupport.LeafTypePlain)}),
+					simplehash.WithIDCommitted(id),
+				)
+				require.Nil(s.T(), err)
+				leafValue := fmt.Sprintf("%x", hasher.Sum(nil))
+				assert.Equal(s.T(), leafValue, strings.TrimSpace(stdout))
 			}
 		})
 	}

@@ -1,6 +1,8 @@
 package tests
 
 import (
+	"bytes"
+	"io"
 	"os"
 
 	"github.com/datatrails/go-datatrails-common/logger"
@@ -35,10 +37,13 @@ const (
 type IntegrationTestSuite struct {
 	suite.Suite
 
-	Env         TestEnv
-	origStdin   *os.File
-	stdinWriter *os.File
-	stdinReader *os.File
+	Env          TestEnv
+	origStdin    *os.File
+	stdinWriter  *os.File
+	stdinReader  *os.File
+	origStdout   *os.File
+	stdoutWriter *os.File
+	stdoutReader *os.File
 }
 
 // StdinWriteAndClose writes the provided bytes to std in and closes the write
@@ -59,6 +64,7 @@ func (s *IntegrationTestSuite) StdinWriteAndClose(b []byte) (int, error) {
 func (s *IntegrationTestSuite) SetupSuite() {
 	// capture this as early as possible
 	s.origStdin = os.Stdin
+	s.origStdout = os.Stdout
 }
 
 // EnsureAzuriteEnv ensures the environment variables for azurite are set
@@ -81,18 +87,37 @@ func (s *IntegrationTestSuite) EnsureAzuriteEnv() {
 	}
 }
 
-func (s *IntegrationTestSuite) ReplaceStdIO() {
+func (s *IntegrationTestSuite) ReplaceStdin() {
 	var err error
 	require := s.Require()
 	require.NotNil(s.origStdin)
-	s.restoreStdIO()
+	s.restoreStdin()
 	s.stdinReader, s.stdinWriter, err = os.Pipe()
 	require.NoError(err)
 	os.Stdin = s.stdinReader
-	// Note, we don't mess with stdout
 }
 
-func (s *IntegrationTestSuite) restoreStdIO() {
+func (s *IntegrationTestSuite) ReplaceStdout() {
+	var err error
+	require := s.Require()
+	require.NotNil(s.origStdout)
+	s.restoreStdout()
+	s.stdoutReader, s.stdoutWriter, err = os.Pipe()
+	require.NoError(err)
+	os.Stdout = s.stdoutWriter
+}
+
+func (s *IntegrationTestSuite) CaptureAndCloseStdout() string {
+	s.Require().NotNil(s.stdoutReader)
+	s.stdoutWriter.Close()
+	s.stdoutWriter = nil
+	var buf bytes.Buffer
+	io.Copy(&buf, s.stdoutReader)
+	s.restoreStdout()
+	return buf.String()
+}
+
+func (s *IntegrationTestSuite) restoreStdin() {
 	os.Stdin = s.origStdin
 
 	if s.stdinWriter != nil {
@@ -105,6 +130,19 @@ func (s *IntegrationTestSuite) restoreStdIO() {
 	s.stdinReader = nil
 }
 
+func (s *IntegrationTestSuite) restoreStdout() {
+	os.Stdout = s.origStdout
+
+	if s.stdoutWriter != nil {
+		s.stdoutWriter.Close()
+	}
+	if s.stdoutReader != nil {
+		s.stdoutReader.Close()
+	}
+	s.stdoutWriter = nil
+	s.stdoutReader = nil
+}
+
 // BeforeTest is run before the test
 //
 // It gets the correct suite wide test environment
@@ -113,7 +151,9 @@ func (s *IntegrationTestSuite) BeforeTest(suiteName, testName string) {
 
 	var err error
 	require := s.Require()
-	s.ReplaceStdIO()
+	s.ReplaceStdin()
+
+	// Note: do NOT replace stdout by default
 
 	logger.New("NOOP")
 	defer logger.OnExit()
@@ -128,5 +168,5 @@ func (s *IntegrationTestSuite) BeforeTest(suiteName, testName string) {
 // Currently used to print useful information for failing tests
 func (s *IntegrationTestSuite) AfterTest(suiteName, testName string) {
 
-	s.restoreStdIO()
+	s.restoreStdin()
 }

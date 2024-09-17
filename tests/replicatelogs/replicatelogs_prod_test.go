@@ -1,4 +1,4 @@
-//go:build integration && azurite
+//go:build integration
 
 package verifyconsistency
 
@@ -14,7 +14,6 @@ func (s *ReplicateLogsCmdSuite) TestReplicateFirstPublicMassif() {
 
 	replicaDir := s.T().TempDir()
 
-	// NOTE: These will fail in the CI until the prod APIM principal gets the new custom role
 	app := veracity.NewApp("tests", false)
 	veracity.AddCommands(app, false)
 

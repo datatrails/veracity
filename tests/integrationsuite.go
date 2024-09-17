@@ -81,6 +81,30 @@ func (s *IntegrationTestSuite) EnsureAzuriteEnv() {
 	}
 }
 
+func (s *IntegrationTestSuite) ReplaceStdIO() {
+	var err error
+	require := s.Require()
+	require.NotNil(s.origStdin)
+	s.restoreStdIO()
+	s.stdinReader, s.stdinWriter, err = os.Pipe()
+	require.NoError(err)
+	os.Stdin = s.stdinReader
+	// Note, we don't mess with stdout
+}
+
+func (s *IntegrationTestSuite) restoreStdIO() {
+	os.Stdin = s.origStdin
+
+	if s.stdinWriter != nil {
+		s.stdinWriter.Close()
+	}
+	if s.stdinReader != nil {
+		s.stdinReader.Close()
+	}
+	s.stdinWriter = nil
+	s.stdinReader = nil
+}
+
 // BeforeTest is run before the test
 //
 // It gets the correct suite wide test environment
@@ -89,12 +113,7 @@ func (s *IntegrationTestSuite) BeforeTest(suiteName, testName string) {
 
 	var err error
 	require := s.Require()
-
-	s.stdinReader, s.stdinWriter, err = os.Pipe()
-	require.NoError(err)
-	require.NotNil(s.origStdin)
-	os.Stdin = s.stdinReader
-	// Note, we don't mess with stdout
+	s.ReplaceStdIO()
 
 	logger.New("NOOP")
 	defer logger.OnExit()
@@ -109,14 +128,5 @@ func (s *IntegrationTestSuite) BeforeTest(suiteName, testName string) {
 // Currently used to print useful information for failing tests
 func (s *IntegrationTestSuite) AfterTest(suiteName, testName string) {
 
-	os.Stdin = s.origStdin
-
-	if s.stdinWriter != nil {
-		s.stdinWriter.Close()
-	}
-	if s.stdinReader != nil {
-		s.stdinReader.Close()
-	}
-	s.stdinWriter = nil
-	s.stdinReader = nil
+	s.restoreStdIO()
 }

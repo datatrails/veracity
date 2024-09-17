@@ -98,23 +98,3 @@ func (s *VerifyEventsSuite) TestVerifyIncludedMultiMassif() {
 		})
 	}
 }
-
-/*
-func (s *VerifyEventsSuite) TestOneTamperEventStdIn() {
-
-	assert := s.Assert()
-	app := veracity.NewApp("version", true)
-	veracity.AddCommands(app, true)
-
-	// note: the suite does a before & after pipe for Stdin
-	s.StdinWriteAndClose(katdata.KnownTamperedPublicEvent)
-
-	err := app.Run([]string{
-		"veracity",
-		"--loglevel", "INFO",
-		"--tenant", s.Env.PublicTenantId,
-		"--data-url", s.Env.VerifiableDataURL,
-		"verify-included",
-	})
-	assert.Errorf(err, "the event should not have verified, its data was purposefully tampered")
-}*/

@@ -136,8 +136,8 @@ By default transient errors are re-tried without limit, and if the error is 429,
 	}
 }
 
-// replicateChanges replicaet the changes for the provided slice of tenants.
-// Paralelism is limited yy breaking the total changes into smaller slices and calling this function
+// replicateChanges replicate the changes for the provided slice of tenants.
+// Paralelism is limited by breaking the total changes into smaller slices and calling this function
 func replicateChanges(cCtx *cli.Context, cmd *CmdCtx, changes []TenantMassif, progress Progresser) error {
 
 	var wg sync.WaitGroup

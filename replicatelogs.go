@@ -6,12 +6,21 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/datatrails/go-datatrails-common/cbor"
 	"github.com/datatrails/go-datatrails-common/logger"
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
 	"github.com/gosuri/uiprogress"
 	"github.com/urfave/cli/v2"
+	"golang.org/x/exp/rand"
+)
+
+const (
+	// baseDefaultRetryDelay is the base delay for retrying transient errors. A little jitter is added.
+	// 429 errors which provide a valid Retry-After header will honor that header rather than use this.
+	baseDefaultRetryDelay = 2 * time.Second
+	defaultConcurrency    = 5
 )
 
 var (
@@ -75,6 +84,21 @@ changes are read from standard input.`,
 				Value:   false,
 				Aliases: []string{"p"},
 			},
+			&cli.IntFlag{
+				Name:    "retries",
+				Aliases: []string{"r"},
+				Value:   -1, // -1 means no limit
+				Usage: `
+Set a maximum number of retries for transient error conditions. Set 0 to disable retries.
+By default transient errors are re-tried without limit, and if the error is 429, the Retry-After header is honored.`,
+			},
+			&cli.IntFlag{
+				Name:    "concurrency",
+				Value:   defaultConcurrency,
+				Aliases: []string{"c"},
+				Usage: fmt.Sprintf(
+					`The number of concurrent replication operations to run, defaults to %d. A high number is a sure way to get rate limited`, defaultConcurrency),
+			},
 		},
 		Action: func(cCtx *cli.Context) error {
 			cmd := &CmdCtx{}
@@ -99,56 +123,97 @@ changes are read from standard input.`,
 			}
 			progress := newProgressor(cCtx, "tenants", len(changes))
 
-			var wg sync.WaitGroup
-			errChan := make(chan error, len(changes)) // buffered so it doesn't block
-
-			for _, change := range changes {
-				wg.Add(1)
-				go func(change TenantMassif, errChan chan<- error) {
-					defer wg.Done()
-					defer progress.Completed()
-
-					replicator, err := NewVerifiedReplica(cCtx, cmd.Clone())
-					if err != nil {
-						errChan <- err
-						return
-					}
-					endMassif := uint32(change.Massif)
-					startMassif := uint32(0)
-					if cCtx.IsSet("ancestors") && uint32(cCtx.Int("ancestors")) < endMassif {
-						startMassif = endMassif - uint32(cCtx.Int("ancestors"))
-					}
-
-					err = replicator.ReplicateVerifiedUpdates(
-						context.Background(),
-						change.Tenant, startMassif, endMassif,
-					)
-					if err != nil {
-						errChan <- err
-					}
-				}(change, errChan)
+			concurency := min(len(changes), max(1, cCtx.Int("concurrency")))
+			for i := 0; i < len(changes); i += concurency {
+				err = replicateChanges(cCtx, cmd, changes[i:min(i+concurency, len(changes))], progress)
+				if err != nil {
+					return err
+				}
 			}
 
-			// the error channel is buffered enough for each tenant, so this will not get deadlocked
-			wg.Wait()
-			close(errChan)
-
-			var errs []error
-			for err := range errChan {
-				cmd.log.Infof(err.Error())
-				errs = append(errs, err)
-			}
-			if len(errs) > 0 {
-				return errs[0]
-			}
-			if len(changes) == 1 {
-				cmd.log.Infof("replication complete for tenant %s", changes[0].Tenant)
-			} else {
-				cmd.log.Infof("replication complete for %d tenants", len(changes))
-			}
 			return nil
 		},
 	}
+}
+
+// replicateChanges replicaet the changes for the provided slice of tenants.
+// Paralelism is limited yy breaking the total changes into smaller slices and calling this function
+func replicateChanges(cCtx *cli.Context, cmd *CmdCtx, changes []TenantMassif, progress Progresser) error {
+
+	var wg sync.WaitGroup
+	errChan := make(chan error, len(changes)) // buffered so it doesn't block
+
+	for _, change := range changes {
+		wg.Add(1)
+		go func(change TenantMassif, errChan chan<- error) {
+			defer wg.Done()
+			defer progress.Completed()
+
+			retries := max(-1, cCtx.Int("retries"))
+			for {
+
+				replicator, err := NewVerifiedReplica(cCtx, cmd.Clone())
+				if err != nil {
+					errChan <- err
+					return
+				}
+				endMassif := uint32(change.Massif)
+				startMassif := uint32(0)
+				if cCtx.IsSet("ancestors") && uint32(cCtx.Int("ancestors")) < endMassif {
+					startMassif = endMassif - uint32(cCtx.Int("ancestors"))
+				}
+
+				err = replicator.ReplicateVerifiedUpdates(
+					context.Background(),
+					change.Tenant, startMassif, endMassif,
+				)
+				if err == nil {
+					return
+				}
+
+				// 429 is the only transient error we currently re-try
+				var retryDelay time.Duration
+				retryDelay, ok := massifs.IsRateLimiting(err)
+				if !ok || retries == 0 {
+					// not transient
+					errChan <- err
+					return
+				}
+				if retryDelay == 0 {
+					retryDelay = defaultRetryDelay(err)
+				}
+
+				// underflow will actually terminate the loop, but that would have been running for an infeasable amount of time
+				retries--
+				// in the default case, remaining is always reported as -1
+				cmd.log.Infof("retrying in %s, remaining: %d", retryDelay, max(-1, retries))
+			}
+		}(change, errChan)
+	}
+
+	// the error channel is buffered enough for each tenant, so this will not get deadlocked
+	wg.Wait()
+	close(errChan)
+
+	var errs []error
+	for err := range errChan {
+		cmd.log.Infof(err.Error())
+		errs = append(errs, err)
+	}
+	if len(errs) > 0 {
+		return errs[0]
+	}
+	if len(changes) == 1 {
+		cmd.log.Infof("replication complete for tenant %s", changes[0].Tenant)
+	} else {
+		cmd.log.Infof("replication complete for %d tenants", len(changes))
+	}
+	return nil
+}
+
+func defaultRetryDelay(_ error) time.Duration {
+	// give the delay some jitter, this is universally a good practice
+	return baseDefaultRetryDelay + time.Duration(rand.Intn(100))*time.Millisecond
 }
 
 func newProgressor(cCtx *cli.Context, barName string, increments int) Progresser {

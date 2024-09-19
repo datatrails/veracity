@@ -13,11 +13,10 @@ require (
 	github.com/gosuri/uiprogress v0.0.1
 	github.com/urfave/cli/v2 v2.27.1
 	github.com/zeebo/bencode v1.0.0
+	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
 )
 
-// replace (
-// 	github.com/datatrails/go-datatrails-merklelog/massifs => ../go-datatrails-merklelog/massifs
-// )
+replace github.com/datatrails/go-datatrails-merklelog/massifs => ../go-datatrails-merklelog/massifs
 
 require (
 	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect

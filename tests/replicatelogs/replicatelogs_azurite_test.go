@@ -571,6 +571,202 @@ func (s *ReplicateLogsCmdSuite) Test4MassifsForThreeTenants() {
 	}
 }
 
+// TestThreeTenantsOneAtATime uses --concurency to force the replication to go one tenant at a time
+// The test just ensures the obvious boundary case works
+func (s *ReplicateLogsCmdSuite) TestThreeTenantsOneAtATime() {
+	logger.New("TestThreeTenantsOneAtATime")
+	defer logger.OnExit()
+
+	tc := massifs.NewLocalMassifReaderTestContext(
+		s.T(), logger.Sugar, "TestThreeTenantsOneAtATime")
+
+	massifCount := uint32(4)
+	massifHeight := uint8(8)
+
+	tenantId0 := tc.G.NewTenantIdentity()
+	// note: CreateLog both creates the massifs *and* populates them
+	tc.CreateLog(tenantId0, massifHeight, massifCount)
+	tenantId1 := tc.G.NewTenantIdentity()
+	tc.CreateLog(tenantId1, massifHeight, massifCount)
+	tenantId2 := tc.G.NewTenantIdentity()
+	tc.CreateLog(tenantId2, massifHeight, massifCount)
+
+	changes := []struct {
+		TenantIdentity string `json:"tenant"`
+		MassifIndex    int    `json:"massifindex"`
+	}{
+		{tenantId0, int(massifCount - 1)},
+		{tenantId1, int(massifCount - 1)},
+		{tenantId2, int(massifCount - 1)},
+	}
+
+	data, err := json.Marshal(changes)
+	s.NoError(err)
+	// note: the suite does a before & after pipe for Stdin
+	s.StdinWriteAndClose(data)
+
+	replicaDir := s.T().TempDir()
+
+	// note: VERACITY_IKWID is set in main, we need it to enable --envauth so we force it here
+	app := veracity.NewApp("tests", true)
+	veracity.AddCommands(app, true)
+
+	err = app.Run([]string{
+		"veracity",
+		"--envauth", // uses the emulator
+		"--container", tc.TestConfig.Container,
+		"--data-url", s.Env.AzuriteVerifiableDataURL,
+		"--height", fmt.Sprintf("%d", massifHeight),
+		"replicate-logs",
+		"--replicadir", replicaDir,
+		"--concurrency", "1",
+	})
+	s.NoError(err)
+
+	for _, change := range changes {
+		for i := range change.MassifIndex + 1 {
+			expectMassifFile := filepath.Join(
+				replicaDir, massifs.ReplicaRelativeMassifPath(change.TenantIdentity, uint32(i)))
+			s.FileExistsf(
+				expectMassifFile, "the replicated massif should exist")
+			expectSealFile := filepath.Join(
+				replicaDir, massifs.ReplicaRelativeSealPath(change.TenantIdentity, uint32(i)))
+			s.FileExistsf(expectSealFile, "the replicated seal should exist")
+		}
+	}
+}
+
+// TestConcurrencyZero uses --concurency to force the replication to go one tenant at a time
+// The test just ensures the obvious boundary case works
+func (s *ReplicateLogsCmdSuite) TestConcurrencyZero() {
+	logger.New("TestConcurrencyZero")
+	defer logger.OnExit()
+
+	tc := massifs.NewLocalMassifReaderTestContext(
+		s.T(), logger.Sugar, "TestConcurrencyZero")
+
+	massifCount := uint32(4)
+	massifHeight := uint8(8)
+
+	tenantId0 := tc.G.NewTenantIdentity()
+	// note: CreateLog both creates the massifs *and* populates them
+	tc.CreateLog(tenantId0, massifHeight, massifCount)
+	tenantId1 := tc.G.NewTenantIdentity()
+	tc.CreateLog(tenantId1, massifHeight, massifCount)
+	tenantId2 := tc.G.NewTenantIdentity()
+	tc.CreateLog(tenantId2, massifHeight, massifCount)
+
+	changes := []struct {
+		TenantIdentity string `json:"tenant"`
+		MassifIndex    int    `json:"massifindex"`
+	}{
+		{tenantId0, int(massifCount - 1)},
+		{tenantId1, int(massifCount - 1)},
+		{tenantId2, int(massifCount - 1)},
+	}
+
+	data, err := json.Marshal(changes)
+	s.NoError(err)
+	// note: the suite does a before & after pipe for Stdin
+	s.StdinWriteAndClose(data)
+
+	replicaDir := s.T().TempDir()
+
+	// note: VERACITY_IKWID is set in main, we need it to enable --envauth so we force it here
+	app := veracity.NewApp("tests", true)
+	veracity.AddCommands(app, true)
+
+	err = app.Run([]string{
+		"veracity",
+		"--envauth", // uses the emulator
+		"--container", tc.TestConfig.Container,
+		"--data-url", s.Env.AzuriteVerifiableDataURL,
+		"--height", fmt.Sprintf("%d", massifHeight),
+		"replicate-logs",
+		"--replicadir", replicaDir,
+		"--concurrency", "0",
+	})
+	s.NoError(err)
+
+	for _, change := range changes {
+		for i := range change.MassifIndex + 1 {
+			expectMassifFile := filepath.Join(
+				replicaDir, massifs.ReplicaRelativeMassifPath(change.TenantIdentity, uint32(i)))
+			s.FileExistsf(
+				expectMassifFile, "the replicated massif should exist")
+			expectSealFile := filepath.Join(
+				replicaDir, massifs.ReplicaRelativeSealPath(change.TenantIdentity, uint32(i)))
+			s.FileExistsf(expectSealFile, "the replicated seal should exist")
+		}
+	}
+}
+
+// TestConcurrencyCappedToTenantCount sets --concurency greater than the number of tenants
+// and shows all tenants are replicated
+func (s *ReplicateLogsCmdSuite) TestConcurrencyCappedToTenantCount() {
+	logger.New("TestConcurrencyCappedToTenantCount")
+	defer logger.OnExit()
+
+	tc := massifs.NewLocalMassifReaderTestContext(
+		s.T(), logger.Sugar, "TestConcurrencyCappedToTenantCount")
+
+	massifCount := uint32(4)
+	massifHeight := uint8(8)
+
+	tenantId0 := tc.G.NewTenantIdentity()
+	// note: CreateLog both creates the massifs *and* populates them
+	tc.CreateLog(tenantId0, massifHeight, massifCount)
+	tenantId1 := tc.G.NewTenantIdentity()
+	tc.CreateLog(tenantId1, massifHeight, massifCount)
+	tenantId2 := tc.G.NewTenantIdentity()
+	tc.CreateLog(tenantId2, massifHeight, massifCount)
+
+	changes := []struct {
+		TenantIdentity string `json:"tenant"`
+		MassifIndex    int    `json:"massifindex"`
+	}{
+		{tenantId0, int(massifCount - 1)},
+		{tenantId1, int(massifCount - 1)},
+		{tenantId2, int(massifCount - 1)},
+	}
+
+	data, err := json.Marshal(changes)
+	s.NoError(err)
+	// note: the suite does a before & after pipe for Stdin
+	s.StdinWriteAndClose(data)
+
+	replicaDir := s.T().TempDir()
+
+	// note: VERACITY_IKWID is set in main, we need it to enable --envauth so we force it here
+	app := veracity.NewApp("tests", true)
+	veracity.AddCommands(app, true)
+
+	err = app.Run([]string{
+		"veracity",
+		"--envauth", // uses the emulator
+		"--container", tc.TestConfig.Container,
+		"--data-url", s.Env.AzuriteVerifiableDataURL,
+		"--height", fmt.Sprintf("%d", massifHeight),
+		"replicate-logs",
+		"--replicadir", replicaDir,
+		"--concurrency", "30000",
+	})
+	s.NoError(err)
+
+	for _, change := range changes {
+		for i := range change.MassifIndex + 1 {
+			expectMassifFile := filepath.Join(
+				replicaDir, massifs.ReplicaRelativeMassifPath(change.TenantIdentity, uint32(i)))
+			s.FileExistsf(
+				expectMassifFile, "the replicated massif should exist")
+			expectSealFile := filepath.Join(
+				replicaDir, massifs.ReplicaRelativeSealPath(change.TenantIdentity, uint32(i)))
+			s.FileExistsf(expectSealFile, "the replicated seal should exist")
+		}
+	}
+
+}
+
 // newTestLocalReader creates a new LocalReader
 // This provides a convenient way to interact with the massifs locally replicated by integration tests.
 func newTestLocalReader(

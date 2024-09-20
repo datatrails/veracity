@@ -152,16 +152,7 @@ func replicateChanges(cCtx *cli.Context, cmd *CmdCtx, changes []TenantMassif, pr
 			retries := max(-1, cCtx.Int("retries"))
 			for {
 
-				replicator, err := NewVerifiedReplica(cCtx, cmd.Clone())
-				if err != nil {
-					errChan <- err
-					return
-				}
-				endMassif := uint32(change.Massif)
-				startMassif := uint32(0)
-				if cCtx.IsSet("ancestors") && uint32(cCtx.Int("ancestors")) < endMassif {
-					startMassif = endMassif - uint32(cCtx.Int("ancestors"))
-				}
+				replicator, startMassif, endMassif, err := initReplication(cCtx, cmd, change)
 
 				err = replicator.ReplicateVerifiedUpdates(
 					context.Background(),
@@ -209,6 +200,20 @@ func replicateChanges(cCtx *cli.Context, cmd *CmdCtx, changes []TenantMassif, pr
 		cmd.log.Infof("replication complete for %d tenants", len(changes))
 	}
 	return nil
+}
+
+func initReplication(cCtx *cli.Context, cmd *CmdCtx, change TenantMassif) (*VerifiedReplica, uint32, uint32, error) {
+
+	replicator, err := NewVerifiedReplica(cCtx, cmd.Clone())
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	endMassif := uint32(change.Massif)
+	startMassif := uint32(0)
+	if cCtx.IsSet("ancestors") && uint32(cCtx.Int("ancestors")) < endMassif {
+		startMassif = endMassif - uint32(cCtx.Int("ancestors"))
+	}
+	return replicator, startMassif, endMassif, nil
 }
 
 func defaultRetryDelay(_ error) time.Duration {

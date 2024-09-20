@@ -153,6 +153,10 @@ func replicateChanges(cCtx *cli.Context, cmd *CmdCtx, changes []TenantMassif, pr
 			for {
 
 				replicator, startMassif, endMassif, err := initReplication(cCtx, cmd, change)
+				if err != nil {
+					errChan <- err
+					return
+				}
 
 				err = replicator.ReplicateVerifiedUpdates(
 					context.Background(),

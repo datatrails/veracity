@@ -160,21 +160,19 @@ func NewEventDiagCmd() *cli.Command {
 				// Generate the proof for the mmrIndex and get the root. We use
 				// the mmrSize from the end of the blob in which the leaf entry
 				// was recorded. Any size > than the leaf index would work.
-				eventHasher.Reset()
 				mmrSize := cmd.massif.RangeCount()
-				proof, err := mmr.IndexProof(mmrSize, &cmd.massif, eventHasher, mmrIndex)
-				if err != nil {
-					return err
-				}
-				root, err := mmr.GetRoot(mmrSize, &cmd.massif, eventHasher)
+				proof, err := mmr.InclusionProof(&cmd.massif, mmrSize, mmrIndex)
 				if err != nil {
 					return err
 				}
 
-				eventHasher.Reset()
-				verified := mmr.VerifyInclusion(mmrSize, eventHasher, logNodeValue, mmrIndex, proof, root)
+				verified, err := mmr.VerifyInclusion(&cmd.massif, eventHasher, mmrSize, logNodeValue, mmrIndex, proof)
 				if verified {
 					fmt.Printf("OK|%d %d\n", mmrIndex, leafIndex)
+					continue
+				}
+				if err != nil {
+					fmt.Printf("XX|%d %d|%s\n", mmrIndex, leafIndex, err.Error())
 					continue
 				}
 				fmt.Printf("XX|%d %d\n", mmrIndex, leafIndex)

@@ -37,8 +37,7 @@ tasks:
             -race \
             -v \
             -coverprofile={{.UNITTEST_DIR}}/main.out \
-            ./... \
-            2>&1 | go-junit-report -set-exit-code -debug.print-events > {{.UNITTEST_DIR}}/main.xml
+            ./...
           gocov convert {{.UNITTEST_DIR}}/main.out > {{.UNITTEST_DIR}}/coverage.json
 
   go:prodpublic:
@@ -59,8 +58,7 @@ tasks:
             -race \
             -v \
             -coverprofile={{.UNITTEST_DIR}}/main.out \
-            ./... \
-            2>&1 | go-junit-report -set-exit-code -debug.print-events > {{.UNITTEST_DIR}}/main.xml
+            ./...
           gocov convert {{.UNITTEST_DIR}}/main.out > {{.UNITTEST_DIR}}/coverage.json
 
 
@@ -81,6 +79,5 @@ tasks:
             -race \
             -v \
             -coverprofile={{.UNITTEST_DIR}}/main.out \
-            ./... \
-            2>&1 | go-junit-report -set-exit-code -debug.print-events > {{.UNITTEST_DIR}}/main.xml
+            ./...
           gocov convert {{.UNITTEST_DIR}}/main.out > {{.UNITTEST_DIR}}/coverage.json

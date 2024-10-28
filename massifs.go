@@ -98,13 +98,13 @@ to produce the desired information computationaly produce
 
 				firstLeaf := mi * massifLeafCount
 				lastLeaf := firstLeaf + massifLeafCount - 1
-				firstMMRIndex := mmr.TreeIndex(firstLeaf)
-				lastMMRIndex := mmr.TreeIndex(lastLeaf+1) - 1
+				firstMMRIndex := mmr.MMRIndex(firstLeaf)
+				lastMMRIndex := mmr.MMRIndex(lastLeaf+1) - 1
 
 				// It's retrospective, stored in the current massif based on the
 				// *last* full massif. which we always  know when starting a new
 				// massif.
-				peakStackIndices = PeakStack(height, firstMMRIndex+1)
+				peakStackIndices = PeakStack(height, firstMMRIndex)
 				peakStackStart := massifs.PeakStackStart(height)
 				logStart := massifs.PeakStackEnd(mi, height)
 
@@ -166,9 +166,9 @@ func joinStack(stackIndices []uint64) string {
 // forward in each massif blob to make them self contained.
 // (The mmrblobs package has a slightly different variant of this that returns
 // a map)
-func PeakStack(massifHeight uint8, mmrSize uint64) []uint64 {
+func PeakStack(massifHeight uint8, mmrIndex uint64) []uint64 {
 	var stack []uint64
-	iPeaks := mmr.Peaks(mmrSize)
+	iPeaks := mmr.Peaks(mmrIndex)
 	for _, ip := range iPeaks {
 		if mmr.PosHeight(ip) < uint64(massifHeight)-1 {
 			continue

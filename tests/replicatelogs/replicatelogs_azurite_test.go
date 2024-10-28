@@ -449,8 +449,8 @@ func (s *ReplicateLogsCmdSuite) TestLocalTamperDetected() {
 
 	massifLeafCount := mmr.HeightIndexLeafCount(uint64(massifHeight) - 1)
 	LastLeafIndex := massifLeafCount - 1
-	mmrSize0 := mmr.FirstMMRSize(mmr.TreeIndex(LastLeafIndex))
-	peaks := mmr.Peaks(mmrSize0)
+	mmrSize0 := mmr.FirstMMRSize(mmr.MMRIndex(LastLeafIndex))
+	peaks := mmr.Peaks(mmrSize0 - 1)
 	// this simulates the effect of changing a leaf then re-building the log so
 	// that a proof of inclusion can be produced for the new element, this
 	// necessarily causes a peak to change. *any* peak change will cause the

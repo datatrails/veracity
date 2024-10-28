@@ -46,7 +46,7 @@ func TestNodeScanCmd(t *testing.T) {
 	// confirming the derived leaf hash is matched in the blob. WHich is the
 	// purpose of the diagnostic tool. But we log the expected mmrIndex for development ease.
 
-	fmt.Printf("TreeIndex(%d) == %d\n", leafIndex, mmr.TreeIndex(uint64(leafIndex)))
+	fmt.Printf("MMRIndex(%d) == %d\n", leafIndex, mmr.MMRIndex(uint64(leafIndex)))
 
 	// Get the idtimestamp that ensures every entry is unique
 	idTimestamp, _, err := massifs.SplitIDTimestampHex(

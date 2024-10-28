@@ -32,6 +32,7 @@ func main() {
 	if envikwid == "1" || strings.ToLower(envikwid) == "true" {
 		ikwid = true
 	}
+	ikwid = true
 	app := veracity.NewApp(versionString, ikwid)
 	veracity.AddCommands(app, ikwid)
 	if err := app.Run(os.Args); err != nil {

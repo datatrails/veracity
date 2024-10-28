@@ -60,15 +60,8 @@ func verifyEvent(
 		return nil, err
 	}
 
-	hasher := sha256.New()
 	mmrSize := massif.RangeCount()
-	proof, err := mmr.IndexProof(mmrSize, &massif, hasher, mmrIndex)
-	if err != nil {
-		return nil, err
-	}
-
-	hasher.Reset()
-	root, err := mmr.GetRoot(mmrSize, &massif, hasher)
+	proof, err := mmr.InclusionProof(&massif, mmrSize, mmrIndex)
 	if err != nil {
 		return nil, err
 	}
@@ -77,13 +70,12 @@ func verifyEvent(
 	// includes the event. Future work can deepen this to include
 	// discovery of the log head, and or verification against a
 	// sealed MMRSize.
-	hasher.Reset()
-	verified := mmr.VerifyInclusion(mmrSize, hasher, event.LeafHash, mmrIndex, proof, root)
+	verified, err := mmr.VerifyInclusion(&massif, sha256.New(), mmrSize, event.LeafHash, mmrIndex, proof)
 	if verified {
 		return proof, nil
 	}
 
-	return nil, ErrVerifyInclusionFailed
+	return nil, fmt.Errorf("%w: %v", ErrVerifyInclusionFailed, err)
 }
 
 // NewVerifyIncludedCmd verifies inclusion of a DataTrails event in the tenants Merkle Log

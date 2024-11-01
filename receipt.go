@@ -100,7 +100,8 @@ func NewReceiptCmd() *cli.Command {
 			}
 
 			if cCtx.String("output") == "" {
-				n, err := os.Stdout.Write(receipt)
+				var n int
+				n, err = os.Stdout.Write(receipt)
 				if err != nil {
 					return err
 				}

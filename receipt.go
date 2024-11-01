@@ -114,7 +114,7 @@ func NewReceiptCmd() *cli.Command {
 					return err
 				}
 				if n != len(receipt) {
-					return fmt.Errorf("failed to write all bytes to file")
+					return fmt.Errorf("failed to write all bytes to stdout")
 				}
 				return nil
 			}

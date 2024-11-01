@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
-	"strconv"
 
 	"github.com/datatrails/go-datatrails-common/cbor"
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
@@ -65,15 +64,7 @@ func NewReceiptCmd() *cli.Command {
 			}
 			log("verifying for tenant: %s", tenantIdentity)
 
-			var mmrIndex uint64
-			mmrIndex = cCtx.Uint64("mmrindex")
-			if cCtx.Args().Len() > 0 {
-				v, err := strconv.Atoi(cCtx.Args().Get(0))
-				if err != nil {
-					return err
-				}
-				mmrIndex = uint64(v)
-			}
+			mmrIndex := cCtx.Uint64("mmrindex")
 			massifHeight := uint8(cCtx.Int64("height"))
 
 			// TODO: local replica receipts, its not a big lift, the local reader used by replicatelogs

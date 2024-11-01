@@ -173,8 +173,7 @@ func PeakStack(massifHeight uint8, mmrIndex uint64) []uint64 {
 		if mmr.PosHeight(ip) < uint64(massifHeight)-1 {
 			continue
 		}
-		// remembering that Peaks returns *positions*
-		stack = append(stack, ip-1)
+		stack = append(stack, ip)
 	}
 	return stack
 }

@@ -503,6 +503,10 @@ func (v *VerifiedReplica) replicateVerifiedContext(
 
 	// if the remote and local are the same, we are done, provided the roots still match
 	if len(local.Data) == len(remote.Data) {
+		// note: the length equal check is elevated so we only write to local
+		// disc if there are changes.  this duplicates a check in
+		// verifiedStateEqual in the interest of avoiding accidents due to
+		// future refactorings.
 		if !verifiedStateEqual(local, remote) {
 			return fmt.Errorf("%w: %s, massif=%d", ErrRemoteLogInconsistentRootState, tenantIdentity, massifIndex)
 		}

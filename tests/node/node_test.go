@@ -86,7 +86,7 @@ func (s *NodeSuite) TestVerifyIncludedMultiMassif() {
 
 				s.ReplaceStdout()
 
-				mmrIndex := mmr.TreeIndex(iLeaf)
+				mmrIndex := mmr.MMRIndex(iLeaf)
 
 				err := app.Run([]string{
 					"veracity",

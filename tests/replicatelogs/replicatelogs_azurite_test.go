@@ -459,7 +459,7 @@ func (s *ReplicateLogsCmdSuite) TestLocalTamperDetected() {
 	// will be unable to produce the correct detached payload for the Sign1 seal
 	// over the root material.
 	tamperLocalReaderNode(s.T(), localReader, tenantId0,
-		massifHeight, peaks[len(peaks)-1]-1, []byte{0x0D, 0x0E, 0x0A, 0x0D, 0x0B, 0x0E, 0x0E, 0x0F})
+		massifHeight, peaks[len(peaks)-1], []byte{0x0D, 0x0E, 0x0A, 0x0D, 0x0B, 0x0E, 0x0E, 0x0F})
 
 	// Note: it's actually a property of the way massifs fill that the last node
 	// added is always a peak, we could have taken that shortcut abvove. In the

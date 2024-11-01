@@ -16,7 +16,7 @@ import (
 func NewReceiptCmd() *cli.Command {
 	return &cli.Command{
 		Name:  "receipt",
-		Usage: "Generate a COSE Receipt of inclusion for any merkllog entry",
+		Usage: "Generate a COSE Receipt of inclusion for any merklelog entry",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "output",

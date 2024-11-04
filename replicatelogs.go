@@ -608,7 +608,7 @@ func verifiedStateEqual(a *massifs.VerifiedContext, b *massifs.VerifiedContext) 
 	if len(fromRoots) != len(toRoots) {
 		return false
 	}
-	for i := 0; i < len(fromRoots); i++ {
+	for i := range len(fromRoots) {
 		if !bytes.Equal(fromRoots[i], toRoots[i]) {
 			return false
 		}

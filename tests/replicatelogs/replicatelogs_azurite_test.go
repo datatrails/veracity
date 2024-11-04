@@ -108,12 +108,11 @@ func (s *ReplicateLogsCmdSuite) TestV0ToV1ReplicationTransition() {
 			if lastMassif > 0 {
 				massifLeaves := mmr.HeightIndexLeafCount(uint64(tt.massifHeight - 1)) // = ((2 << massifHeight) - 1 + 1) >> 1
 				// CreateLog always deleted blobs, so we can only use AddLeavesToLog here
-				for i := uint64(0); i < tt.v1Count; i++ {
+				for range tt.v1Count {
 					tc.AddLeavesToLog(
 						tenantId0, tt.massifHeight, int(massifLeaves),
 						massifs.TestWithSealKey(&key), /*, massifs.TestWithV0Seals() V1 seals*/
 					)
-
 				}
 			}
 			if tt.lastLeagacyLeafCount > 0 {

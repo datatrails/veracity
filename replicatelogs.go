@@ -130,7 +130,9 @@ By default transient errors are re-tried without limit, and if the error is 429,
 				return err
 			}
 
-			changes, err := readTenantMassifChanges(context.TODO(), cCtx, cmd)
+			// There isn't really a better context. We could implement user
+			// defined timeouts for "lights out/ci" use cases in future. Humans can ctrl-c
+			changes, err := readTenantMassifChanges(context.Background(), cCtx, cmd)
 			if err != nil {
 				return err
 			}
@@ -175,6 +177,8 @@ func replicateChanges(cCtx *cli.Context, cmd *CmdCtx, changes []TenantMassif, pr
 					return
 				}
 
+				// There isn't really a better context. We could implement user
+				// defined timeouts for "lights out/ci" use cases in future. Humans can ctrl-c
 				err = replicator.ReplicateVerifiedUpdates(
 					context.Background(),
 					change.Tenant, startMassif, endMassif,

@@ -57,12 +57,12 @@ func (st SealTail) String() string {
 		st.LogActivity.UTC().Format(time.RFC3339),
 	)
 	if st.LastID != "" {
-		return s + fmt.Sprintf(
-			", tag activity: %v",
-			st.TagActivity.UTC().Format(time.RFC3339),
+		return fmt.Sprintf(
+			"%s, tag activity: %v",
+			s, st.TagActivity.UTC().Format(time.RFC3339),
 		)
 	}
-	return s + fmt.Sprintf(", tag activity: ** tag not set **")
+	return fmt.Sprintf("%s, tag activity: ** tag not set **", s)
 }
 
 // NewTailConfig derives a configuration from the supplied comand line options context
@@ -89,12 +89,12 @@ func (lt MassifTail) String() string {
 	)
 	if lt.LastID != "" {
 		return fmt.Sprintf(
-			", tag activity: %v",
-			lt.TagActivity.UTC().Format(time.RFC3339),
+			"%s, tag activity: %v",
+			s, lt.TagActivity.UTC().Format(time.RFC3339),
 		)
 
 	}
-	return s + fmt.Sprintf(", tag activity: ** tag not set **")
+	return fmt.Sprintf("%s, tag activity: ** tag not set **", s)
 }
 
 // TailSeal returns the most recently added seal for the log

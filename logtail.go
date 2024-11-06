@@ -57,7 +57,7 @@ func (st SealTail) String() string {
 		st.LogActivity.UTC().Format(time.RFC3339),
 	)
 	if st.LastID != "" {
-		return fmt.Sprintf(
+		return s + fmt.Sprintf(
 			", tag activity: %v",
 			st.TagActivity.UTC().Format(time.RFC3339),
 		)

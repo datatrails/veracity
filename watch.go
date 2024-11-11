@@ -29,6 +29,8 @@ const (
 	// maxPollCount is the maximum number of times to poll for *some* activity.
 	// Polling always terminates as soon as the first activity is detected.
 	maxPollCount = 15
+	// More than this over flows the epoch which is half the length of the unix time epoch
+	maxHorizon = time.Hour * 100000
 )
 
 var (
@@ -78,11 +80,11 @@ func NewLogWatcherCmd() *cli.Command {
 				Name: "idsince", Aliases: []string{"s"},
 				Usage: "Start time as an idtimestamp. Start time defaults to now. All results are >= this hex string. If provided, it is used exactly as is. Takes precedence over since",
 			},
-			&cli.DurationFlag{
+			&cli.StringFlag{
 				Name:    "horizon",
 				Aliases: []string{"z"},
-				Value:   time.Hour * 24,
-				Usage:   "Infer since as now - horizon, aka 1h to onl see things in the last hour. If watching (count=0), since is re-calculated every interval",
+				Value:   "24s",
+				Usage:   "Infer since as now - horizon. The format is {number}{units} eg 1h to only see things in the last hour. If watching (count=0), since is re-calculated every interval",
 			},
 			&cli.DurationFlag{
 				Name: "interval", Aliases: []string{"d"},
@@ -124,18 +126,68 @@ type cliContext interface {
 	Int(name string) int
 }
 
+const (
+	rangeDurationParseErrorSubString = "time: invalid duration "
+)
+
+// parseHorizon parses a duration string from the command line In accordance
+// with the most common reason for parse failure (specifying a large number), On
+// an error that looks like a range to large issue, we coerce to the maximum
+// hours and ignore the error. Errors that don't contain the marker substring
+// are returned as is.
+func parseHorizon(horizon string) (time.Duration, error) {
+	d, err := time.ParseDuration(horizon)
+	if err == nil {
+
+		// clamp the horizon, otherwise it may overflow the idtimestamp epoch
+		if d > maxHorizon {
+			return maxHorizon, nil
+		}
+		if d < 0 {
+			return 0, fmt.Errorf("negative horizon value:%s", horizon)
+		}
+
+		return d, nil
+	}
+
+	// Note: it is a matter of opinion whether we should error here or not.
+	// Since finding many tenants is only a performance issue, we simply
+	// force the maximum range of hours on an error that indicates a range
+	// issue. By far the most common use for a large value is "just give me everything"
+	// The substring was obtained by code inspection of the time.ParseDuration implementation
+	if strings.HasPrefix(err.Error(), rangeDurationParseErrorSubString) {
+		return maxHorizon, nil
+	}
+
+	// Alternative which accurately reports the error but is likely just as inconvenient
+	// if strings.HasPrefix(err.Error(), rangeDurationParseErrorSubString) {
+	// 	return WatchConfig{}, fmt.Errorf("the horizon '%s' is to large or otherwise out of range", horizon)
+	// }
+
+	return d, fmt.Errorf("the horizon '%s' is out of range or otherwise invalid", horizon)
+}
+
 // NewWatchConfig derives a configuration from the options set on the command line context
 func NewWatchConfig(cCtx cliContext, cmd *CmdCtx) (WatchConfig, error) {
 
+	var err error
+
 	cfg := WatchConfig{}
 	cfg.Interval = cCtx.Duration("interval")
-	cfg.Horizon = cCtx.Duration("horizon")
+
+	horizon := cCtx.String("horizon")
+	if horizon != "" {
+		cfg.Horizon, err = parseHorizon(horizon)
+		if err != nil {
+			return WatchConfig{}, err
+		}
+	}
 	if cCtx.Timestamp("since") != nil {
 		cfg.Since = *cCtx.Timestamp("since")
 	}
 	cfg.IDSince = cCtx.String("idsince")
 
-	err := watcher.ConfigDefaults(&cfg.WatchConfig)
+	err = watcher.ConfigDefaults(&cfg.WatchConfig)
 	if err != nil {
 		return WatchConfig{}, err
 	}

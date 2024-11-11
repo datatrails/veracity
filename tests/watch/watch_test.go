@@ -6,6 +6,55 @@ import (
 	"github.com/datatrails/veracity"
 )
 
+func (s *WatchCmdSuite) TestErrorForNegativeHorizon() {
+
+	app := veracity.NewApp("version", false)
+	veracity.AddCommands(app, false)
+
+	err := app.Run([]string{
+		"veracity",
+		"--data-url", s.Env.VerifiableDataURL,
+		"watch",
+		"--horizon", "-1h",
+	})
+	s.ErrorContains(err, "negative horizon")
+	// alternative approach which just makes the error more readable
+	// s.ErrorContains(err, "is to large or otherwise out of range")
+}
+
+func (s *WatchCmdSuite) TestNoErrorVeryLargeHorizon() {
+
+	app := veracity.NewApp("version", false)
+	veracity.AddCommands(app, false)
+
+	err := app.Run([]string{
+		"veracity",
+		"--data-url", s.Env.VerifiableDataURL,
+		"watch",
+		"--horizon", "1000000000h",
+		//"--horizon", "100000h", // 11 years, so we are sure we look back far enough to find an event
+	})
+	s.NoError(err)
+	// alternative approach which just makes the error more readable
+	// s.ErrorContains(err, "is out of range or otherwise invalid")
+}
+
+func (s *WatchCmdSuite) TestNoErrorLargeButParsableHorizon() {
+
+	app := veracity.NewApp("version", false)
+	veracity.AddCommands(app, false)
+
+	err := app.Run([]string{
+		"veracity",
+		"--data-url", s.Env.VerifiableDataURL,
+		"watch",
+		"--horizon", "1000000h", // over flows the id timestamp epoch
+	})
+	s.NoError(err)
+	// alternative approach which just makes the error more readable
+	// s.ErrorContains(err, "is out of range or otherwise invalid")
+}
+
 func (s *WatchCmdSuite) TestNoErrorOrNoChanges() {
 
 	app := veracity.NewApp("version", false)

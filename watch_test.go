@@ -69,6 +69,28 @@ func TestNewWatchConfig(t *testing.T) {
 		errPrefix string
 	}{
 		{
+			name: "interval too small",
+			args: args{
+				cCtx: &mockContext{
+					horizon: "1h",
+					// just under a second
+					interval: time.Millisecond * 999,
+				},
+				cmd: new(CmdCtx),
+			},
+			errPrefix: "polling more than once per second is not",
+		},
+
+		{
+			name: "horizon or since options are required",
+			args: args{
+				cCtx: &mockContext{},
+				cmd:  new(CmdCtx),
+			},
+			errPrefix: "provide horizon on its own or either of the since",
+		},
+
+		{
 			name: "poll count is at least one",
 			args: args{
 				cCtx: &mockContext{
@@ -109,18 +131,6 @@ func TestNewWatchConfig(t *testing.T) {
 			},
 		},
 		{
-			name: "interval too small",
-			args: args{
-				cCtx: &mockContext{
-					horizon: time.Hour,
-					// just under a second
-					interval: time.Millisecond * 999,
-				},
-				cmd: new(CmdCtx),
-			},
-			errPrefix: "polling more than once per second is not",
-		},
-		{
 			name: "bad hex string for idtimestamp errors",
 			args: args{
 				cCtx: &mockContext{
@@ -129,14 +139,6 @@ func TestNewWatchConfig(t *testing.T) {
 				cmd: new(CmdCtx),
 			},
 			errPrefix: "encoding/hex: invalid byte",
-		},
-		{
-			name: "horizon or since options are required",
-			args: args{
-				cCtx: &mockContext{},
-				cmd:  new(CmdCtx),
-			},
-			errPrefix: "provide horizon on its own or either of the since",
 		},
 	}
 	for _, tt := range tests {
@@ -500,7 +502,7 @@ type mockContext struct {
 	since    *time.Time
 	mode     string
 	idsince  string
-	horizon  time.Duration
+	horizon  string
 	interval time.Duration
 	count    int
 	tenant   string
@@ -514,6 +516,8 @@ func (c mockContext) String(n string) string {
 		return c.idsince
 	case "tenant":
 		return c.tenant
+	case "horizon":
+		return c.horizon
 	default:
 		return ""
 	}
@@ -530,8 +534,6 @@ func (c mockContext) Int(n string) int {
 
 func (c mockContext) Duration(n string) time.Duration {
 	switch n {
-	case "horizon":
-		return c.horizon
 	case "interval":
 		return c.interval
 	default:

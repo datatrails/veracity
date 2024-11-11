@@ -106,7 +106,7 @@ func NewLogWatcherCmd() *cli.Command {
 			cmd := &CmdCtx{}
 			ctx := context.Background()
 
-			if err := cfgLogging(cmd, cCtx); err != nil {
+			if err = cfgLogging(cmd, cCtx); err != nil {
 				return err
 			}
 			reporter := &defaultReporter{log: cmd.log}

@@ -55,6 +55,9 @@ type defaultReporter struct {
 }
 
 func (r defaultReporter) Logf(message string, args ...any) {
+	if r.log == nil {
+		return
+	}
 	r.log.Infof(message, args...)
 }
 func (r defaultReporter) Outf(message string, args ...any) {
@@ -98,11 +101,17 @@ func NewLogWatcherCmd() *cli.Command {
 			},
 		},
 		Action: func(cCtx *cli.Context) error {
+
 			var err error
 			cmd := &CmdCtx{}
 			ctx := context.Background()
 
-			cfg, err := NewWatchConfig(cCtx, cmd)
+			if err := cfgLogging(cmd, cCtx); err != nil {
+				return err
+			}
+			reporter := &defaultReporter{log: cmd.log}
+
+			cfg, err := NewWatchConfig(cCtx, cmd, reporter)
 			if err != nil {
 				return err
 			}
@@ -114,7 +123,7 @@ func NewLogWatcherCmd() *cli.Command {
 				return err
 			}
 
-			return WatchForChanges(ctx, cfg, reader, &defaultReporter{log: cmd.log})
+			return WatchForChanges(ctx, cfg, reader, reporter)
 		},
 	}
 }
@@ -135,12 +144,13 @@ const (
 // an error that looks like a range to large issue, we coerce to the maximum
 // hours and ignore the error. Errors that don't contain the marker substring
 // are returned as is.
-func parseHorizon(horizon string) (time.Duration, error) {
+func parseHorizon(horizon string, reporter watchReporter) (time.Duration, error) {
 	d, err := time.ParseDuration(horizon)
 	if err == nil {
 
 		// clamp the horizon, otherwise it may overflow the idtimestamp epoch
 		if d > maxHorizon {
+			reporter.Logf("clamped duration from %s to %v", horizon, maxHorizon)
 			return maxHorizon, nil
 		}
 		if d < 0 {
@@ -156,6 +166,7 @@ func parseHorizon(horizon string) (time.Duration, error) {
 	// issue. By far the most common use for a large value is "just give me everything"
 	// The substring was obtained by code inspection of the time.ParseDuration implementation
 	if strings.HasPrefix(err.Error(), rangeDurationParseErrorSubString) {
+		reporter.Logf("clamped duration from %s to %v", horizon, maxHorizon)
 		return maxHorizon, nil
 	}
 
@@ -168,7 +179,7 @@ func parseHorizon(horizon string) (time.Duration, error) {
 }
 
 // NewWatchConfig derives a configuration from the options set on the command line context
-func NewWatchConfig(cCtx cliContext, cmd *CmdCtx) (WatchConfig, error) {
+func NewWatchConfig(cCtx cliContext, cmd *CmdCtx, reporter watchReporter) (WatchConfig, error) {
 
 	var err error
 
@@ -177,7 +188,7 @@ func NewWatchConfig(cCtx cliContext, cmd *CmdCtx) (WatchConfig, error) {
 
 	horizon := cCtx.String("horizon")
 	if horizon != "" {
-		cfg.Horizon, err = parseHorizon(horizon)
+		cfg.Horizon, err = parseHorizon(horizon, reporter)
 		if err != nil {
 			return WatchConfig{}, err
 		}

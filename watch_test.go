@@ -143,7 +143,7 @@ func TestNewWatchConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewWatchConfig(tt.args.cCtx, tt.args.cmd)
+			got, err := NewWatchConfig(tt.args.cCtx, tt.args.cmd, &mockReporter{})
 			if err != nil {
 				if tt.errPrefix == "" {
 					t.Errorf("NewWatchConfig() unexpected error = %v", err)

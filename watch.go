@@ -83,7 +83,7 @@ func NewLogWatcherCmd() *cli.Command {
 			&cli.StringFlag{
 				Name:    "horizon",
 				Aliases: []string{"z"},
-				Value:   "24s",
+				Value:   "24h",
 				Usage:   "Infer since as now - horizon. The format is {number}{units} eg 1h to only see things in the last hour. If watching (count=0), since is re-calculated every interval",
 			},
 			&cli.DurationFlag{

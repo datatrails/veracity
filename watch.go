@@ -185,7 +185,7 @@ func parseHorizon(horizon string) (time.Duration, error) {
 	if err == nil {
 
 		if d > maxHorizon {
-			return maxHorizon, fmt.Errorf("the maximum supported duration is --horizon=%v, which has the alias --horizon=max. also consider using --latest", maxHorizon)
+			return 0, fmt.Errorf("the maximum supported duration is --horizon=%v, which has the alias --horizon=max. also consider using --latest", maxHorizon)
 		}
 		if d < 0 {
 			return 0, fmt.Errorf("negative horizon value:%s", horizon)
@@ -195,7 +195,7 @@ func parseHorizon(horizon string) (time.Duration, error) {
 	}
 
 	if strings.HasPrefix(err.Error(), rangeDurationParseErrorSubString) {
-		return maxHorizon, fmt.Errorf("the supplied horizon was invalid. the maximum supported duration is --horizon=%v, which has the alias --horizon=max. also consider using --latest", maxHorizon)
+		return 0, fmt.Errorf("the supplied horizon was invalid. the maximum supported duration is --horizon=%v, which has the alias --horizon=max. also consider using --latest", maxHorizon)
 	}
 
 	return d, fmt.Errorf("the horizon '%s' is out of range or otherwise invalid. Use --horizon=max to get the largest supported value %v. also consider using --latest", horizon, maxHorizon)

@@ -18,11 +18,9 @@ func (s *WatchCmdSuite) TestErrorForNegativeHorizon() {
 		"--horizon", "-1h",
 	})
 	s.ErrorContains(err, "negative horizon")
-	// alternative approach which just makes the error more readable
-	// s.ErrorContains(err, "is to large or otherwise out of range")
 }
 
-func (s *WatchCmdSuite) TestNoErrorVeryLargeHorizon() {
+func (s *WatchCmdSuite) TestErrorGuidanceForVeryLargeHorizon() {
 
 	app := veracity.NewApp("version", false)
 	veracity.AddCommands(app, false)
@@ -32,14 +30,12 @@ func (s *WatchCmdSuite) TestNoErrorVeryLargeHorizon() {
 		"--data-url", s.Env.VerifiableDataURL,
 		"watch",
 		"--horizon", "1000000000h",
-		//"--horizon", "100000h", // 11 years, so we are sure we look back far enough to find an event
 	})
-	s.NoError(err)
-	// alternative approach which just makes the error more readable
-	// s.ErrorContains(err, "is out of range or otherwise invalid")
+	s.ErrorContains(err, "--horizon=max")
+	s.ErrorContains(err, "--latest")
 }
 
-func (s *WatchCmdSuite) TestNoErrorLargeButParsableHorizon() {
+func (s *WatchCmdSuite) TestErrorGuidanceForLargeButParsableHorizon() {
 
 	app := veracity.NewApp("version", false)
 	veracity.AddCommands(app, false)
@@ -50,9 +46,8 @@ func (s *WatchCmdSuite) TestNoErrorLargeButParsableHorizon() {
 		"watch",
 		"--horizon", "1000000h", // over flows the id timestamp epoch
 	})
-	s.NoError(err)
-	// alternative approach which just makes the error more readable
-	// s.ErrorContains(err, "is out of range or otherwise invalid")
+	s.ErrorContains(err, "--horizon=max")
+	s.ErrorContains(err, "--latest")
 }
 
 func (s *WatchCmdSuite) TestNoErrorOrNoChanges() {
@@ -79,7 +74,7 @@ func (s *WatchCmdSuite) TestNoChangesForFictitiousTenant() {
 		"veracity",
 		"--data-url", s.Env.VerifiableDataURL,
 		"--tenant", s.Env.UnknownTenantId,
-		"watch",
+		"watch", "--latest",
 	})
 	assert.Equal(err, veracity.ErrNoChanges)
 }

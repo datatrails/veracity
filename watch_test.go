@@ -68,6 +68,39 @@ func TestNewWatchConfig(t *testing.T) {
 		check     checkWatchConfig
 		errPrefix string
 	}{
+
+		{
+			name: "max horizon alias",
+			args: args{
+				cCtx: &mockContext{
+					horizon: "max",
+				},
+				cmd: new(CmdCtx),
+			},
+		},
+
+		{
+			name: "latest flag for casual replicators",
+			args: args{
+				cCtx: &mockContext{
+					latest: true,
+				},
+				cmd: new(CmdCtx),
+			},
+		},
+
+		{
+			name: "latest mutualy exclusive with horizon",
+			args: args{
+				cCtx: &mockContext{
+					latest:  true,
+					horizon: "1h",
+				},
+				cmd: new(CmdCtx),
+			},
+			errPrefix: "the latest flag is mutualy exclusive",
+		},
+
 		{
 			name: "interval too small",
 			args: args{
@@ -143,7 +176,7 @@ func TestNewWatchConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewWatchConfig(tt.args.cCtx, tt.args.cmd, &mockReporter{})
+			got, err := NewWatchConfig(tt.args.cCtx, tt.args.cmd)
 			if err != nil {
 				if tt.errPrefix == "" {
 					t.Errorf("NewWatchConfig() unexpected error = %v", err)
@@ -500,12 +533,36 @@ func (r *mockReporter) Outf(message string, args ...any) {
 
 type mockContext struct {
 	since    *time.Time
+	latest   bool
 	mode     string
 	idsince  string
 	horizon  string
 	interval time.Duration
 	count    int
 	tenant   string
+}
+
+func (c mockContext) IsSet(n string) bool {
+	switch n {
+	case "since":
+		return c.since != nil
+	case "latest":
+		return c.latest == true
+	case "mode":
+		return c.mode != ""
+	case "idsince":
+		return c.idsince != ""
+	case "horizon":
+		return c.horizon != ""
+	case "interval":
+		return c.interval != 0
+	case "count":
+		return c.count != 0
+	case "tenant":
+		return c.tenant != ""
+	default:
+		return false
+	}
 }
 
 func (c mockContext) String(n string) string {
@@ -520,6 +577,15 @@ func (c mockContext) String(n string) string {
 		return c.horizon
 	default:
 		return ""
+	}
+}
+
+func (c mockContext) Bool(n string) bool {
+	switch n {
+	case "latest":
+		return c.latest
+	default:
+		return false
 	}
 }
 

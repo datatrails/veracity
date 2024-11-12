@@ -71,6 +71,13 @@ testVeracityWatchPublicFindsActivity() {
     assertContains "watch-public should find activity" "$output" "$PROD_PUBLIC_TENANT_ID"
 }
 
+testVeracityWatchLatestFindsActivity() {
+    local output
+    output=$($VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata --tenant=$PROD_PUBLIC_TENANT_ID watch --latest)
+    assertEquals "watch-public --latest should return a 0 exit code" 0 $?
+    assertContains "watch-public --latest should find activity" "$output" "$PROD_PUBLIC_TENANT_ID"
+}
+
 testVeracityReplicateLogsPublicTenantWatchPipe() {
     local output
 

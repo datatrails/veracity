@@ -198,5 +198,6 @@ Additional Commands include:
 * `watch` - discover recently active logs
 * `replicate-logs` - create or update a local trusted replica of one more more tenants logs,
    accepts the output of `watch` as input.
+* `receipt` - Generate a [COSE Receipt](https://www.ietf.org/archive/id/draft-ietf-cose-merkle-tree-proofs-07.html) of inclusion using the [MMRIVER profile](https://www.ietf.org/archive/id/draft-bryce-cose-merkle-mountain-range-proofs-00.html) for an entry.
 
 For more information, please visit the [DataTrails documentation](https://docs.datatrails.ai/)

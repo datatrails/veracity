@@ -47,10 +47,6 @@ func NewReplicateLogsCmd() *cli.Command {
 		Usage:   `verifies the remote log and replicates it locally, ensuring the remote changes are consistent with the trusted local replica.`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{Name: skipUncommittedFlagName, Value: false},
-			&cli.BoolFlag{
-				Name: "enable-v1seals", Value: false,
-				Usage: "Set to enable pre-release suport for the new V1 seal format. Once the new format is in production, this flag will be removed.",
-			},
 			&cli.IntFlag{
 				Name: "massif", Aliases: []string{"m"},
 			},
@@ -373,31 +369,15 @@ func (v *VerifiedReplica) ReplicateVerifiedUpdates(
 		return false
 	}
 
-	remoteOptionsFromLocal := func(local *massifs.VerifiedContext) []massifs.ReaderOption {
-		var opts []massifs.ReaderOption
-		if local == nil {
-			return opts
-		}
-
-		return append(opts, massifs.WithTrustedBaseState(local.MMRState))
-	}
-
 	// on demand promotion of a v0 state to a v1 state, for compatibility with the consistency check.
 	trustedBaseState := func(local *massifs.VerifiedContext) (massifs.MMRState, error) {
 
 		if local.MMRState.Version > int(massifs.MMRStateVersion0) {
-			// this will just work, until v1 seals reach production no customer can encounter this.
-			return local.MMRState, nil
-		}
-
-		if !v.cCtx.Bool("enable-v1seals") {
-			// The user has not explictly enabled the new seal format, so we return the legacy state unchanged.
-			// THis will "just work" for production. Use against a pre-release endpoint will fail verification.
 			return local.MMRState, nil
 		}
 
 		// At this point we have a local seal in v0 format and we expect the
-		// remote seal to be in v1 format (post v1 seal release for avid + forestrie).
+		// remote seal to be in v1 format.
 		// We need to promote the legacy base state to a V1 state for the
 		// consistency check.  This is a one way operation, and the legacy seal
 		// root is discarded.  Once the seal for the open massif is upgraded,
@@ -475,6 +455,7 @@ func (v *VerifiedReplica) ReplicateVerifiedUpdates(
 
 	for i := startMassif; i <= endMassif; i++ {
 
+		remoteVerifyOpts := []massifs.ReaderOption{massifs.WithCBORCodec(v.cborCodec)}
 		if local != nil {
 			// Promote the trusted base state to a V1 state if it is a V0 state.
 			// All currently incomplete massifs in remote replicas will have their
@@ -482,10 +463,12 @@ func (v *VerifiedReplica) ReplicateVerifiedUpdates(
 			// completed massifs will remain as V0 seals.  Atempting to replicate a
 			// V0 state will fail with a suitable error. That just implies the
 			// veracity tool has been run against a legacy endpoint.
-			local.MMRState, err = trustedBaseState(local)
+			baseState, err := trustedBaseState(local)
 			if err != nil {
 				return err
 			}
+			// The local seal stays in v0 format until the end of the massif, else we break the signature
+			remoteVerifyOpts = append(remoteVerifyOpts, massifs.WithTrustedBaseState(baseState))
 		}
 
 		// On the first iteration local is *either* the predecessor to
@@ -494,8 +477,7 @@ func (v *VerifiedReplica) ReplicateVerifiedUpdates(
 		// remote is still incomplte it means there is no subseqent massif to
 		// read)
 		remote, err := v.remoteReader.GetVerifiedContext(
-			ctx, tenantIdentity, uint64(i),
-			append(remoteOptionsFromLocal(local), massifs.WithCBORCodec(v.cborCodec))...)
+			ctx, tenantIdentity, uint64(i), remoteVerifyOpts...)
 		if err != nil {
 			// both the remote massif and it's seal must be present for the
 			// verification to succeed, so we don't filter using isBlobNotFound

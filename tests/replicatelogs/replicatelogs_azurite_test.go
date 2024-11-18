@@ -18,6 +18,139 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestReplicateMassifUpdate ensures that an extension to a previously replicated
+// massif is handled correctly
+func (s *ReplicateLogsCmdSuite) TestReplicateMassifUpdate() {
+	logger.New("TestReplicateMassifUpdate")
+	defer logger.OnExit()
+
+	tc := massifs.NewLocalMassifReaderTestContext(
+		s.T(), logger.Sugar, "TestReplicateMassifUpdate")
+
+	h8MassifLeaves := mmr.HeightIndexLeafCount(uint64(8 - 1)) // = ((2 << massifHeight) - 1 + 1) >> 1
+
+	tests := []struct {
+		name                   string
+		massifHeight           uint8
+		firstUpdateMassifs     uint64
+		firstUpdateExtraLeaves uint64
+		// if zero, the last massif will be completed. If the last is full and secondUpdateMassifs is zero the test is invalid
+		secondUpdateMassifs     uint64
+		secondUpdateExtraLeaves uint64
+	}{
+		// make sure we cover the obvious edge cases
+		{name: "complete first massif", massifHeight: 8, firstUpdateMassifs: 0, firstUpdateExtraLeaves: h8MassifLeaves - 3, secondUpdateMassifs: 0, secondUpdateExtraLeaves: 3},
+	}
+	key := massifs.TestGenerateECKey(s.T(), elliptic.P256())
+
+	for _, tt := range tests {
+
+		s.Run(tt.name, func() {
+
+			// Populate the log with the content for the first update
+
+			require.True(s.T(), tt.firstUpdateMassifs > 0 || tt.firstUpdateExtraLeaves > 0, uint32(0), "invalid test")
+			require.True(s.T(), tt.secondUpdateMassifs > 0 || tt.secondUpdateExtraLeaves > 0, uint32(0), "invalid test")
+			replicaDir := s.T().TempDir()
+			tenantId0 := tc.G.NewTenantIdentity()
+
+			// note: CreateLog both creates the massifs *and* populates them
+			lastMassif := uint32(tt.firstUpdateMassifs)
+			if lastMassif > 0 {
+				lastMassif--
+			}
+
+			// If we skip CreateLog below, we need to delete the blobs
+			tc.AzuriteContext.DeleteBlobsByPrefix(massifs.TenantMassifPrefix(tenantId0))
+
+			if lastMassif > 0 {
+				tc.CreateLog(
+					tenantId0, tt.massifHeight, lastMassif,
+					massifs.TestWithSealKey(&key),
+				)
+			}
+			if tt.firstUpdateExtraLeaves > 0 {
+				tc.AddLeavesToLog(
+					tenantId0, tt.massifHeight, int(tt.firstUpdateExtraLeaves),
+					massifs.TestWithSealKey(&key),
+				)
+			}
+
+			// Replicate the log
+			// note: VERACITY_IKWID is set in main, we need it to enable --envauth so we force it here
+			app := veracity.NewApp("tests", true)
+			veracity.AddCommands(app, true)
+
+			err := app.Run([]string{
+				"veracity",
+				"--envauth", // uses the emulator
+				"--container", tc.TestConfig.Container,
+				"--data-url", s.Env.AzuriteVerifiableDataURL,
+				"--tenant", tenantId0,
+				"--height", fmt.Sprintf("%d", tt.massifHeight),
+				"replicate-logs",
+				// "--ancestors", fmt.Sprintf("%d", tt.ancestors),
+				"--replicadir", replicaDir,
+				"--massif", fmt.Sprintf("%d", lastMassif),
+			})
+			s.NoError(err)
+
+			// Add the content for the second update
+			lastMassif = uint32(tt.secondUpdateMassifs)
+			if lastMassif > 0 {
+				lastMassif--
+			}
+
+			if lastMassif > 0 {
+				massifLeaves := mmr.HeightIndexLeafCount(uint64(tt.massifHeight - 1)) // = ((2 << massifHeight) - 1 + 1) >> 1
+				// CreateLog always deleted blobs, so we can only use AddLeavesToLog here
+				for range tt.secondUpdateMassifs {
+					tc.AddLeavesToLog(
+						tenantId0, tt.massifHeight, int(massifLeaves),
+						massifs.TestWithSealKey(&key),
+					)
+				}
+			}
+			if tt.firstUpdateExtraLeaves > 0 {
+				tc.AddLeavesToLog(
+					tenantId0, tt.massifHeight, int(tt.secondUpdateExtraLeaves),
+					massifs.TestWithSealKey(&key),
+				)
+			}
+
+			// Replicate the content
+			err = app.Run([]string{
+				"veracity",
+				"--envauth", // uses the emulator
+				"--container", tc.TestConfig.Container,
+				"--data-url", s.Env.AzuriteVerifiableDataURL,
+				"--tenant", tenantId0,
+				"--height", fmt.Sprintf("%d", tt.massifHeight),
+				"replicate-logs",
+				"--replicadir", replicaDir,
+				"--massif", fmt.Sprintf("%d", lastMassif),
+			})
+			s.NoError(err)
+
+			// Attempt to replicate again, this will verify the local state and then do nothing
+			err = app.Run([]string{
+				"veracity",
+				"--envauth", // uses the emulator
+				"--container", tc.TestConfig.Container,
+				"--data-url", s.Env.AzuriteVerifiableDataURL,
+				"--tenant", tenantId0,
+				"--height", fmt.Sprintf("%d", tt.massifHeight),
+				"replicate-logs",
+				"--replicadir", replicaDir,
+				"--massif", fmt.Sprintf("%d", lastMassif),
+			})
+
+			s.NoError(err)
+		})
+	}
+
+}
+
 // TestV0ToV1ReplicationTransition tests that v0 seal replica can be continued with v1 seals
 // In this tests the log starts with v0 seals, is replicated, and the continues with v1 seals.
 // This covers the production case where there are previously replicated logs.
@@ -134,8 +267,9 @@ func (s *ReplicateLogsCmdSuite) TestV0ToV1ReplicationTransition() {
 				"--replicadir", replicaDir,
 				"--massif", fmt.Sprintf("%d", lastMassif),
 			})
-			s.Error(err) // not explicitly enabling seals, replication should fail
+			s.NoError(err)
 
+			// re-read the v1 seal and decide we are up to date
 			err = app.Run([]string{
 				"veracity",
 				"--envauth", // uses the emulator
@@ -144,9 +278,6 @@ func (s *ReplicateLogsCmdSuite) TestV0ToV1ReplicationTransition() {
 				"--tenant", tenantId0,
 				"--height", fmt.Sprintf("%d", tt.massifHeight),
 				"replicate-logs",
-
-				// enable the v1 seals and the replication should succeed
-				"--enable-v1seals",
 				"--replicadir", replicaDir,
 				"--massif", fmt.Sprintf("%d", lastMassif),
 			})

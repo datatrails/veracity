@@ -458,16 +458,10 @@ func (v *VerifiedReplica) ReplicateVerifiedUpdates(
 		remoteVerifyOpts := []massifs.ReaderOption{massifs.WithCBORCodec(v.cborCodec)}
 		if local != nil {
 			// Promote the trusted base state to a V1 state if it is a V0 state.
-			// All currently incomplete massifs in remote replicas will have their
-			// last seal upgraded as a result.  Historic seals for previously
-			// completed massifs will remain as V0 seals.  Atempting to replicate a
-			// V0 state will fail with a suitable error. That just implies the
-			// veracity tool has been run against a legacy endpoint.
 			baseState, err := trustedBaseState(local)
 			if err != nil {
 				return err
 			}
-			// The local seal stays in v0 format until the end of the massif, else we break the signature
 			remoteVerifyOpts = append(remoteVerifyOpts, massifs.WithTrustedBaseState(baseState))
 		}
 

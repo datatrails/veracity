@@ -8,9 +8,11 @@ import (
 	"testing"
 
 	"github.com/datatrails/go-datatrails-common/logger"
-	"github.com/datatrails/go-datatrails-logverification/logverification"
+	"github.com/datatrails/go-datatrails-logverification/logverification/app"
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
+	veracityapp "github.com/datatrails/veracity/app"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type MockMR struct {
@@ -64,41 +66,41 @@ func TestVerifyEvent(t *testing.T) {
 	logger.New("TestVerifyList")
 	defer logger.OnExit()
 	event := []byte(`{
-		"identity": "publicassets/87dd2e5a-42b4-49a5-8693-97f40a5af7f8/events/a022f458-8e55-4d63-a200-4172a42fc2aa", 
-		"asset_identity": "publicassets/87dd2e5a-42b4-49a5-8693-97f40a5af7f8", 
+		"identity": "publicassets/87dd2e5a-42b4-49a5-8693-97f40a5af7f8/events/a022f458-8e55-4d63-a200-4172a42fc2aa",
+		"asset_identity": "publicassets/87dd2e5a-42b4-49a5-8693-97f40a5af7f8",
 		"event_attributes": {
-			"arc_access_policy_asset_attributes_read":  [ 
-				{"attribute" :"*","0x4609ea6bbe85F61bc64760273ce6D89A632B569f" :"wallet","SmL4PHAHXLdpkj/c6Xs+2br+hxqLmhcRk75Hkj5DyEQ=" :"tessera"}], 
-			"arc_access_policy_event_arc_display_type_read":  [ 
-				{"SmL4PHAHXLdpkj/c6Xs+2br+hxqLmhcRk75Hkj5DyEQ=" :"tessera","value" :"*","0x4609ea6bbe85F61bc64760273ce6D89A632B569f" :"wallet"}], 
-			"arc_access_policy_always_read":  [ 
+			"arc_access_policy_asset_attributes_read":  [
+				{"attribute" :"*","0x4609ea6bbe85F61bc64760273ce6D89A632B569f" :"wallet","SmL4PHAHXLdpkj/c6Xs+2br+hxqLmhcRk75Hkj5DyEQ=" :"tessera"}],
+			"arc_access_policy_event_arc_display_type_read":  [
+				{"SmL4PHAHXLdpkj/c6Xs+2br+hxqLmhcRk75Hkj5DyEQ=" :"tessera","value" :"*","0x4609ea6bbe85F61bc64760273ce6D89A632B569f" :"wallet"}],
+			"arc_access_policy_always_read":  [
 				{"wallet" :"0x0E29670b420B7f2E8E699647b632cdE49D868dA7","tessera" :"SmL4PHAHXLdpkj/c6Xs+2br+hxqLmhcRk75Hkj5DyEQ="}]
-		}, 
-		"asset_attributes": {"arc_display_name": "Dava Derby", "arc_display_type": "public-test"}, 
-		"operation": "NewAsset", 
-		"behaviour": "AssetCreator", 
-		"timestamp_declared": "2024-05-24T07:26:58Z", 
-		"timestamp_accepted": "2024-05-24T07:26:58Z", 
-		"timestamp_committed": "2024-05-24T07:27:00.200Z", 
-		"principal_declared": {"issuer":"", "subject":"", "display_name":"", "email":""}, 
-		"principal_accepted": {"issuer":"", "subject":"", "display_name":"", "email":""}, 
-		"confirmation_status": "CONFIRMED", 
-		"transaction_id": "0xc891533b1806555fff9ab853cd9ce1bb2c00753609070a875a44ec53a6c1213b", 
-		"block_number": 7932, 
-		"transaction_index": 1, 
-		"from": "0x0E29670b420B7f2E8E699647b632cdE49D868dA7", 
-		"tenant_identity": "tenant/7dfaa5ef-226f-4f40-90a5-c015e59998a8", 
-		"merklelog_entry": {"commit":{"index":"0", "idtimestamp":"018fa97ef269039b00"}, 
+		},
+		"asset_attributes": {"arc_display_name": "Dava Derby", "arc_display_type": "public-test"},
+		"operation": "NewAsset",
+		"behaviour": "AssetCreator",
+		"timestamp_declared": "2024-05-24T07:26:58Z",
+		"timestamp_accepted": "2024-05-24T07:26:58Z",
+		"timestamp_committed": "2024-05-24T07:27:00.200Z",
+		"principal_declared": {"issuer":"", "subject":"", "display_name":"", "email":""},
+		"principal_accepted": {"issuer":"", "subject":"", "display_name":"", "email":""},
+		"confirmation_status": "CONFIRMED",
+		"transaction_id": "0xc891533b1806555fff9ab853cd9ce1bb2c00753609070a875a44ec53a6c1213b",
+		"block_number": 7932,
+		"transaction_index": 1,
+		"from": "0x0E29670b420B7f2E8E699647b632cdE49D868dA7",
+		"tenant_identity": "tenant/7dfaa5ef-226f-4f40-90a5-c015e59998a8",
+		"merklelog_entry": {"commit":{"index":"0", "idtimestamp":"018fa97ef269039b00"},
 		"confirm":{
-			"mmr_size":"7", 
-			"root":"/rlMNJhlay9CUuO3LgX4lSSDK6dDhtKesCO50CtrHr4=", 
-			"timestamp":"1716535620409", 
-			"idtimestamp":"", 
-			"signed_tree_head":""}, 
+			"mmr_size":"7",
+			"root":"/rlMNJhlay9CUuO3LgX4lSSDK6dDhtKesCO50CtrHr4=",
+			"timestamp":"1716535620409",
+			"idtimestamp":"",
+			"signed_tree_head":""},
 		"unequivocal":null}
 	}`)
 
-	eventOK, _ := logverification.NewVerifiableEvent(event)
+	eventOK, _ := veracityapp.NewAssetsV2AppEntry(event)
 
 	justDecode := func(in string) []byte {
 		b, _ := hex.DecodeString(in)
@@ -107,13 +109,13 @@ func TestVerifyEvent(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		event         *logverification.VerifiableEvent
+		event         *app.AppEntry
 		massifReader  MassifReader
 		expectedProof [][]byte
 		expectedError bool
 	}{
 		{
-			name:  "smiple OK",
+			name:  "simple OK",
 			event: eventOK,
 			massifReader: NewMockMR(0,
 				//       7
@@ -180,15 +182,28 @@ func TestVerifyEvent(t *testing.T) {
 		},
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			proof, err := verifyEvent(tc.event, defaultMassifHeight, tc.massifReader, "", "")
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 
-			if tc.expectedError {
+			logTenant, err := test.event.LogTenant()
+			require.Nil(t, err)
+
+			massifIndex := massifs.MassifIndexFromMMRIndex(defaultMassifHeight, test.event.MMRIndex())
+
+			ctx := context.Background()
+			massif, err := test.massifReader.GetMassif(ctx, logTenant, massifIndex)
+			require.NoError(t, err)
+
+			mmrEntry, err := test.event.MMREntry(&massif)
+			require.NoError(t, err)
+
+			proof, err := verifyEvent(test.event, logTenant, mmrEntry, defaultMassifHeight, test.massifReader)
+
+			if test.expectedError {
 				assert.NotNil(t, err, "expected error got nil")
 			} else {
 				assert.Nil(t, err, "unexpected error")
-				assert.Equal(t, tc.expectedProof, proof)
+				assert.Equal(t, test.expectedProof, proof)
 			}
 		})
 	}

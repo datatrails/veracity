@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/datatrails/go-datatrails-logverification/logverification"
+	"github.com/datatrails/go-datatrails-logverification/logverification/app"
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
 	"github.com/datatrails/go-datatrails-merklelog/mmr"
 	"github.com/urfave/cli/v2"
+
+	veracityapp "github.com/datatrails/veracity/app"
 )
 
 var (
@@ -31,31 +33,17 @@ func proofPath(proof [][]byte) string {
 }
 
 func verifyEvent(
-	event *logverification.VerifiableEvent, massifHeight uint8, massifReader MassifReader,
-	forTenant string,
-	tenantLogPath string,
+	event *app.AppEntry, logTenant string, mmrEntry []byte, massifHeight uint8, massifReader MassifReader,
 ) ([][]byte, error) {
 
 	// Get the mmrIndex from the request and then compute the massif
 	// it implies based on the massifHeight command line option.
-	mmrIndex := event.MerkleLog.Commit.Index
+	mmrIndex := event.MMRIndex()
 
-	tenantIdentity := forTenant
 	massifIndex := massifs.MassifIndexFromMMRIndex(massifHeight, mmrIndex)
-	if tenantIdentity == "" {
-		// The tenant identity on the event is the original tenant
-		// that created the event. For public assets and shared
-		// assets, this is true regardless of which tenancy the
-		// record is fetched from.  Those same events will appear in
-		// the logs of all tenants they were shared with.
-		tenantIdentity = event.TenantID
-	}
-	if tenantLogPath == "" {
-		tenantLogPath = tenantIdentity
-	}
 
 	// read the massif blob
-	massif, err := massifReader.GetMassif(context.Background(), tenantLogPath, massifIndex)
+	massif, err := massifReader.GetMassif(context.Background(), logTenant, massifIndex)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +58,7 @@ func verifyEvent(
 	// includes the event. Future work can deepen this to include
 	// discovery of the log head, and or verification against a
 	// sealed MMRSize.
-	verified, err := mmr.VerifyInclusion(&massif, sha256.New(), mmrSize, event.LeafHash, mmrIndex, proof)
+	verified, err := mmr.VerifyInclusion(&massif, sha256.New(), mmrSize, mmrEntry, mmrIndex, proof)
 	if verified {
 		return proof, nil
 	}
@@ -111,14 +99,29 @@ Note: for publicly attested events, or shared protected events, you must use --t
 				cmd.log.Infof(m, args...)
 			}
 
-			var verifiableEvents []logverification.VerifiableEvent
-			if cCtx.Args().Len() > 0 {
-				// note: to be permissive in what we accept, we just require the minimum count here.
-				// we do not proces multiple files if there are more than one, though we could.
-				verifiableEvents, err = filePathToVerifiableEvents(cCtx.Args().Get(0))
+			tenantIdentity := cCtx.String("tenant")
+			if tenantIdentity != "" {
+				log("verifying for tenant: %s", tenantIdentity)
 			} else {
-				verifiableEvents, err = stdinToVerifiableEvents()
+				log("verifying protected events for the event creator")
 			}
+
+			// If we are reading the massif log locally, the log path is the
+			// data-local path. The reader does the right thing regardless of
+			// whether the option is a directory or a file.
+			// verifyEvent defaults it to tenantIdentity for the benefit of the remote reader implementation
+			tenantLogPath := cCtx.String("data-local")
+
+			if tenantLogPath != "" {
+				tenantIdentity = tenantLogPath
+			}
+
+			appData, err := veracityapp.ReadAppData(cCtx.Args().Len() > 0, cCtx.Args().Get(0))
+			if err != nil {
+				return err
+			}
+
+			verifiableLogEntries, err := veracityapp.AppDataToVerifiableLogEntries(appData, tenantIdentity)
 			if err != nil {
 				return err
 			}
@@ -127,63 +130,45 @@ Note: for publicly attested events, or shared protected events, you must use --t
 				return err
 			}
 
-			tenantIdentity := cCtx.String("tenant")
-			if tenantIdentity != "" {
-				log("verifying for tenant: %s", tenantIdentity)
-			} else {
-				log("verifying protected events for the asset creator")
-			}
-
 			var countNotCommitted int
 			var countVerifyFailed int
 
-			// If we are reading the massif log locally, the log path is the
-			// data-local path. The reader does the right thing regardless of
-			// whether the option is a directory or a file.
-			// verifyEvent defaults it to tenantIdentity for the benefit of the remote reader implementation
-			tenantLogPath := cCtx.String("data-local")
+			for _, event := range verifiableLogEntries {
 
-			for _, event := range verifiableEvents {
+				leafIndex := mmr.LeafIndex(event.MMRIndex())
 
-				// don't try if we don't even have any merkle log entries on this event
-				if event.MerkleLog == nil || event.MerkleLog.Commit == nil {
-					countNotCommitted += 1
-					log("not committed: %s", event.EventID)
-					continue
-				}
+				verified, err := event.VerifyInclusion(&cmd.massif)
 
-				mmrIndex := event.MerkleLog.Commit.Index
-				leafIndex := mmr.LeafIndex(mmrIndex)
-				log("verifying: %d %d %s %s", mmrIndex, leafIndex, event.MerkleLog.Commit.Idtimestamp, event.EventID)
-				proof, err := verifyEvent(&event, cmd.massifHeight, cmd.massifReader, tenantIdentity, tenantLogPath)
-				if err != nil {
-
-					// We keep going if the error is a verification failure, as
-					// this supports reporting "gaps". All other errors are
-					// imediately terminal
-					if !errors.Is(err, ErrVerifyInclusionFailed) {
-						return err
-					}
+				// We keep going if the error is a verification failure, as
+				// this supports reporting "gaps". All other errors are
+				// imediately terminal
+				if !errors.Is(err, ErrVerifyInclusionFailed) || !verified {
 					countVerifyFailed += 1
-					log("XX|%d %d\n", mmrIndex, leafIndex)
+					log("XX|%d %d\n", event.MMRIndex(), leafIndex)
 					continue
 				}
 
-				log("OK|%d %d|%s", mmrIndex, leafIndex, proofPath(proof))
+				if !errors.Is(err, ErrVerifyInclusionFailed) && err != nil {
+					return err
+				}
+
+				proof, err := event.Proof(&cmd.massif)
+
+				log("OK|%d %d|%s", event.MMRIndex(), leafIndex, proofPath(proof))
 			}
 
 			if countVerifyFailed != 0 {
-				if len(verifiableEvents) == 1 {
+				if len(verifiableLogEntries) == 1 {
 					return fmt.Errorf("%w. for tenant %s", ErrVerifyInclusionFailed, tenantIdentity)
 				}
 				return fmt.Errorf("%w. for tenant %s", ErrVerifyInclusionFailed, tenantIdentity)
 			}
 
 			if countNotCommitted > 0 {
-				if len(verifiableEvents) == 1 {
+				if len(verifiableLogEntries) == 1 {
 					return fmt.Errorf("%w. not committed: %d", ErrUncommittedEvents, countNotCommitted)
 				}
-				return fmt.Errorf("%w. %d events of %d were not committed", ErrUncommittedEvents, countNotCommitted, len(verifiableEvents))
+				return fmt.Errorf("%w. %d events of %d were not committed", ErrUncommittedEvents, countNotCommitted, len(verifiableLogEntries))
 			}
 
 			return nil

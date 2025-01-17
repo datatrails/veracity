@@ -8,6 +8,13 @@ import (
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
 )
 
+// MassifGetter gets a specific massif based on the massifIndex given for a tenant log
+type MassifGetter interface {
+	GetMassif(
+		ctx context.Context, tenantIdentity string, massifIndex uint64, opts ...massifs.ReaderOption,
+	) (massifs.MassifContext, error)
+}
+
 type MassifReader interface {
 	GetVerifiedContext(
 		ctx context.Context, tenantIdentity string, massifIndex uint64,
@@ -23,9 +30,7 @@ type MassifReader interface {
 	GetLazyContext(
 		ctx context.Context, tenantIdentity string, which massifs.LogicalBlob, opts ...massifs.ReaderOption,
 	) (massifs.LogBlobContext, uint64, error)
-	GetMassif(
-		ctx context.Context, tenantIdentity string, massifIndex uint64, opts ...massifs.ReaderOption,
-	) (massifs.MassifContext, error)
+	MassifGetter
 }
 
 // CmdCtx holds shared config and config derived state for all commands

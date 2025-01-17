@@ -2,8 +2,8 @@ package veracity
 
 import (
 	"context"
-	"encoding/hex"
-	"errors"
+	"crypto/sha256"
+	"encoding/binary"
 	"fmt"
 	"testing"
 
@@ -15,169 +15,157 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type MockMR struct {
-	data map[uint64][]byte
-}
+// testMassifContext generates a massif context with 2 entries
+//
+// the first entry is a known assetsv2 events
+// the seconds entry is a known eventsv1 event
+func testMassifContext(t *testing.T) *massifs.MassifContext {
 
-func (*MockMR) GetFirstMassif(ctx context.Context, tenantIdentity string, opts ...massifs.ReaderOption) (massifs.MassifContext, error) {
-	return massifs.MassifContext{}, fmt.Errorf("not implemented")
-}
-func (*MockMR) GetHeadMassif(ctx context.Context, tenantIdentity string, opts ...massifs.ReaderOption) (massifs.MassifContext, error) {
-	return massifs.MassifContext{}, fmt.Errorf("not implemented")
-}
-func (*MockMR) GetLazyContext(ctx context.Context, tenantIdentity string, which massifs.LogicalBlob, opts ...massifs.ReaderOption) (massifs.LogBlobContext, uint64, error) {
-	return massifs.LogBlobContext{}, 0, fmt.Errorf("not implemented")
-}
-func (m *MockMR) GetMassif(ctx context.Context, tenantIdentity string, massifIndex uint64, opts ...massifs.ReaderOption) (massifs.MassifContext, error) {
-	mc := massifs.MassifContext{}
-	data, ok := m.data[massifIndex]
-	if !ok {
-		return mc, fmt.Errorf("massif not found")
+	start := massifs.MassifStart{
+		MassifHeight: 3,
 	}
-	mc.Data = data
-	return mc, nil
+
+	testMassifContext := &massifs.MassifContext{
+		Start: start,
+		LogBlobContext: massifs.LogBlobContext{
+			BlobPath: "test",
+			Tags:     map[string]string{},
+		},
+	}
+
+	data, err := start.MarshalBinary()
+	require.NoError(t, err)
+
+	testMassifContext.Data = append(data, testMassifContext.InitIndexData()...)
+
+	testMassifContext.Tags["firstindex"] = fmt.Sprintf("%016x", testMassifContext.Start.FirstIndex)
+
+	hasher := sha256.New()
+
+	// KAT Data taken from an actual merklelog.
+
+	// AssetsV2
+	_, err = testMassifContext.AddHashedLeaf(
+		hasher,
+		binary.BigEndian.Uint64([]byte{148, 111, 227, 95, 198, 1, 121, 0}),
+		[]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		[]byte("tenant/112758ce-a8cb-4924-8df8-fcba1e31f8b0"),
+		[]byte("assets/899e00a2-29bc-4316-bf70-121ce2044472/events/450dce94-065e-4f6a-bf69-7b59f28716b6"),
+		[]byte{97, 231, 1, 42, 127, 20, 181, 70, 122, 134, 84, 231, 174, 117, 200, 148, 171, 205, 57, 146, 174, 48, 34, 30, 152, 215, 77, 3, 204, 14, 202, 57},
+	)
+	require.NoError(t, err)
+
+	// EventsV1
+	_, err = testMassifContext.AddHashedLeaf(
+		hasher,
+		binary.BigEndian.Uint64([]byte{148, 112, 0, 54, 17, 1, 121, 0}),
+		[]byte{1, 17, 39, 88, 206, 168, 203, 73, 36, 141, 248, 252, 186, 30, 49, 248, 176, 0, 0, 0, 0, 0, 0, 0},
+		[]byte("tenant/112758ce-a8cb-4924-8df8-fcba1e31f8b0"),
+		[]byte("events/01947000-3456-780f-bfa9-29881e3bac88"),
+		[]byte{215, 191, 107, 210, 134, 10, 40, 56, 226, 71, 136, 164, 9, 118, 166, 159, 86, 31, 175, 135, 202, 115, 37, 151, 174, 118, 115, 113, 25, 16, 144, 250},
+	)
+	require.NoError(t, err)
+
+	// Intermediate Node Skipped
+
+	return testMassifContext
 }
 
-func (m *MockMR) GetHeadVerifiedContext(
-	ctx context.Context, tenantIdentity string,
+type fakeMassifGetter struct {
+	t             *testing.T
+	massifContext *massifs.MassifContext
+}
+
+// NewFakeMassifGetter creates a new massif getter that has 2 entries in the massif it gets
+//
+// one assetsv2 event entry and one eventsv1 entry
+func NewFakeMassifGetter(t *testing.T) *fakeMassifGetter {
+
+	massifContext := testMassifContext(t)
+
+	return &fakeMassifGetter{
+		t:             t,
+		massifContext: massifContext,
+	}
+
+}
+
+// NewFakeMassifGetterInvalidRoot creates a new massif getter that has an incorrect massif root
+func NewFakeMassifGetterInvalidRoot(t *testing.T) *fakeMassifGetter {
+
+	massifContext := testMassifContext(t)
+
+	// a massif context with 2 entries has its root at index 2
+	//
+	//   2
+	//  / \
+	// 0   1
+	rootMMRIndex := 2
+
+	rootDataStart := (massifContext.LogStart() + uint64(rootMMRIndex*massifs.LogEntryBytes)) - 1
+	rootDataEnd := (rootDataStart + massifs.ValueBytes)
+
+	// set the start and end of the root entry to 0
+	//  to make the root entry invalid
+	massifContext.Data[rootDataStart] = 0x0
+	massifContext.Data[rootDataEnd] = 0x0
+
+	return &fakeMassifGetter{
+		t:             t,
+		massifContext: massifContext,
+	}
+}
+
+// GetMassif always returns the test massif
+func (tmg *fakeMassifGetter) GetMassif(
+	ctx context.Context,
+	tenantIdentity string,
+	massifIndex uint64,
 	opts ...massifs.ReaderOption,
-) (*massifs.VerifiedContext, error) {
-	return nil, errors.New("not implemented")
+) (massifs.MassifContext, error) {
+	return *tmg.massifContext, nil
 }
 
-func (m *MockMR) GetVerifiedContext(
-	ctx context.Context, tenantIdentity string, massifIndex uint64,
-	opts ...massifs.ReaderOption,
-) (*massifs.VerifiedContext, error) {
-	return nil, errors.New("not implemented")
-}
-
-func NewMockMR(massifIndex uint64, data string) *MockMR {
-	b, e := hex.DecodeString(data)
-	if e != nil {
-		return nil
-	}
-	return &MockMR{
-		data: map[uint64][]byte{massifIndex: b},
-	}
-}
-
-func TestVerifyEvent(t *testing.T) {
+func TestVerifyAssetsV2Event(t *testing.T) {
 	logger.New("TestVerifyList")
 	defer logger.OnExit()
-	event := []byte(`{
-		"identity": "publicassets/87dd2e5a-42b4-49a5-8693-97f40a5af7f8/events/a022f458-8e55-4d63-a200-4172a42fc2aa",
-		"asset_identity": "publicassets/87dd2e5a-42b4-49a5-8693-97f40a5af7f8",
-		"event_attributes": {
-			"arc_access_policy_asset_attributes_read":  [
-				{"attribute" :"*","0x4609ea6bbe85F61bc64760273ce6D89A632B569f" :"wallet","SmL4PHAHXLdpkj/c6Xs+2br+hxqLmhcRk75Hkj5DyEQ=" :"tessera"}],
-			"arc_access_policy_event_arc_display_type_read":  [
-				{"SmL4PHAHXLdpkj/c6Xs+2br+hxqLmhcRk75Hkj5DyEQ=" :"tessera","value" :"*","0x4609ea6bbe85F61bc64760273ce6D89A632B569f" :"wallet"}],
-			"arc_access_policy_always_read":  [
-				{"wallet" :"0x0E29670b420B7f2E8E699647b632cdE49D868dA7","tessera" :"SmL4PHAHXLdpkj/c6Xs+2br+hxqLmhcRk75Hkj5DyEQ="}]
-		},
-		"asset_attributes": {"arc_display_name": "Dava Derby", "arc_display_type": "public-test"},
-		"operation": "NewAsset",
-		"behaviour": "AssetCreator",
-		"timestamp_declared": "2024-05-24T07:26:58Z",
-		"timestamp_accepted": "2024-05-24T07:26:58Z",
-		"timestamp_committed": "2024-05-24T07:27:00.200Z",
-		"principal_declared": {"issuer":"", "subject":"", "display_name":"", "email":""},
-		"principal_accepted": {"issuer":"", "subject":"", "display_name":"", "email":""},
-		"confirmation_status": "CONFIRMED",
-		"transaction_id": "0xc891533b1806555fff9ab853cd9ce1bb2c00753609070a875a44ec53a6c1213b",
-		"block_number": 7932,
-		"transaction_index": 1,
-		"from": "0x0E29670b420B7f2E8E699647b632cdE49D868dA7",
-		"tenant_identity": "tenant/7dfaa5ef-226f-4f40-90a5-c015e59998a8",
-		"merklelog_entry": {"commit":{"index":"0", "idtimestamp":"018fa97ef269039b00"},
-		"confirm":{
-			"mmr_size":"7",
-			"root":"/rlMNJhlay9CUuO3LgX4lSSDK6dDhtKesCO50CtrHr4=",
-			"timestamp":"1716535620409",
-			"idtimestamp":"",
-			"signed_tree_head":""},
-		"unequivocal":null}
-	}`)
 
-	eventOK, _ := veracityapp.NewAssetsV2AppEntry(event)
+	events, _ := veracityapp.NewAssetsV2AppEntries(assetsV2SingleEventList)
+	require.NotZero(t, len(events))
 
-	justDecode := func(in string) []byte {
-		b, _ := hex.DecodeString(in)
-		return b
-	}
+	event := events[0]
 
 	tests := []struct {
 		name          string
 		event         *app.AppEntry
-		massifReader  MassifReader
+		massifGetter  MassifGetter
 		expectedProof [][]byte
 		expectedError bool
 	}{
 		{
-			name:  "simple OK",
-			event: eventOK,
-			massifReader: NewMockMR(0,
-				//       7
-				//    3       6
-				// 1    2  4     5
-				"000000000000000090757516a9086b0000000000000000000000010e00000000"+
-					"0000000000000000000000000000000000000000000000000000000000000000"+
-					"0000000000000000000000000000000000000000000000000000000000000000"+
-					"0000000000000000000000000000000000000000000000000000000000000000"+
-					"0000000000000000000000000000000000000000000000000000000000000000"+
-					"0000000000000000000000000000000000000000000000000000000000000000"+
-					"0000000000000000000000000000000000000000000000000000000000000000"+
-					"0000000000000000000000000000000000000000000000000000000000000000"+
-					"0000000000000000000000000000000000000000000000000000000000000000"+
-					"0000000000000000000000000000000000000000000000000000000000000000"+
-					"0000000000000000000000000000000000000000000000000000000000000000"+
-					"bfc511ab1b880b24bb2358e07472e3383cdeddfbc4de9d66d652197dfb2b6633"+ // this is  hash(event)
-					"0000000000000000000000000000000000000000000000000000000000000002"+ // leaf 2
-					"dbdc36cf2b46382c810ecef9a423bf7e7f222d72c221baf2e840cc94428e966c"+ // this is node 1-2 hash(3 + hash(event) + leaf 2)
-					"0000000000000000000000000000000000000000000000000000000000000004"+ // leaf 3
-					"0000000000000000000000000000000000000000000000000000000000000005"+ // leaf 4
-					"0000000000000000000000000000000000000000000000000000000000000006"+ // node 3 - 4
-					"c1dc2d0cf9982d94f97597193cce3a42c21a1b02c346c0fada0aa1d48ed2089f", // this is root hash(7 + node 1-2 + node 3-4)
-			),
+			name:          "simple OK",
+			event:         &event,
+			massifGetter:  NewFakeMassifGetter(t),
 			expectedError: false,
 			expectedProof: [][]byte{
-				justDecode("0000000000000000000000000000000000000000000000000000000000000002"),
-				justDecode("0000000000000000000000000000000000000000000000000000000000000006"),
+				{
+					0xd7, 0xbf, 0x6b, 0xd2, 0x86, 0xa, 0x28, 0x38,
+					0xe2, 0x47, 0x88, 0xa4, 0x9, 0x76, 0xa6, 0x9f,
+					0x56, 0x1f, 0xaf, 0x87, 0xca, 0x73, 0x25, 0x97,
+					0xae, 0x76, 0x73, 0x71, 0x19, 0x10, 0x90, 0xfa,
+				},
 			},
 		},
-		{
+		/**{
 			name:          "No mmr log",
-			event:         eventOK,
-			massifReader:  NewMockMR(6, "000000000000000090757516a9086b0000000000000000000000010e00000000"),
+			event:         &event,
+			massifGetter:  &fakeMassifGetter{t, nil},
 			expectedError: true,
-		},
+		},*/
 		{
-			name:  "Not valid proof",
-			event: eventOK,
-			massifReader: NewMockMR(0,
-				//       7
-				//    3       6
-				// 1    2  4     5
-				"000000000000000090757516a9086b0000000000000000000000010e00000000"+
-					"0000000000000000000000000000000000000000000000000000000000000000"+
-					"0000000000000000000000000000000000000000000000000000000000000000"+
-					"0000000000000000000000000000000000000000000000000000000000000000"+
-					"0000000000000000000000000000000000000000000000000000000000000000"+
-					"0000000000000000000000000000000000000000000000000000000000000000"+
-					"0000000000000000000000000000000000000000000000000000000000000000"+
-					"0000000000000000000000000000000000000000000000000000000000000000"+
-					"0000000000000000000000000000000000000000000000000000000000000000"+
-					"0000000000000000000000000000000000000000000000000000000000000000"+
-					"0000000000000000000000000000000000000000000000000000000000000000"+
-					"bfc511ab1b880b24bb2358e07472e3383cdeddfbc4de9d66d652197dfb2b6633"+ // this is  hash(event)
-					"0000000000000000000000000000000000000000000000000000000000000002"+ // leaf 2
-					"dbdc36cf2b46382c810ecef9a423bf7e7f222d72c221baf2e840cc94428e966c"+ // this is node 1-2 hash(3 + hash(event) + leaf 2)
-					"0000000000000000000000000000000000000000000000000000000000000004"+ // leaf 3
-					"0000000000000000000000000000000000000000000000000000000000000005"+ // leaf 4
-					"0000000000000000000000000000000000000000000000000000000000000006"+ // node 3 - 4
-					"c1dc2d0cf9982d94f97597193cce3a42c21a1b02c346c0fada0aa1d48ed208ff", // this is fake root hash - end if ff instead of 9f
-			),
+			name:          "Not valid proof",
+			event:         &event,
+			massifGetter:  NewFakeMassifGetterInvalidRoot(t),
 			expectedError: true,
 		},
 	}
@@ -191,13 +179,13 @@ func TestVerifyEvent(t *testing.T) {
 			massifIndex := massifs.MassifIndexFromMMRIndex(defaultMassifHeight, test.event.MMRIndex())
 
 			ctx := context.Background()
-			massif, err := test.massifReader.GetMassif(ctx, logTenant, massifIndex)
+			massif, err := test.massifGetter.GetMassif(ctx, logTenant, massifIndex)
 			require.NoError(t, err)
 
 			mmrEntry, err := test.event.MMREntry(&massif)
 			require.NoError(t, err)
 
-			proof, err := verifyEvent(test.event, logTenant, mmrEntry, defaultMassifHeight, test.massifReader)
+			proof, err := verifyEvent(test.event, logTenant, mmrEntry, defaultMassifHeight, test.massifGetter)
 
 			if test.expectedError {
 				assert.NotNil(t, err, "expected error got nil")

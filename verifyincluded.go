@@ -33,7 +33,7 @@ func proofPath(proof [][]byte) string {
 }
 
 func verifyEvent(
-	event *app.AppEntry, logTenant string, mmrEntry []byte, massifHeight uint8, massifReader MassifReader,
+	event *app.AppEntry, logTenant string, mmrEntry []byte, massifHeight uint8, massifGetter MassifGetter,
 ) ([][]byte, error) {
 
 	// Get the mmrIndex from the request and then compute the massif
@@ -43,7 +43,7 @@ func verifyEvent(
 	massifIndex := massifs.MassifIndexFromMMRIndex(massifHeight, mmrIndex)
 
 	// read the massif blob
-	massif, err := massifReader.GetMassif(context.Background(), logTenant, massifIndex)
+	massif, err := massifGetter.GetMassif(context.Background(), logTenant, massifIndex)
 	if err != nil {
 		return nil, err
 	}
@@ -153,6 +153,9 @@ Note: for publicly attested events, or shared protected events, you must use --t
 				}
 
 				proof, err := event.Proof(&cmd.massif)
+				if err != nil {
+					return err
+				}
 
 				log("OK|%d %d|%s", event.MMRIndex(), leafIndex, proofPath(proof))
 			}

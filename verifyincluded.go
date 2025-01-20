@@ -112,8 +112,8 @@ Note: for publicly attested events, or shared protected events, you must use --t
 			// verifyEvent defaults it to tenantIdentity for the benefit of the remote reader implementation
 			tenantLogPath := cCtx.String("data-local")
 
-			if tenantLogPath != "" {
-				tenantIdentity = tenantLogPath
+			if tenantLogPath == "" {
+				tenantLogPath = tenantIdentity
 			}
 
 			appData, err := veracityapp.ReadAppData(cCtx.Args().Len() == 0, cCtx.Args().Get(0))
@@ -147,7 +147,7 @@ Note: for publicly attested events, or shared protected events, you must use --t
 				//
 				// if it is, we get the new massif
 				if massifContext == nil || massifIndex != previousMassifIndex {
-					massif, err := cmd.massifReader.GetMassif(cCtx.Context, tenantIdentity, massifIndex)
+					massif, err := cmd.massifReader.GetMassif(cCtx.Context, tenantLogPath, massifIndex)
 					if err != nil {
 						return err
 					}

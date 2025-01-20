@@ -162,7 +162,7 @@ testValidEventNotinMassif() {
 
     output=$(curl -sL $DATATRAILS_URL/archivist/v2/$PUBLIC_EVENT_ID | $VERACITY_INSTALL --data-local $SOAK_LOCAL_BLOB_FILE --tenant=$PROD_PUBLIC_TENANT_ID verify-included 2>&1)
     assertEquals "verifying an event not in the massif should result in an error" 1 $?
-    assertStringMatch "Error should have the correct error message" "$output" "$expected_message"
+    assertStringMatch "Error should have the correct error message" "$expected_message" "$output"
 }
 
 testNon200Response() {

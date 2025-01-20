@@ -33,7 +33,7 @@ func NewEventDiagCmd() *cli.Command {
 
 			tenantIdentity := cCtx.String("tenant")
 
-			appData, err := veracityapp.ReadAppData(cCtx.Args().Len() > 0, cCtx.Args().Get(0))
+			appData, err := veracityapp.ReadAppData(cCtx.Args().Len() == 0, cCtx.Args().Get(0))
 			if err != nil {
 				return err
 			}

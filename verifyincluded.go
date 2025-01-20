@@ -116,7 +116,7 @@ Note: for publicly attested events, or shared protected events, you must use --t
 				tenantIdentity = tenantLogPath
 			}
 
-			appData, err := veracityapp.ReadAppData(cCtx.Args().Len() > 0, cCtx.Args().Get(0))
+			appData, err := veracityapp.ReadAppData(cCtx.Args().Len() == 0, cCtx.Args().Get(0))
 			if err != nil {
 				return err
 			}
@@ -133,11 +133,29 @@ Note: for publicly attested events, or shared protected events, you must use --t
 			var countNotCommitted int
 			var countVerifyFailed int
 
+			previousMassifIndex := uint64(0)
+			var massifContext *massifs.MassifContext = nil
+
 			for _, event := range verifiableLogEntries {
 
 				leafIndex := mmr.LeafIndex(event.MMRIndex())
 
-				verified, err := event.VerifyInclusion(&cmd.massif)
+				// get the massif index for the event event
+				massifIndex := massifs.MassifIndexFromMMRIndex(cmd.massifHeight, event.MMRIndex())
+
+				// check if we need this event is part of a different massif than the previous event
+				//
+				// if it is, we get the new massif
+				if massifContext == nil || massifIndex != previousMassifIndex {
+					massif, err := cmd.massifReader.GetMassif(cCtx.Context, tenantIdentity, massifIndex)
+					if err != nil {
+						return err
+					}
+
+					massifContext = &massif
+				}
+
+				verified, err := event.VerifyInclusion(massifContext)
 
 				// We keep going if the error is a verification failure, as
 				// this supports reporting "gaps". All other errors are
@@ -152,12 +170,14 @@ Note: for publicly attested events, or shared protected events, you must use --t
 					return err
 				}
 
-				proof, err := event.Proof(&cmd.massif)
+				proof, err := event.Proof(massifContext)
 				if err != nil {
 					return err
 				}
 
 				log("OK|%d %d|%s", event.MMRIndex(), leafIndex, proofPath(proof))
+
+				previousMassifIndex = massifIndex
 			}
 
 			if countVerifyFailed != 0 {

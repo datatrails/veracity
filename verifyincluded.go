@@ -159,13 +159,14 @@ Note: for publicly attested events, or shared protected events, you must use --t
 
 				// We keep going if the error is a verification failure, as
 				// this supports reporting "gaps". All other errors are
-				// imediately terminal
+				// immediately terminal
 				if errors.Is(err, mmr.ErrVerifyInclusionFailed) || !verified {
 					countVerifyFailed += 1
 					log("XX|%d %d\n", event.MMRIndex(), leafIndex)
 					continue
 				}
 
+				// all other errors immediately terminal
 				if err != nil {
 					return err
 				}

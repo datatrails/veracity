@@ -25,6 +25,10 @@ const (
 	EventsV1AppDomain = byte(1)
 )
 
+var (
+	ErrNoJsonGiven = errors.New("no json given")
+)
+
 // AppDataToVerifiableLogEntries converts the app data to verifiable log entries
 func AppDataToVerifiableLogEntries(appData []byte, logTenant string) ([]app.AppEntry, error) {
 
@@ -142,6 +146,12 @@ func eventListFromData(data []byte) ([]byte, error) {
 		Events        []json.RawMessage `json:"events,omitempty"`
 		NextPageToken json.RawMessage   `json:"next_page_token,omitempty"`
 	}{}
+
+	// check for empty json
+	// NOTE: also len(nil) == 0, so does the nil check also
+	if len(data) == 0 {
+		return nil, ErrNoJsonGiven
+	}
 
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()

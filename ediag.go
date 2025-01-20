@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
@@ -121,6 +122,8 @@ func NewEventDiagCmd() *cli.Command {
 					return err
 				}
 
+				logTrieKey := massifs.GetTrieKey(cmd.massif.Data, cmd.massif.IndexStart(), leafIndexMassif)
+
 				logTrieIDTimestampBytes := logTrieEntry[massifs.TrieEntryIdTimestampStart:massifs.TrieEntryIdTimestampEnd]
 				logTrieIDTimestamp := binary.BigEndian.Uint64(logTrieIDTimestampBytes)
 				unixMS, err := snowflakeid.IDUnixMilli(logTrieIDTimestamp, uint8(cmd.massif.Start.CommitmentEpoch))
@@ -129,16 +132,21 @@ func NewEventDiagCmd() *cli.Command {
 				}
 				idTime := time.UnixMilli(unixMS)
 
+				logTenant, err := appEntry.LogTenant()
+				if err != nil {
+					return err
+				}
+
 				trieKey := massifs.NewTrieKey(
 					massifs.KeyTypeApplicationContent,
-					appEntry.LogID(),
-					[]byte(appEntry.AppID()))
+					[]byte(logTenant),
+					[]byte(strings.TrimPrefix(appEntry.AppID(), "public")))
 				if len(trieKey) != massifs.TrieKeyBytes {
 					return massifs.ErrIndexEntryBadSize
 				}
 				cmpPrint(
 					" |%x trie-key\n",
-					" |%x != log-trie-key %x\n", trieKey[:32], logTrieEntry[:32])
+					" |%x != log-trie-key %x\n", trieKey[:32], logTrieKey[:32])
 				fmt.Printf(" |%x %s log-idtimestamp\n", logTrieIDTimestampBytes, idTime.Format(time.DateTime))
 				cmpPrint(
 					" |%x idtimestamp\n",

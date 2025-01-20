@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io"
 	"strings"
 
 	"github.com/datatrails/go-datatrails-logverification/logverification/app"
@@ -82,10 +83,17 @@ func appDomain(appData []byte) byte {
 
 	decoder := json.NewDecoder(bytes.NewReader(eventList))
 	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&events)
-	if err != nil {
-		// return default of assetsv2
-		return AssetsV2AppDomain
+	for {
+		err = decoder.Decode(&events)
+
+		if errors.Is(err, io.EOF) {
+			break
+		}
+
+		if err != nil {
+			// return default of assetsv2
+			return AssetsV2AppDomain
+		}
 	}
 
 	// decode the first event and find the identity
@@ -95,10 +103,18 @@ func appDomain(appData []byte) byte {
 
 	decoder = json.NewDecoder(bytes.NewReader(events.Events[0]))
 	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&event)
-	if err != nil {
-		// if we can't return default of assetsv2
-		return AssetsV2AppDomain
+
+	for {
+		err = decoder.Decode(&event)
+
+		if errors.Is(err, io.EOF) {
+			break
+		}
+
+		if err != nil {
+			// if we can't return default of assetsv2
+			return AssetsV2AppDomain
+		}
 	}
 
 	// find if the event identity is assetsv2 or eventsv1 identity
@@ -129,13 +145,22 @@ func eventListFromData(data []byte) ([]byte, error) {
 
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&doc)
 
-	// if we can decode the events json
-	//  we know its in the form of a list events json response from
-	//  the list events api, so just return data
-	if err == nil {
-		return data, nil
+	for {
+
+		err = decoder.Decode(&doc)
+
+		// if we can decode the events json
+		//  we know its in the form of a list events json response from
+		//  the list events api, so just return data
+		if errors.Is(err, io.EOF) {
+			return data, nil
+		}
+
+		if err != nil {
+			break
+		}
+
 	}
 
 	// if we get here we know that the given data doesn't represent

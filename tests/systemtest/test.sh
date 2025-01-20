@@ -61,7 +61,7 @@ testVeracityVersion() {
     assertEquals "veracity --version should return a 0 exit code" 0 $?
 
     echo "$output" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+'
-    assertTrue "The output should start with a semantic version string" $?  
+    assertTrue "The output should start with a semantic version string" $?
 }
 
 testVeracityWatchPublicFindsActivity() {
@@ -194,12 +194,12 @@ testNotBlobFile() {
 }
 
 testInvalidBlobUrl() {
-    local expected_message="error: unexpected end of JSON input"
+    local expected_message="error: no json given"
     local invalid_domain="https://app.datatrails.com"
     local invalid_url="$invalid_domain/verifiabledata"
     local output
     output=$(curl -sL $invalid_domain/archivist/v2/$PUBLIC_EVENT_ID | $VERACITY_INSTALL --data-url $invalid_url --tenant=$PROD_PUBLIC_TENANT_ID verify-included 2>&1)
 
     assertEquals "verifying an event not in the massif should result in an error" 1 $?
-    assertStringMatch "Error should have the correct error message" "$output" "$expected_message"
+    assertStringMatch "Error should have the correct error message" "$expected_message" "$output"
 }

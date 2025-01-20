@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/datatrails/go-datatrails-common v0.18.3
 	github.com/datatrails/go-datatrails-common-api-gen v0.6.1
-	github.com/datatrails/go-datatrails-logverification v0.3.1-0.20250116102134-3a54c0b74a15
+	github.com/datatrails/go-datatrails-logverification v0.3.1-0.20250120105619-ff54ff9d5968
 	github.com/datatrails/go-datatrails-merklelog/massifs v0.3.1
 	github.com/datatrails/go-datatrails-merklelog/mmr v0.1.1
 	github.com/datatrails/go-datatrails-merklelog/mmrtesting v0.1.0

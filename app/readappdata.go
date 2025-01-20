@@ -38,8 +38,8 @@ func ReadAppData(fromStdIn bool, filePath string) ([]byte, error) {
 
 	if fromStdIn {
 		return stdinToAppData()
-	} else {
-		return filePathToAppData(filePath)
 	}
+
+	return filePathToAppData(filePath)
 
 }

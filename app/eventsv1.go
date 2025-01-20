@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"sort"
 	"strings"
 
@@ -10,6 +11,10 @@ import (
 	"github.com/datatrails/go-datatrails-serialization/eventsv1"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/encoding/protojson"
+)
+
+var (
+	ErrInvalidEventsV1EventJson = errors.New(`invalid eventsv1 event json`)
 )
 
 func VerifiableEventsV1EventsFromData(data []byte, logTenant string) ([]app.AppEntry, error) {
@@ -42,6 +47,11 @@ func NewEventsV1AppEntries(eventsJson []byte, logTenant string) ([]app.AppEntry,
 		return nil, err
 	}
 
+	// check if we haven't got any events
+	if len(eventListJson.Events) == 0 {
+		return nil, ErrNoEvents
+	}
+
 	events := []app.AppEntry{}
 	for _, eventJson := range eventListJson.Events {
 		verifiableEvent, err := NewEventsV1AppEntry(eventJson, logTenant)
@@ -60,9 +70,13 @@ func NewEventsV1AppEntries(eventsJson []byte, logTenant string) ([]app.AppEntry,
 	return events, nil
 }
 
-// NewVerifiableEventsV1Events takes a single eventsv1 event JSON and returns a VerifiableEventsV1Event,
+// NewEventsV1AppEntry takes a single eventsv1 event JSON and returns a VerifiableEventsV1Event,
 // providing just enough information to verify and identify the event.
 func NewEventsV1AppEntry(eventJson []byte, logTenant string) (*app.AppEntry, error) {
+
+	if logTenant == "" {
+		return nil, ErrInvalidEventsV1EventJson
+	}
 
 	// special care is needed here to deal with uint64 types. json marshal /
 	// un marshal treats them as strings because they don't fit in a

@@ -29,7 +29,7 @@ var (
 	ErrNoJsonGiven = errors.New("no json given")
 )
 
-// AppDataToVerifiableLogEntries converts the app data to verifiable log entries
+// AppDataToVerifiableLogEntries converts the app data (one or more app entries) to verifiable log entries
 func AppDataToVerifiableLogEntries(appData []byte, logTenant string) ([]app.AppEntry, error) {
 
 	// first attempt to convert the appdata to a list of events

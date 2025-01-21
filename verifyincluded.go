@@ -32,6 +32,7 @@ func proofPath(proof [][]byte) string {
 	return fmt.Sprintf("[%s]", strings.Join(hexProof, ", "))
 }
 
+// verifyEvent is an example function of how to verify the inclusion of a datatrails event using the mmr and massifs modules
 func verifyEvent(
 	event *app.AppEntry, logTenant string, mmrEntry []byte, massifHeight uint8, massifGetter MassifGetter,
 ) ([][]byte, error) {

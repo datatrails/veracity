@@ -436,7 +436,7 @@ func TestWatchForChanges(t *testing.T) {
 			}
 			if tt.wantOutputs != nil {
 				reporter := tt.args.reporter.(*mockReporter)
-				for i := 0; i < len(tt.wantOutputs); i++ {
+				for i := range tt.wantOutputs {
 					if i >= len(reporter.outf) {
 						t.Errorf("wanted %d outputs, got %d", len(tt.wantOutputs), len(reporter.outf))
 						break
@@ -469,7 +469,7 @@ func newFilterBlobItems(nameAndLastIdPairs ...string) []*azStorageBlob.FilterBlo
 	// just ignore odd lenght
 	var items []*azStorageBlob.FilterBlobItem
 	pairs := len(nameAndLastIdPairs) >> 1
-	for i := 0; i < pairs; i++ {
+	for i := range pairs {
 		name := nameAndLastIdPairs[i*2]
 		lastid := nameAndLastIdPairs[i*2+1]
 		items = append(items, newFilterBlobItem(name, lastid))

@@ -5,6 +5,12 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+const (
+	millisecondMultiplier = 1000
+
+	nanoMultipler = 1e6
+)
+
 func NewTimestamp(id uint64, epoch uint8) (*timestamppb.Timestamp, error) {
 	ts := &timestamppb.Timestamp{}
 	err := SetTimestamp(id, ts, epoch)
@@ -20,8 +26,8 @@ func SetTimestamp(id uint64, ts *timestamppb.Timestamp, epoch uint8) error {
 		return err
 	}
 
-	ts.Seconds = ms / 1000
-	ts.Nanos = int32(uint64(ms)-(uint64(ts.GetSeconds())*1000)) * 1e6
+	ts.Seconds = ms / millisecondMultiplier
+	ts.Nanos = int32(uint64(ms)-(uint64(ts.GetSeconds())*millisecondMultiplier)) * nanoMultipler
 
 	return nil
 }

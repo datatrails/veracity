@@ -411,7 +411,7 @@ func (s *ReplicateLogsCmdSuite) TestAncestorMassifLogsForOneTenant() {
 
 			if tt.ancestors >= massifCount-1 {
 				// then all massifs should be replicated
-				for i := uint32(0); i < massifCount; i++ {
+				for i := range massifCount {
 					expectMassifFile := filepath.Join(replicaDir, massifs.ReplicaRelativeMassifPath(tenantId0, i))
 					s.FileExistsf(expectMassifFile, "the replicated massif should exist")
 					expectSealFile := filepath.Join(replicaDir, massifs.ReplicaRelativeSealPath(tenantId0, i))

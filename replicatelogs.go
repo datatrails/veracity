@@ -29,6 +29,12 @@ const (
 
 	// The default data retention policy is 2 years, so this is a generous default for "all data".
 	tenYearsOfHours = 10 * 365 * 24 * time.Hour
+
+	// jitterRangeMS is the range from 0 to jitter in milliseconds
+	jitterRangeMS = 100
+
+	// massifHeightMax is the maximum massif height
+	massifHeightMax = 255
 )
 
 var (
@@ -209,7 +215,7 @@ func replicateChanges(cCtx *cli.Context, cmd *CmdCtx, changes []TenantMassif, pr
 
 	var errs []error
 	for err := range errChan {
-		cmd.log.Infof(err.Error())
+		cmd.log.Infof("%v", err)
 		errs = append(errs, err)
 	}
 	if len(errs) > 0 {
@@ -239,7 +245,7 @@ func initReplication(cCtx *cli.Context, cmd *CmdCtx, change TenantMassif) (*Veri
 
 func defaultRetryDelay(_ error) time.Duration {
 	// give the delay some jitter, this is universally a good practice
-	return baseDefaultRetryDelay + time.Duration(rand.Intn(100))*time.Millisecond
+	return baseDefaultRetryDelay + time.Duration(rand.Intn(jitterRangeMS))*time.Millisecond
 }
 
 func newProgressor(cCtx *cli.Context, barName string, increments int) Progresser {
@@ -277,7 +283,7 @@ func NewVerifiedReplica(
 	}
 
 	massifHeight := cCtx.Int64("height")
-	if massifHeight > 255 {
+	if massifHeight > massifHeightMax {
 		return nil, fmt.Errorf("massif height must be less than 256")
 	}
 

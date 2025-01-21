@@ -74,7 +74,6 @@ func NewEventDiagCmd() *cli.Command {
 					// assets, this is true regardless of which tenancy the
 					// record is fetched from.  Those same events will appear in
 					// the logs of all tenants they were shared with.
-					var err error
 					tenantIdentity, err = appEntry.LogTenant()
 					if err != nil {
 						return err
@@ -132,14 +131,11 @@ func NewEventDiagCmd() *cli.Command {
 				}
 				idTime := time.UnixMilli(unixMS)
 
-				logTenant, err := appEntry.LogTenant()
-				if err != nil {
-					return err
-				}
-
+				// TODO: log version 1 uses the uuid bytes of the log tenant
+				// so we need to handle that here as well as log version 0.
 				trieKey := massifs.NewTrieKey(
 					massifs.KeyTypeApplicationContent,
-					[]byte(logTenant),
+					[]byte(tenantIdentity),
 					[]byte(strings.TrimPrefix(appEntry.AppID(), "public")))
 				if len(trieKey) != massifs.TrieKeyBytes {
 					return massifs.ErrIndexEntryBadSize

@@ -23,6 +23,10 @@ import (
 const (
 	resourceChangedProperty            = "resource_changed"
 	resourceChangeMerkleLogStoredEvent = "assetsv2merklelogeventstored"
+	millisecondMultiplier              = int64(1000)
+	names                              = 2
+	assetAttributeWords                = 4
+	eventAttributeWords                = 6
 )
 
 type leafHasher interface {
@@ -45,15 +49,18 @@ func NewAzuriteTestContext(
 	t *testing.T,
 	testLabelPrefix string,
 ) (mmrtesting.TestContext, EventTestGenerator, mmrtesting.TestConfig) {
+
+	eventRate := 500
+
 	cfg := mmrtesting.TestConfig{
-		StartTimeMS: (1698342521) * 1000, EventRate: 500,
+		StartTimeMS: (1698342521) * millisecondMultiplier, EventRate: eventRate,
 		TestLabelPrefix: testLabelPrefix,
 		TenantIdentity:  "",
 		Container:       strings.ReplaceAll(strings.ToLower(testLabelPrefix), "_", "")}
 	leafHasher := NewLeafHasher()
 	tc := mmrtesting.NewTestContext(t, cfg)
 	g := NewEventTestGenerator(
-		t, cfg.StartTimeMS/1000,
+		t, cfg.StartTimeMS/millisecondMultiplier,
 		&leafHasher,
 		mmrtesting.TestGeneratorConfig{
 			StartTimeMS:     cfg.StartTimeMS,
@@ -97,13 +104,16 @@ func (g *EventTestGenerator) NextId() (uint64, error) {
 	var err error
 	var id uint64
 
-	for i := 0; i < 2; i++ {
+	var attempts = 2
+	var sleep = time.Millisecond * 2
+
+	for range attempts {
 		id, err = g.IdState.NextID()
 		if err != nil {
 			if !errors.Is(err, snowflakeid.ErrOverloaded) {
 				return 0, err
 			}
-			time.Sleep(time.Millisecond * 2)
+			time.Sleep(sleep)
 		}
 	}
 	return id, nil
@@ -127,7 +137,7 @@ func (g *EventTestGenerator) GenerateLeaf(tenantIdentity string, base, i uint64)
 
 func (g *EventTestGenerator) GenerateEventBatch(count int) []*assets.EventResponse {
 	events := make([]*assets.EventResponse, 0, count)
-	for i := 0; i < count; i++ {
+	for range count {
 		events = append(events, g.GenerateNextEvent(mmrtesting.DefaultGeneratorTenantIdentity))
 	}
 	return events
@@ -135,7 +145,7 @@ func (g *EventTestGenerator) GenerateEventBatch(count int) []*assets.EventRespon
 
 func (g *EventTestGenerator) GenerateTenantEventMessageBatch(tenantIdentity string, count int) []*azbus.ReceivedMessage {
 	msgs := make([]*azbus.ReceivedMessage, 0, count)
-	for i := 0; i < count; i++ {
+	for range count {
 		event := assets.EventMessage{
 			TenantId: tenantIdentity,
 			Event:    g.GenerateNextEvent(tenantIdentity),
@@ -159,7 +169,7 @@ func (g *EventTestGenerator) GenerateNextEvent(tenantIdentity string) *assets.Ev
 	assetIdentity := g.NewAssetIdentity()
 	assetUUID := strings.Split(assetIdentity, "/")[1]
 
-	name := strings.Join(g.WordList(2), "")
+	name := strings.Join(g.WordList(names), "")
 	email := fmt.Sprintf("%s@datatrails.com", name)
 	subject := strconv.Itoa(g.Intn(math.MaxInt))
 
@@ -184,14 +194,14 @@ func (g *EventTestGenerator) GenerateNextEvent(tenantIdentity string) *assets.Ev
 
 			"event-attribute-0": {
 				Value: &attribute.Attribute_StrVal{
-					StrVal: g.MultiWordString(6),
+					StrVal: g.MultiWordString(eventAttributeWords),
 				},
 			},
 		},
 		AssetAttributes: map[string]*attribute.Attribute{
 			"asset-attribute-0": {
 				Value: &attribute.Attribute_StrVal{
-					StrVal: g.MultiWordString(4),
+					StrVal: g.MultiWordString(assetAttributeWords),
 				},
 			},
 		},

@@ -129,7 +129,7 @@ to produce the desired information computationaly produce
 					// massifs all have twice the amount of space reserved for
 					// the trie than we need.
 					trieDataSize := massifs.TrieEntryBytes * (1 << height)
-					peakStackSize := massifs.PeakStackLen(mi) * 32
+					peakStackSize := massifs.PeakStackLen(mi) * massifs.LogEntryBytes
 					switch cCtx.String("format") {
 					case tableFmtName:
 						row = fmt.Sprintf(tableSizesFmt, trieDataSize, peakStackSize) + row

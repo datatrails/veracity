@@ -17,7 +17,7 @@ func NewApp(version string, ikwid bool) *cli.App {
 		Usage:   "common read only operations on datatrails merklelog verifiable data",
 		Flags: []cli.Flag{
 			&cli.StringFlag{Name: "loglevel", Value: "NOOP"},
-			&cli.Int64Flag{Name: "height", Value: 14, Usage: "override the massif height"},
+			&cli.Int64Flag{Name: "height", Value: int64(defaultMassifHeight), Usage: "override the massif height"},
 			&cli.StringFlag{
 				Name: "data-url", Aliases: []string{"u"},
 				Usage: "url to download merkle log data from. mutually exclusive with data-local; if neither option is supplied, DataTrails' live log data will be used",

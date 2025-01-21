@@ -8,6 +8,10 @@ import (
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
 )
 
+const (
+	readWriteAllPermission = 0666
+)
+
 // FileWriteAppendOpener is an interface for opening a file for writing
 // The Open implementation must  open for *append*, and must create the file if it does not exist.
 // The Create implementation must truncate the file if it exists, and create it if it does not.
@@ -19,7 +23,7 @@ func (*FileWriteAppendOpener) Open(name string) (io.WriteCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	return os.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	return os.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_APPEND, readWriteAllPermission)
 }
 
 // Create ensures the named file exists, is empty and is writable

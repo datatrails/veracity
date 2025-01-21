@@ -33,7 +33,7 @@ var (
 func AppDataToVerifiableLogEntries(appData []byte, logTenant string) ([]app.AppEntry, error) {
 
 	// first attempt to convert the appdata to a list of events
-	eventList, err := eventListFromData(appData)
+	eventList, err := eventListFromJson(appData)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func AppDataToVerifiableLogEntries(appData []byte, logTenant string) ([]app.AppE
 func appDomain(appData []byte) byte {
 
 	// first attempt to convert the appdata to a list of events
-	eventList, err := eventListFromData(appData)
+	eventList, err := eventListFromJson(appData)
 	if err != nil {
 		// if we can't return default of assetsv2
 		return AssetsV2AppDomain
@@ -130,7 +130,7 @@ func appDomain(appData []byte) byte {
 
 }
 
-// eventListFromData normalises a json encoded event or *list* of events, by
+// eventListFromJson normalises a json encoded event or *list* of events, by
 // always returning a list of json encoded events.
 //
 // This converts events from the following apps:
@@ -139,7 +139,7 @@ func appDomain(appData []byte) byte {
 //
 // NOTE: there is no json validation done on the event or list of events given
 // any valid json will be accepted, use validation logic after this function.
-func eventListFromData(data []byte) ([]byte, error) {
+func eventListFromJson(data []byte) ([]byte, error) {
 	var err error
 
 	doc := struct {

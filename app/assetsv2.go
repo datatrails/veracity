@@ -22,7 +22,7 @@ func VerifiableAssetsV2EventsFromData(data []byte) ([]app.AppEntry, error) {
 
 	// Accept either the list events response format or a single event. Peak
 	// into the json data to pick which.
-	eventsJson, err := eventListFromData(data)
+	eventsJson, err := eventListFromJson(data)
 	if err != nil {
 		return nil, err
 	}

@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEventListFromData(t *testing.T) {
+func TestEventListFromJson(t *testing.T) {
 	type args struct {
 		data []byte
 	}
@@ -68,7 +68,7 @@ func TestEventListFromData(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			actual, err := eventListFromData(test.args.data)
+			actual, err := eventListFromJson(test.args.data)
 
 			assert.Equal(t, test.wantErr, err != nil)
 			assert.Equal(t, test.expected, actual)

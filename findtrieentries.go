@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/datatrails/go-datatrails-common/logger"
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
 	"github.com/datatrails/go-datatrails-merklelog/mmr"
 	"github.com/google/uuid"
@@ -62,19 +63,19 @@ func logIDToLogTenant(logID string) (string, error) {
 }
 
 // findTrieKeys searchs the log of the given log tenant for matches to the given triekeys
-// and returns the trie indexes (leaf indexes) of all the matches
-func findTrieKeys(massifReader MassifReader, logTenant string, trieKeys ...[]byte) ([]uint64, error) {
+// and returns the trie indexes (leaf indexes) of all the matches as well as the number of trie entries considered
+func findTrieKeys(log logger.Logger, massifReader MassifReader, logTenant string, trieKeys ...[]byte) ([]uint64, uint64, error) {
 
 	// get the head massif
 	headMassifContext, err := massifReader.GetHeadMassif(context.Background(), logTenant)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	// find the number of massifs
 	massifCount := headMassifContext.Start.MassifIndex + 1
 
-	leafIndex := uint64(0)
+	trieIndex := uint64(0)
 
 	matchingTrieIndexes := []uint64{}
 
@@ -82,40 +83,43 @@ func findTrieKeys(massifReader MassifReader, logTenant string, trieKeys ...[]byt
 
 		massifContext, err := massifReader.GetMassif(context.Background(), logTenant, uint64(massifIndex))
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 
-		// get the leaf count based on the size
-		massifLeaves := massifContext.MassifLeafCount()
+		// get the trieEntry count based on the size
+		// NOTE: the leaf count and trie entry count are the same
+		// NOTE: the leaf index and trie index are equivilent.
+		trieEntries := massifContext.MassifLeafCount()
+
+		log.Debugf("checking %v trie entries in massif %v for matches", trieEntries, massifIndex)
 
 		// check each leaf for matching trieKeys
-		for range massifLeaves {
+		for range trieEntries {
 
-			mmrIndex := mmr.MMRIndex(leafIndex)
+			mmrIndex := mmr.MMRIndex(trieIndex)
 
 			logTrieKey, err := massifContext.GetTrieKey(mmrIndex)
 			if err != nil {
-				return nil, err
+				return nil, 0, err
 			}
 
 			for _, trieKey := range trieKeys {
 
 				// if a triekey matches add it to the matching trie indexes
-				// NOTE: the leaf index and trie index are equivilent.
 				if bytes.Equal(trieKey, logTrieKey) {
-					matchingTrieIndexes = append(matchingTrieIndexes, leafIndex)
+					matchingTrieIndexes = append(matchingTrieIndexes, trieIndex)
 					break // only one trieKey will ever match, so if we found the matching trie key, don't keep looking
 				}
 
 			}
 
-			leafIndex++
+			trieIndex++
 
 		}
-
 	}
 
-	return matchingTrieIndexes, nil
+	// the leaf index is now the leaf size as we do an extra +1 at the end of the for loop
+	return matchingTrieIndexes, trieIndex, nil
 
 }
 
@@ -200,6 +204,7 @@ func NewFindTrieEntriesCmd() *cli.Command {
 			}
 
 			trieIndexMatches := []uint64{}
+			entriesConsidered := uint64(0)
 
 			// if we have the logID use it to find the trie key.
 			if logID != "" {
@@ -215,7 +220,9 @@ func NewFindTrieEntriesCmd() *cli.Command {
 					[]byte(appID),
 				)
 
-				trieIndexMatches, err = findTrieKeys(cmd.massifReader, logTenant, trieKey)
+				cmd.log.Debugf("trieKey: %x", trieKey)
+
+				trieIndexMatches, entriesConsidered, err = findTrieKeys(cmd.log, cmd.massifReader, logTenant, trieKey)
 				if err != nil {
 					return err
 				}
@@ -234,7 +241,9 @@ func NewFindTrieEntriesCmd() *cli.Command {
 					[]byte(appID),
 				)
 
-				logTenantUUIDStr := strings.TrimPrefix("tenant/", logTenant)
+				cmd.log.Debugf("trieKey version 0: %x", trieKeyVersion0)
+
+				logTenantUUIDStr := strings.TrimPrefix(logTenant, "tenant/")
 				logTenantUUID, err := uuid.Parse(logTenantUUIDStr)
 				if err != nil {
 
@@ -256,12 +265,16 @@ func NewFindTrieEntriesCmd() *cli.Command {
 					[]byte(appID),
 				)
 
-				trieIndexMatches, err = findTrieKeys(cmd.massifReader, logTenant, trieKeyVersion0, trieKeyVersion1)
+				cmd.log.Debugf("trieKey version 1: %x", trieKeyVersion1)
+
+				trieIndexMatches, entriesConsidered, err = findTrieKeys(cmd.log, cmd.massifReader, logTenant, trieKeyVersion0, trieKeyVersion1)
 				if err != nil {
 					return err
 				}
 
 			}
+
+			cmd.log.Debugf("entries considered: %v", entriesConsidered)
 
 			// if we want the trie index matches log them and return
 			if !asMMRIndexes {

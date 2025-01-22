@@ -100,6 +100,7 @@ func findTrieKeys(log logger.Logger, massifReader MassifReader, logTenant string
 	leafIndex := uint64(massifStartIndex * int64(mmr.HeightIndexLeafCount(uint64(massifHeight-1))))
 
 	matchingLeafIndexes := []uint64{}
+	entriesConsidered := uint64(0)
 
 	// search all massifs from the starting index to the end index
 	for massifIndex := massifStartIndex; massifIndex <= massifEndIndex; massifIndex++ {
@@ -137,12 +138,12 @@ func findTrieKeys(log logger.Logger, massifReader MassifReader, logTenant string
 			}
 
 			leafIndex++
+			entriesConsidered++
 
 		}
 	}
 
-	// the leaf index is now the leaf size as we do an extra +1 at the end of the for loop
-	return matchingLeafIndexes, leafIndex, nil
+	return matchingLeafIndexes, entriesConsidered, nil
 
 }
 

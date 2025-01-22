@@ -186,12 +186,12 @@ func NewFindTrieEntriesCmd() *cli.Command {
 			},
 			&cli.Int64Flag{
 				Name:  massifRangeStartFlagName,
-				Usage: fmt.Sprintf("if set, start the search for matching trie entries at the massif at this given massif index, Requires %v to be set as well. if omitted will search all massifs.", massifRangeEndFlagName),
+				Usage: fmt.Sprintf("if set, start the search for matching trie entries at the massif at this given massif index, also requires %v to be set. if omitted will search all massifs.", massifRangeEndFlagName),
 				Value: -1,
 			},
 			&cli.Int64Flag{
 				Name:  massifRangeEndFlagName,
-				Usage: fmt.Sprintf("if set, end the search for matching trie entries at the massif at this given massif index, Requires %v to be set as well. if omitted will search all massifs.", massifRangeStartFlagName),
+				Usage: fmt.Sprintf("if set, end the search for matching trie entries at the massif at this given massif index, also requires %v to be set. if omitted will search all massifs.", massifRangeStartFlagName),
 				Value: -1,
 			},
 		},

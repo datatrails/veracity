@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -34,8 +35,7 @@ const (
 )
 
 var (
-	ErrIncompleteMassifRange = fmt.Errorf("error both %v and %v need to be set for a massif range, or both need to be omitted", massifRangeStartFlagName, massifRangeEndFlagName)
-	ErrNoLogTenant           = fmt.Errorf("error, cannot find log tenant, please provide either %v or %v", logIDFlagName, logTenantFlagName)
+	ErrNoLogTenant = fmt.Errorf("error, cannot find log tenant, please provide either %v or %v", logIDFlagName, logTenantFlagName)
 )
 
 // logIDToLogTenant converts the log id to the log tenant
@@ -66,34 +66,17 @@ func logIDToLogTenant(logID string) (string, error) {
 	return logTenant, nil
 }
 
-// findRangeForAllMassifs returns the start and end massif index for all massifs in the log for the given log tenant
-//
-// returns massif start index, massif end index and error.
-func findRangeForAllMassifs(massifReader MassifReader, logTenant string) (int64, int64, error) {
-
-	// get the head massif
-	// NOTE: this is expensive, if there is a better way to do this lets do it
-	headMassifContext, err := massifReader.GetHeadMassif(context.Background(), logTenant)
-	if err != nil {
-		return 0, 0, err
-	}
-
-	return 0, int64(headMassifContext.Start.MassifIndex), nil
-
-}
-
 // findTrieKeys searchs the log of the given log tenant for matches to the given triekeys
 // and returns the leaf indexes (trie indexes) of all the matches as well as the number of trie entries considered
-func findTrieKeys(log logger.Logger, massifReader MassifReader, logTenant string, massifStartIndex int64, massifEndIndex int64, massifHeight uint8, trieKeys ...[]byte) ([]uint64, uint64, error) {
-
-	// search in all the massifs
-	if massifStartIndex == -1 {
-		var err error
-		massifStartIndex, massifEndIndex, err = findRangeForAllMassifs(massifReader, logTenant)
-		if err != nil {
-			return nil, 0, err
-		}
-	}
+func findTrieKeys(
+	log logger.Logger,
+	massifReader MassifReader,
+	logTenant string,
+	massifStartIndex int64,
+	massifEndIndex int64,
+	massifHeight uint8,
+	trieKeys ...[]byte,
+) ([]uint64, uint64, error) {
 
 	// find the starting leaf index by finding the number of leaf nodes in a full massif, of the given massif height,
 	//  then multiplying that by the number of massifs we are skipping over
@@ -102,11 +85,32 @@ func findTrieKeys(log logger.Logger, massifReader MassifReader, logTenant string
 	matchingLeafIndexes := []uint64{}
 	entriesConsidered := uint64(0)
 
+	massifIndex := massifStartIndex
+
 	// search all massifs from the starting index to the end index
-	for massifIndex := massifStartIndex; massifIndex <= massifEndIndex; massifIndex++ {
+	for {
+
+		// check if we have reached the last massif we want to consider checking
+		// -1 means check until the last massif, so never break here if massifEndIndex == -1
+		if massifIndex > massifEndIndex && massifEndIndex != -1 {
+			break
+		}
 
 		massifContext, err := massifReader.GetMassif(context.Background(), logTenant, uint64(massifIndex))
+
+		// check if we have reached the last massif
+		if errors.Is(err, massifs.ErrMassifNotFound) {
+			break
+		}
+
 		if err != nil {
+
+			// check if we get an azblob error of blob not found
+			// this is also an indication we have reached the last massif
+			if strings.Contains(err.Error(), "BlobNotFound") {
+				break
+			}
+
 			return nil, 0, err
 		}
 
@@ -141,6 +145,8 @@ func findTrieKeys(log logger.Logger, massifReader MassifReader, logTenant string
 			entriesConsidered++
 
 		}
+
+		massifIndex++
 	}
 
 	return matchingLeafIndexes, entriesConsidered, nil
@@ -187,12 +193,12 @@ func NewFindTrieEntriesCmd() *cli.Command {
 			},
 			&cli.Int64Flag{
 				Name:  massifRangeStartFlagName,
-				Usage: fmt.Sprintf("if set, start the search for matching trie entries at the massif at this given massif index, also requires %v to be set. if omitted will search all massifs.", massifRangeEndFlagName),
-				Value: -1,
+				Usage: "if set, start the search for matching trie entries at the massif at this given massif index. if omitted will start search at massif 0.",
+				Value: 0,
 			},
 			&cli.Int64Flag{
 				Name:  massifRangeEndFlagName,
-				Usage: fmt.Sprintf("if set, end the search for matching trie entries at the massif at this given massif index, also requires %v to be set. if omitted will search all massifs.", massifRangeStartFlagName),
+				Usage: "if set, end the search for matching trie entries at the massif at this given massif index. if omitted will end search at the last massif.",
 				Value: -1,
 			},
 		},
@@ -220,11 +226,6 @@ func NewFindTrieEntriesCmd() *cli.Command {
 			// check we only have at least 1 of log tenant or logID
 			if logTenant == "" && logID == "" {
 				return ErrNoLogTenant
-			}
-
-			// check for a complete massif range, both massif start and massif end need to be set or neither should be set.
-			if (massifStartIndex > -1 && massifEndIndex <= -1) || (massifEndIndex > -1 && massifStartIndex <= -1) {
-				return ErrIncompleteMassifRange
 			}
 
 			// if we don't have the log tenant derive it from the

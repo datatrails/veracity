@@ -93,7 +93,7 @@ func findTrieKeys(log logger.Logger, massifReader MassifReader, logTenant string
 
 		log.Debugf("checking %v trie entries in massif %v for matches", trieEntries, massifIndex)
 
-		// check each leaf for matching trieKeys
+		// check each trie entry for matching trieKeys
 		for range trieEntries {
 
 			mmrIndex := mmr.MMRIndex(trieIndex)
@@ -118,7 +118,7 @@ func findTrieKeys(log logger.Logger, massifReader MassifReader, logTenant string
 		}
 	}
 
-	// the leaf index is now the leaf size as we do an extra +1 at the end of the for loop
+	// the trie index is now the trie size as we do an extra +1 at the end of the for loop
 	return matchingTrieIndexes, trieIndex, nil
 
 }
@@ -134,6 +134,8 @@ func NewFindTrieEntriesCmd() *cli.Command {
 		By default returns all trie Indexes (leaf indexes) of matching trie entries.
 
 		The trieKey is HASH(DOMAIN | LOGID | APPID)
+
+		NOTE: ignores the global --tenant option, please use --log-tenant command option.
 `,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -164,13 +166,8 @@ func NewFindTrieEntriesCmd() *cli.Command {
 			cmd := &CmdCtx{}
 
 			// This command uses the structured logger for all optional output.
-			// Output not explicitly printed is silenced by default.
 			if err := cfgLogging(cmd, cCtx); err != nil {
 				return err
-			}
-
-			log := func(m string, args ...any) {
-				cmd.log.Infof(m, args...)
 			}
 
 			// get all flags
@@ -278,7 +275,7 @@ func NewFindTrieEntriesCmd() *cli.Command {
 
 			// if we want the trie index matches log them and return
 			if !asMMRIndexes {
-				log("matches: %v", trieIndexMatches)
+				fmt.Printf("matches: %v\n", trieIndexMatches)
 				return nil
 			}
 
@@ -290,7 +287,7 @@ func NewFindTrieEntriesCmd() *cli.Command {
 				mmrIndexMatches = append(mmrIndexMatches, mmrIndex)
 			}
 
-			log("matches: %v", mmrIndexMatches)
+			fmt.Printf("matches: %v\n", mmrIndexMatches)
 
 			return nil
 

@@ -74,10 +74,6 @@ func NewEventsV1AppEntries(eventsJson []byte, logTenant string) ([]app.AppEntry,
 // providing just enough information to verify and identify the event.
 func NewEventsV1AppEntry(eventJson []byte, logTenant string) (*app.AppEntry, error) {
 
-	if logTenant == "" {
-		return nil, ErrInvalidEventsV1EventJson
-	}
-
 	// special care is needed here to deal with uint64 types. json marshal /
 	// un marshal treats them as strings because they don't fit in a
 	// javascript Number
@@ -99,6 +95,17 @@ func NewEventsV1AppEntry(eventJson []byte, logTenant string) (*app.AppEntry, err
 	err := json.Unmarshal(eventJson, &entry)
 	if err != nil {
 		return nil, err
+	}
+
+	// check we have at least the origin tenant
+	if entry.OriginTenant == "" {
+		return nil, ErrInvalidEventsV1EventJson
+	}
+
+	// if logTenant isn't given, default to the origin tenant
+	// for log tenant.
+	if logTenant == "" {
+		logTenant = entry.OriginTenant
 	}
 
 	// get the merklelog commit info

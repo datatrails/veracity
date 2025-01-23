@@ -75,3 +75,40 @@ func TestEventListFromJson(t *testing.T) {
 		})
 	}
 }
+
+// Test_appDomain tests:
+//
+// 1. a list of assetsv2 events return assetsv2 app domain
+// 2. a list of eventsv1 events reutrn eventsv1 app domain
+func Test_appDomain(t *testing.T) {
+	type args struct {
+		appData []byte
+	}
+	tests := []struct {
+		name     string
+		args     args
+		expected byte
+	}{
+		{
+			name: "positive assetsv2",
+			args: args{
+				appData: singleAssetsv2EventJsonList,
+			},
+			expected: 0,
+		},
+		{
+			name: "positive eventsv1",
+			args: args{
+				appData: singleEventsv1EventJsonList,
+			},
+			expected: 1,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual := appDomain(test.args.appData)
+
+			assert.Equal(t, test.expected, actual)
+		})
+	}
+}

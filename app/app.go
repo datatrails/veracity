@@ -106,7 +106,6 @@ func appDomain(appData []byte) byte {
 	}{}
 
 	decoder = json.NewDecoder(bytes.NewReader(events.Events[0]))
-	decoder.DisallowUnknownFields()
 
 	for {
 		err = decoder.Decode(&event)

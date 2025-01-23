@@ -113,6 +113,10 @@ Note: for publicly attested events, or shared protected events, you must use --t
 			// verifyEvent defaults it to tenantIdentity for the benefit of the remote reader implementation
 			tenantLogPath := cCtx.String("data-local")
 
+			if tenantLogPath == "" {
+				tenantLogPath = tenantIdentity
+			}
+
 			appData, err := veracityapp.ReadAppData(cCtx.Args().Len() == 0, cCtx.Args().Get(0))
 			if err != nil {
 				return err
@@ -143,12 +147,12 @@ Note: for publicly attested events, or shared protected events, you must use --t
 				// find the log tenant path if not provided
 				if tenantLogPath == "" {
 
-					logTenant, err := event.LogTenant()
+					var err error
+					tenantLogPath, err = event.LogTenant()
 					if err != nil {
 						return err
 					}
 
-					tenantLogPath = logTenant
 				}
 
 				// check if we need this event is part of a different massif than the previous event

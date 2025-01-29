@@ -48,7 +48,7 @@ func findMMREntries(
 	// search all massifs from the starting index to the end index
 	for {
 
-		// check if we have reached the last massif we want to consider checking
+		// check if we have reached the last massif we want to consider checking.
 		// -1 means check until the last massif, so never break here if massifEndIndex == -1
 		if massifIndex > massifEndIndex && massifEndIndex != -1 {
 			break
@@ -56,7 +56,7 @@ func findMMREntries(
 
 		massifContext, err := massifReader.GetMassif(context.Background(), logTenant, uint64(massifIndex))
 
-		// check if we have reached the last massif
+		// check if we have reached the last massif for the log tenant
 		if errors.Is(err, massifs.ErrMassifNotFound) {
 			break
 		}
@@ -79,7 +79,7 @@ func findMMREntries(
 
 		log.Debugf("checking %v trie entries in massif %v for matches", mmrLeafEntries, massifIndex)
 
-		// check each trie entry for matching trieKeys
+		// check each mmr leaf entry for matching mmr entry
 		for range mmrLeafEntries {
 
 			mmrIndex := mmr.MMRIndex(leafIndex)

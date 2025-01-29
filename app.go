@@ -65,6 +65,7 @@ func AddCommands(app *cli.App, ikwid bool) *cli.App {
 		app.Commands = append(app.Commands, NewDiagCmd())
 		app.Commands = append(app.Commands, NewNodeScanCmd())
 		app.Commands = append(app.Commands, NewFindTrieEntriesCmd())
+		app.Commands = append(app.Commands, NewFindMMREntriesCmd())
 	}
 	return app
 }

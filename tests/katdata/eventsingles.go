@@ -69,6 +69,28 @@ var (
   }
 }`)
 
+	KnownGoodEventsV1Event = []byte(`{
+    "identity": "events/0194b168-bac0-75e6-bbc4-a47cc45bdbf5",
+    "attributes": {
+        "4": "finally add in the eggs",
+        "5": "put in the over until golden brown",
+        "1": "pour flour and milk into bowl",
+        "2": "mix together until gloopy",
+        "3": "slowly add in the sugar while still mixing"
+    },
+    "trails": [
+        "cake"
+    ],
+    "origin_tenant": "tenant/97e90a09-8c56-40df-a4de-42fde462ef6f",
+    "created_by": "a3732a3f-1406-45b6-bdce-2976945752fc",
+    "created_at": 1738143218368,
+    "confirmation_status": "CONFIRMED",
+    "merklelog_commit": {
+        "index": "4",
+        "idtimestamp": "0194b168bcde03be00"
+    }
+}`)
+
 	// The 'tamper' is the 'a' from a single arc_ event attribute has been clipped.
 	KnownTamperedPublicEvent = []byte(`{
   "identity": "publicassets/87dd2e5a-42b4-49a5-8693-97f40a5af7f8/events/a022f458-8e55-4d63-a200-4172a42fc2aa",

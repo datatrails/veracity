@@ -28,6 +28,26 @@ func (s *VerifyEventsSuite) TestVerifyOneEventStdIn() {
 	assert.NoErrorf(err, "the event is a known good event from the public production tenant, yet verification has failed")
 }
 
+// VerifyOneEventStdIn tests that the veracity sub command verify-included
+// can verify a single event in the format returned from a direct get.
+// The event is provided on standard input
+func (s *VerifyEventsSuite) TestVerifyOneEventsV1EventStdIn() {
+	assert := s.Assert()
+	app := veracity.NewApp("version", true)
+	veracity.AddCommands(app, true)
+
+	// note: the suite does a before & after pipe for Stdin
+	s.StdinWriteAndClose(katdata.KnownGoodEventsV1Event)
+
+	err := app.Run([]string{
+		"veracity",
+		"--loglevel", "INFO",
+		"--data-url", s.Env.VerifiableDataURL,
+		"verify-included",
+	})
+	assert.NoErrorf(err, "the event is a known good event from the public production tenant, yet verification has failed")
+}
+
 func (s *VerifyEventsSuite) TestOneTamperEventStdIn() {
 
 	assert := s.Assert()

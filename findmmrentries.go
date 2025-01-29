@@ -61,14 +61,16 @@ func findMMREntries(
 			break
 		}
 
+		// check if we get an azblob error of blob not found
+		// this is also an indication we have reached the last massif.
+		//
+		// NOTE: due to the azblob error type we need to do string contains.
+		if err != nil && strings.Contains(err.Error(), "BlobNotFound") {
+			break
+		}
+
+		// any other error we can error out on.
 		if err != nil {
-
-			// check if we get an azblob error of blob not found
-			// this is also an indication we have reached the last massif
-			if strings.Contains(err.Error(), "BlobNotFound") {
-				break
-			}
-
 			return nil, 0, err
 		}
 
@@ -82,6 +84,8 @@ func findMMREntries(
 		// check each mmr leaf entry for matching mmr entry
 		for range mmrLeafEntries {
 
+			// we increment leafIndex at the end of the loop, because we have 2 loops
+			//  and we want the leaf index to continue and not reset each inner loop.
 			mmrIndex := mmr.MMRIndex(leafIndex)
 
 			// get the mmrEntry from the massif

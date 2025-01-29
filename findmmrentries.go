@@ -225,7 +225,7 @@ func NewFindMMREntriesCmd() *cli.Command {
 			massifEndIndex := cCtx.Int64(massifRangeEndFlagName)
 
 			// configure the cmd massif reader
-			if err := cfgMassifReader(cmd, cCtx); err != nil {
+			if err = cfgMassifReader(cmd, cCtx); err != nil {
 				return err
 			}
 

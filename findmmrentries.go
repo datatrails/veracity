@@ -244,8 +244,11 @@ func NewFindMMREntriesCmd() *cli.Command {
 			}
 
 			// configure the cmd massif reader
-			cCtx.Set("tenant", logTenant)
-			if err := cfgMassifReader(cmd, cCtx); err != nil {
+			if err = cCtx.Set("tenant", logTenant); err != nil {
+				return err
+			}
+
+			if err = cfgMassifReader(cmd, cCtx); err != nil {
 				return err
 			}
 

@@ -128,6 +128,12 @@ testVerifySingleEventWithLocalMassifCopy() {
     assertEquals "verifying valid events with a local copy of the massif should result in a 0 exit code" 0 $?
 }
 
+testFindTrieKeySingleEventWithLocalMassifCopy() {
+    # Verify the event and check if the exit code is 0
+    curl -sL $DATATRAILS_URL/archivist/v2/$PUBLIC_EVENT_ID | $VERACITY_INSTALL --data-local $PROD_LOCAL_BLOB_FILE find-trie-entries --log-tenant $PROD_PUBLIC_TENANT_ID --app-id $PUBLIC_EVENT_ID
+    assertEquals "verifying valid events with a local copy of the massif should result in a 0 exit code" 0 $?
+}
+
 testVerifyIncludeLocalErrorForDuplicateMassifs() {
     # Verify the event and check if the exit code is 0
     output=$(curl -sL $DATATRAILS_URL/archivist/v2/$PUBLIC_EVENT_ID | $VERACITY_INSTALL --data-local $DUP_DIR/prod-mmr.log --tenant=$PROD_PUBLIC_TENANT_ID verify-included 2>&1)

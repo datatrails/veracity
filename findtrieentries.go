@@ -71,7 +71,7 @@ func logIDToLogTenant(logID string) (string, error) {
 func findTrieKeys(
 	log logger.Logger,
 	massifReader MassifReader,
-	logTenant string,
+	tenantLogPath string,
 	massifStartIndex int64,
 	massifEndIndex int64,
 	massifHeight uint8,
@@ -96,10 +96,15 @@ func findTrieKeys(
 			break
 		}
 
-		massifContext, err := massifReader.GetMassif(context.Background(), logTenant, uint64(massifIndex))
+		massifContext, err := massifReader.GetMassif(context.Background(), tenantLogPath, uint64(massifIndex))
 
 		// check if we have reached the last massif
 		if errors.Is(err, massifs.ErrMassifNotFound) {
+			break
+		}
+
+		// check if we have reached the last massif for local log
+		if errors.Is(err, massifs.ErrLogFileMassifNotFound) {
 			break
 		}
 
@@ -238,7 +243,18 @@ func NewFindTrieEntriesCmd() *cli.Command {
 				}
 			}
 
+			// If we are reading the massif log locally, the log path is the
+			// data-local path. The reader does the right thing regardless of
+			// whether the option is a directory or a file.
+			// verifyEvent defaults it to tenantIdentity for the benefit of the remote reader implementation
+			tenantLogPath := cCtx.String("data-local")
+
+			if tenantLogPath == "" {
+				tenantLogPath = logTenant
+			}
+
 			// configure the cmd massif reader
+			cCtx.Set("tenant", logTenant)
 			if err := cfgMassifReader(cmd, cCtx); err != nil {
 				return err
 			}
@@ -265,7 +281,7 @@ func NewFindTrieEntriesCmd() *cli.Command {
 				leafIndexMatches, entriesConsidered, err = findTrieKeys(
 					cmd.log,
 					cmd.massifReader,
-					logTenant,
+					tenantLogPath,
 					massifStartIndex,
 					massifEndIndex,
 					cmd.massifHeight,
@@ -318,7 +334,7 @@ func NewFindTrieEntriesCmd() *cli.Command {
 				leafIndexMatches, entriesConsidered, err = findTrieKeys(
 					cmd.log,
 					cmd.massifReader,
-					logTenant,
+					tenantLogPath,
 					massifStartIndex,
 					massifEndIndex,
 					cmd.massifHeight,

@@ -84,7 +84,7 @@ func findMMREntries(
 		// NOTE: the leaf index and trie index are equivilent.
 		mmrLeafEntries := massifContext.MassifLeafCount()
 
-		log.Debugf("checking %v trie entries in massif %v for matches", mmrLeafEntries, massifIndex)
+		log.Debugf("checking %v mmr entries in massif %v for matches", mmrLeafEntries, massifIndex)
 
 		// check each mmr leaf entry for matching mmr entry
 		for range mmrLeafEntries {
@@ -201,12 +201,12 @@ func NewFindMMREntriesCmd() *cli.Command {
 			},
 			&cli.Int64Flag{
 				Name:  massifRangeStartFlagName,
-				Usage: "if set, start the search for matching trie entries at the massif at this given massif index. if omitted will start search at massif 0.",
+				Usage: "if set, start the search for matching mmr entries at the massif at this given massif index. if omitted will start search at massif 0.",
 				Value: 0,
 			},
 			&cli.Int64Flag{
 				Name:  massifRangeEndFlagName,
-				Usage: "if set, end the search for matching trie entries at the massif at this given massif index. if omitted will end search at the last massif.",
+				Usage: "if set, end the search for matching mmr entries at the massif at this given massif index. if omitted will end search at the last massif.",
 				Value: -1,
 			},
 		},

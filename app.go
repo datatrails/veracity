@@ -58,14 +58,15 @@ func AddCommands(app *cli.App, ikwid bool) *cli.App {
 	app.Commands = append(app.Commands, NewReplicateLogsCmd())
 	app.Commands = append(app.Commands, NewReceiptCmd())
 
+	app.Commands = append(app.Commands, NewFindTrieEntriesCmd())
+	app.Commands = append(app.Commands, NewFindMMREntriesCmd())
+
 	if ikwid {
 		app.Commands = append(app.Commands, NewMassifsCmd())
 		app.Commands = append(app.Commands, NewLogTailCmd())
 		app.Commands = append(app.Commands, NewEventDiagCmd())
 		app.Commands = append(app.Commands, NewDiagCmd())
 		app.Commands = append(app.Commands, NewNodeScanCmd())
-		app.Commands = append(app.Commands, NewFindTrieEntriesCmd())
-		app.Commands = append(app.Commands, NewFindMMREntriesCmd())
 	}
 	return app
 }

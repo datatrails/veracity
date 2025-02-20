@@ -154,12 +154,91 @@ testFindMMREntrySingleEventWithLocalMassifCopy() {
     assertEquals "verifying finding the mmr entry of a known public prod event from a local log should match mmr index 663" "matches: [663]" "$output"
 }
 
-testVerifyIncludeLocalErrorForDuplicateMassifs() {
-    # Verify the event and check if the exit code is 0
-    output=$(curl -sL $DATATRAILS_URL/archivist/v2/$PUBLIC_EVENT_ID | $VERACITY_INSTALL --data-local $DUP_DIR/prod-mmr.log --tenant=$PROD_PUBLIC_TENANT_ID verify-included 2>&1)
+# test veracity can't update the replica for a tenant whos log has been tampered with
+#
+# in this case the tampering is copying a different tenant's log and eventually seal and overriding the originals.
+# this specific test, the overridden massif was partially full, and its overridden with a full massif.
+testReplicateLocalErrorForTamperedPartialToFullMassif() {
 
-    assertEquals "a local directory with duplicate massif indices should exit 1" 1 $?
-    assertContains "$output"  "log files with the same massif index found"
+    local output
+
+    other_tenant=tenant/97e90a09-8c56-40df-a4de-42fde462ef6f
+
+    # first get the prod tenant replicated for massif 0. NOTE: this is a partially full massif
+    rm -rf $TEST_TMPDIR/merkelogs
+    output=$($VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata \
+        --tenant=$other_tenant watch --horizon 10000h \
+        | $VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata --tenant=$other_tenant replicate-logs --ancestors=0 --replicadir=$TEST_TMPDIR/merkelogs)
+    assertEquals "watch-public should return a 0 exit code" 0 $?
+
+    COUNT=$(find $TEST_TMPDIR/merkelogs -type f | wc -l | tr -d ' ')
+    assertEquals "should replicate one massif and one seal" "2" "$COUNT"
+
+    # now get a different prod public tenant log and seal. NOTE: this is a full massif
+    tampered_log_url=${tampered_log_url:-${DATATRAILS_URL}/verifiabledata/merklelogs/v1/mmrs/${PROD_PUBLIC_TENANT_ID}/0/massifs/0000000000000000.log}
+    tampered_seal_url=${tampered_seal_url:-${DATATRAILS_URL}/verifiabledata/merklelogs/v1/mmrs/${PROD_PUBLIC_TENANT_ID}/0/massifseals/0000000000000000.sth}
+    curl -s -H "x-ms-blob-type: BlockBlob" -H "x-ms-version: 2019-12-12" $tampered_log_url -o tampered.log
+    curl -s -H "x-ms-blob-type: BlockBlob" -H "x-ms-version: 2019-12-12" $tampered_seal_url -o tampered.sth
+
+    # copy over the different tenant log for massif 0
+    cp tampered.log $TEST_TMPDIR/merkelogs/$other_tenant/0/massifs/0000000000000000.log
+
+    # attempt to replicate the logs again
+    output=$($VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata --tenant=$other_tenant replicate-logs --latest --replicadir=$TEST_TMPDIR/merkelogs)
+    assertEquals "a tampered log should exit 1" 1 $?
+    assertContains "$output"  "error: the seal signature verification failed: failed to verify seal for massif 0 for tenant tenant/97e90a09-8c56-40df-a4de-42fde462ef6f: verification error"
+
+    # now attempt to change the seal to the tampered log seal
+    cp tampered.sth $TEST_TMPDIR/merkelogs/$other_tenant/0/massifseals/0000000000000000.sth
+
+    # attempt to replicate the logs again
+    output=$($VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata --tenant=$other_tenant replicate-logs --latest --replicadir=$TEST_TMPDIR/merkelogs)
+    assertEquals "a tampered log should exit 1" 1 $?
+    assertContains "$output"  "error: index out of range"
+
+}
+
+# test veracity can't update the replica for a tenant whos log has been tampered with
+#
+# in this case the tampering is copying a different tenant's log and eventually seal and overriding the originals.
+# this specific test, the overridden massif was full, and its overridden with a partial massif.
+testReplicateLocalErrorForTamperedFullToPartialMassif() {
+
+    local output
+
+    other_tenant=tenant/97e90a09-8c56-40df-a4de-42fde462ef6f
+
+    # first get the prod public tenant replicated for massif 0. NOTE: this is a full massif
+    rm -rf $TEST_TMPDIR/merkelogs
+    output=$($VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata \
+        --tenant=$PROD_PUBLIC_TENANT_ID watch --horizon 10000h \
+        | $VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata --tenant=$PROD_PUBLIC_TENANT_ID replicate-logs --ancestors=0 --replicadir=$TEST_TMPDIR/merkelogs)
+    assertEquals "watch-public should return a 0 exit code" 0 $?
+
+    COUNT=$(find $TEST_TMPDIR/merkelogs -type f | wc -l | tr -d ' ')
+    assertEquals "should replicate one massif and one seal" "2" "$COUNT"
+
+    # now get a different prod tenant log and seal. NOTE the log is partially full for this tenant
+    tampered_log_url=${tampered_log_url:-${DATATRAILS_URL}/verifiabledata/merklelogs/v1/mmrs/${other_tenant}/0/massifs/0000000000000000.log}
+    tampered_seal_url=${tampered_seal_url:-${DATATRAILS_URL}/verifiabledata/merklelogs/v1/mmrs/${other_tenant}/0/massifseals/0000000000000000.sth}
+    curl -s -H "x-ms-blob-type: BlockBlob" -H "x-ms-version: 2019-12-12" $tampered_log_url -o tampered.log
+    curl -s -H "x-ms-blob-type: BlockBlob" -H "x-ms-version: 2019-12-12" $tampered_seal_url -o tampered.sth
+
+    # copy over the different tenant log for massif 0
+    cp tampered.log $TEST_TMPDIR/merkelogs/$PROD_PUBLIC_TENANT_ID/0/massifs/0000000000000000.log
+
+    # attempt to replicate the logs again
+    output=$($VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata --tenant=$PROD_PUBLIC_TENANT_ID replicate-logs --latest --replicadir=$TEST_TMPDIR/merkelogs)
+    assertEquals "a tampered log should exit 1" 1 $?
+    assertContains "$output"  "error: consistency check failed: the accumulator produced for the trusted base state doesn't match the root produced for the seal state fetched from the log"
+
+    # now attempt to change the seal to the tampered log seal
+    cp tampered.sth $TEST_TMPDIR/merkelogs/$PROD_PUBLIC_TENANT_ID/0/massifseals/0000000000000000.sth
+
+    # attempt to replicate the logs again
+    output=$($VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata --tenant=$PROD_PUBLIC_TENANT_ID replicate-logs --latest --replicadir=$TEST_TMPDIR/merkelogs)
+    assertEquals "a tampered log should exit 1" 1 $?
+    assertContains "$output"  "error: consistency check failed: the accumulator produced for the trusted base state doesn't match the root produced for the seal state fetched from the log"
 }
 
 testVerboseOutput() {

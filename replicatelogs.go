@@ -383,7 +383,8 @@ func (v *VerifiedReplica) ReplicateVerifiedUpdates(
 		}
 		state := local.MMRState
 		state.Version = int(massifs.MMRStateVersion1)
-		state.LegacySealRoot = nil
+		// Keep the legacy seal root so that we can verify in the case where the remote is a V0 seal
+		// state.LegacySealRoot = nil
 		state.Peaks = peaks
 		return state, nil
 	}

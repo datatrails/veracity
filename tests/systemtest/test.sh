@@ -208,14 +208,12 @@ testReplicateLocalErrorForTamperedFullToPartialMassif() {
 
     other_tenant=tenant/97e90a09-8c56-40df-a4de-42fde462ef6f
 
-    # first get the prod public tenant replicated for massif 0. NOTE: this is a full massif
     rm -rf $TEST_TMPDIR/merkelogs
-    output=$($VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata \
-        --tenant=$PROD_PUBLIC_TENANT_ID watch --horizon 10000h \
-        | $VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata --tenant=$PROD_PUBLIC_TENANT_ID replicate-logs --ancestors=0 --replicadir=$TEST_TMPDIR/merkelogs)
+    # first get the prod public tenant replicated for massif 0. NOTE: this is a full massif
+    output=$($VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata --tenant=$PROD_PUBLIC_TENANT_ID replicate-logs --massif 0 --replicadir=$TEST_TMPDIR/merklelogs)
     assertEquals "watch-public should return a 0 exit code" 0 $?
 
-    COUNT=$(find $TEST_TMPDIR/merkelogs -type f | wc -l | tr -d ' ')
+    COUNT=$(find $TEST_TMPDIR/merklelogs -type f | wc -l | tr -d ' ')
     assertEquals "should replicate one massif and one seal" "2" "$COUNT"
 
     # now get a different prod tenant log and seal. NOTE the log is partially full for this tenant
@@ -225,19 +223,19 @@ testReplicateLocalErrorForTamperedFullToPartialMassif() {
     curl -s -H "x-ms-blob-type: BlockBlob" -H "x-ms-version: 2019-12-12" $tampered_seal_url -o tampered.sth
 
     # copy over the different tenant log for massif 0
-    cp tampered.log $TEST_TMPDIR/merkelogs/$PROD_PUBLIC_TENANT_ID/0/massifs/0000000000000000.log
+    cp tampered.log $TEST_TMPDIR/merklelogs/$PROD_PUBLIC_TENANT_ID/0/massifs/0000000000000000.log
 
-    # attempt to replicate the logs again
-    output=$($VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata --tenant=$PROD_PUBLIC_TENANT_ID replicate-logs --latest --replicadir=$TEST_TMPDIR/merkelogs)
-    assertEquals "a tampered log should exit 1" 1 $?
+    # attempt to replicate the logs again, the local log data is for the wrong tenant but the local seal is correct for the replaced data and the remote seal
+    output=$($VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata --tenant=$PROD_PUBLIC_TENANT_ID replicate-logs --replicadir=$TEST_TMPDIR/merklelogs)
+    assertEquals "1: a tampered log should exit 1" 1 $?
     assertContains "$output"  "error: consistency check failed: the accumulator produced for the trusted base state doesn't match the root produced for the seal state fetched from the log"
 
-    # now attempt to change the seal to the tampered log seal
-    cp tampered.sth $TEST_TMPDIR/merkelogs/$PROD_PUBLIC_TENANT_ID/0/massifseals/0000000000000000.sth
+    # now add in the seal from the other log, so that the local log and seal are consistent and locally verifiable.
+    cp tampered.sth $TEST_TMPDIR/merklelogs/$PROD_PUBLIC_TENANT_ID/0/massifseals/0000000000000000.sth
 
     # attempt to replicate the logs again
-    output=$($VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata --tenant=$PROD_PUBLIC_TENANT_ID replicate-logs --latest --replicadir=$TEST_TMPDIR/merkelogs)
-    assertEquals "a tampered log should exit 1" 1 $?
+    output=$($VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata --tenant=$PROD_PUBLIC_TENANT_ID replicate-logs --latest --replicadir=$TEST_TMPDIR/merklelogs)
+    assertEquals "2: a tampered log should exit 1" 1 $?
     assertContains "$output"  "error: consistency check failed: the accumulator produced for the trusted base state doesn't match the root produced for the seal state fetched from the log"
 }
 

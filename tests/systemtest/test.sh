@@ -260,7 +260,7 @@ testReplicateErrorForMixedTenants() {
 # This test repeats testReplicateErrorForMixedTenants, but does so using the
 # combination of watch | replicate-logs which permits finer control over the
 # replica
-testReplicateLocalErrorForTamperedPartialToFullMassif() {
+testWatchReplicateErrorForMixedTenants() {
 
     local output
     local other_tenant
@@ -307,6 +307,44 @@ testReplicateLocalErrorForTamperedPartialToFullMassif() {
         | $VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata --tenant=$other_tenant replicate-logs --replicadir=$replicadir)
     assertEquals "extending an inconsistent replica should exit 1" 1 $?
     assertContains "$output"  "error: consistency check failed"
+}
+
+# this test ensures that veracity refused to work with replica directories that
+# mix tenant massifs together while the consistency checks would prevent
+# accidental extension of the wrong log, the failre mode would be very confusing
+# and potentially alarming to the user.
+testWatchReplicateErrorForMixedTenants() {
+
+    local output
+
+    local tenant=${PROD_PUBLIC_TENANT_ID}
+    # Note: this tenant is known to have > 1 massif at the time of writing and logs don't get shorter
+    local other_tenant='tenant/b197ba3c-44fe-4b1a-bbe8-bd9674b2bd17'
+    local replicadir=$TEST_TMPDIR/merklelogs
+    local SHA=shasum
+
+    rm -rf $replicadir
+
+    # replicate massif 0 from the main tenant 
+    output=$($VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata \
+        --tenant=$tenant watch --horizon 10000h \
+        | $VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata --tenant=$tenant replicate-logs --massif=0 --replicadir=$replicadir)
+    assertEquals "watch-public should return a 0 exit code" 0 $?
+
+    # explicitly fetch a massif 0 from a different tenant and place it in the same replica directory using a different filename
+    local other_log_url=${other_log_url:-${DATATRAILS_URL}/verifiabledata/merklelogs/v1/mmrs/${other_tenant}/0/massifs/0000000000000000.log}
+    local other_seal_url=${other_seal_url:-${DATATRAILS_URL}/verifiabledata/merklelogs/v1/mmrs/${other_tenant}/0/massifseals/0000000000000000.sth}
+    curl -s -H "x-ms-blob-type: BlockBlob" -H "x-ms-version: 2019-12-12" $other_log_url -o $replicadir/$tenant/0/massifs/other_tenant.log
+    curl -s -H "x-ms-blob-type: BlockBlob" -H "x-ms-version: 2019-12-12" $other_seal_url -o $replicadir/$tenant/0/massifseals/other_tenant.sth
+
+    # Now attempt to extend the replica. we chose $tenant because we know it has
+    # more than one massif, so this command will always attempt to extend the
+    # replica directory.
+    output=$($VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata \
+        --tenant=$tenant watch --horizon 10000h \
+        | $VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata --tenant=$tenant replicate-logs --replicadir=$replicadir)
+    assertEquals "extending a replica directory with mixed tenants should exit 1" 1 $?
+    assertContains "$output"  "error: log files with the same massif index found in a single directory"
 }
 
 testVerboseOutput() {

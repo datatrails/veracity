@@ -428,10 +428,6 @@ func (v *VerifiedReplica) ReplicateVerifiedUpdates(
 
 	if local != nil {
 
-		if startMassif < local.Start.MassifIndex {
-			return nil
-		}
-
 		// Start from the next massif after the last verified massif and do not
 		// re-verify massifs we have already verified and replicated,
 		if startMassif > local.Start.MassifIndex+1 {
@@ -439,8 +435,7 @@ func (v *VerifiedReplica) ReplicateVerifiedUpdates(
 			// the local, then we start afresh.
 			local = nil
 		} else {
-			// min is safe because we return above if startMassif is less than local.Start.MassifIndex
-			startMassif = min(local.Start.MassifIndex+1, startMassif)
+			startMassif = local.Start.MassifIndex
 		}
 	}
 

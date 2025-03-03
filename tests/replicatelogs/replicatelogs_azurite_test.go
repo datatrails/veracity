@@ -5,8 +5,10 @@ package verifyconsistency
 import (
 	"context"
 	"crypto/elliptic"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -15,8 +17,31 @@ import (
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
 	"github.com/datatrails/go-datatrails-merklelog/mmr"
 	"github.com/datatrails/veracity"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func fileSHA256(filename string) ([]byte, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	hasher := sha256.New()
+	if _, err := io.Copy(hasher, f); err != nil {
+		return nil, err
+	}
+
+	return hasher.Sum(nil), nil
+}
+
+func mustHashFile(t *testing.T, filename string) []byte {
+	t.Helper()
+	hash, err := fileSHA256(filename)
+	require.NoError(t, err)
+	return hash
+}
 
 // TestReplicateMassifUpdate ensures that an extension to a previously replicated
 // massif is handled correctly
@@ -38,6 +63,9 @@ func (s *ReplicateLogsCmdSuite) TestReplicateMassifUpdate() {
 		secondUpdateMassifs     uint64
 		secondUpdateExtraLeaves uint64
 	}{
+		// extend second massif
+		{name: "complete first massif", massifHeight: 8, firstUpdateMassifs: 1, firstUpdateExtraLeaves: h8MassifLeaves - 3, secondUpdateMassifs: 0, secondUpdateExtraLeaves: 3},
+
 		// make sure we cover the obvious edge cases
 		{name: "complete first massif", massifHeight: 8, firstUpdateMassifs: 0, firstUpdateExtraLeaves: h8MassifLeaves - 3, secondUpdateMassifs: 0, secondUpdateExtraLeaves: 3},
 	}
@@ -54,18 +82,12 @@ func (s *ReplicateLogsCmdSuite) TestReplicateMassifUpdate() {
 			replicaDir := s.T().TempDir()
 			tenantId0 := tc.G.NewTenantIdentity()
 
-			// note: CreateLog both creates the massifs *and* populates them
-			lastMassif := uint32(tt.firstUpdateMassifs)
-			if lastMassif > 0 {
-				lastMassif--
-			}
-
 			// If we skip CreateLog below, we need to delete the blobs
 			tc.AzuriteContext.DeleteBlobsByPrefix(massifs.TenantMassifPrefix(tenantId0))
 
-			if lastMassif > 0 {
+			if tt.firstUpdateMassifs > 0 {
 				tc.CreateLog(
-					tenantId0, tt.massifHeight, lastMassif,
+					tenantId0, tt.massifHeight, uint32(tt.firstUpdateMassifs),
 					massifs.TestWithSealKey(&key),
 				)
 			}
@@ -91,17 +113,16 @@ func (s *ReplicateLogsCmdSuite) TestReplicateMassifUpdate() {
 				"replicate-logs",
 				// "--ancestors", fmt.Sprintf("%d", tt.ancestors),
 				"--replicadir", replicaDir,
-				"--massif", fmt.Sprintf("%d", lastMassif),
+				// note: firstUpdateMassifs is the count of *full* massifs we add before adding the leaves, so the count is also the "index" of the last massif.
+				"--massif", fmt.Sprintf("%d", tt.firstUpdateMassifs),
 			})
 			s.NoError(err)
+			firstMassifFilename := filepath.Join(replicaDir, massifs.ReplicaRelativeMassifPath(tenantId0, uint32(tt.firstUpdateMassifs)))
+			firstHash := mustHashFile(s.T(), firstMassifFilename)
 
 			// Add the content for the second update
-			lastMassif = uint32(tt.secondUpdateMassifs)
-			if lastMassif > 0 {
-				lastMassif--
-			}
 
-			if lastMassif > 0 {
+			if tt.secondUpdateMassifs > 0 {
 				massifLeaves := mmr.HeightIndexLeafCount(uint64(tt.massifHeight - 1)) // = ((2 << massifHeight) - 1 + 1) >> 1
 				// CreateLog always deleted blobs, so we can only use AddLeavesToLog here
 				for range tt.secondUpdateMassifs {
@@ -111,7 +132,8 @@ func (s *ReplicateLogsCmdSuite) TestReplicateMassifUpdate() {
 					)
 				}
 			}
-			if tt.firstUpdateExtraLeaves > 0 {
+
+			if tt.secondUpdateExtraLeaves > 0 {
 				tc.AddLeavesToLog(
 					tenantId0, tt.massifHeight, int(tt.secondUpdateExtraLeaves),
 					massifs.TestWithSealKey(&key),
@@ -128,9 +150,14 @@ func (s *ReplicateLogsCmdSuite) TestReplicateMassifUpdate() {
 				"--height", fmt.Sprintf("%d", tt.massifHeight),
 				"replicate-logs",
 				"--replicadir", replicaDir,
-				"--massif", fmt.Sprintf("%d", lastMassif),
+				"--massif", fmt.Sprintf("%d", tt.firstUpdateMassifs+tt.secondUpdateMassifs),
 			})
 			s.NoError(err)
+			// note: secondMassifFilename *may* be same as first depending on test config
+			secondMassifFilename := filepath.Join(replicaDir, massifs.ReplicaRelativeMassifPath(tenantId0, uint32(tt.firstUpdateMassifs+tt.secondUpdateMassifs)))
+			secondHash := mustHashFile(s.T(), secondMassifFilename)
+
+			assert.NotEqual(s.T(), firstHash, secondHash, "the massif should have changed")
 
 			// Attempt to replicate again, this will verify the local state and then do nothing
 			err = app.Run([]string{
@@ -142,7 +169,7 @@ func (s *ReplicateLogsCmdSuite) TestReplicateMassifUpdate() {
 				"--height", fmt.Sprintf("%d", tt.massifHeight),
 				"replicate-logs",
 				"--replicadir", replicaDir,
-				"--massif", fmt.Sprintf("%d", lastMassif),
+				"--massif", fmt.Sprintf("%d", tt.firstUpdateMassifs+tt.secondUpdateMassifs),
 			})
 
 			s.NoError(err)

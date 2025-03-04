@@ -344,7 +344,7 @@ testWatchReplicateErrorForMixedTenants() {
         --tenant=$tenant watch --horizon 10000h \
         | $VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata --tenant=$tenant replicate-logs --replicadir=$replicadir)
     assertEquals "extending a replica directory with mixed tenants should exit 1" 1 $?
-    assertContains "$output"  "error: log files with the same massif index found in a single directory"
+    assertContains "$output"  "error: consistency check failed"
 }
 
 testVerboseOutput() {

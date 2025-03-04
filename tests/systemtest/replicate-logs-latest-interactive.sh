@@ -107,48 +107,6 @@ testReplicateLatest() {
     # now get a different prod public tenant log and seal. NOTE: this is a full massif
 }
 
-## same as testReplicateLatest again but using watch | replicate-logs
-#testWatchReplicateLatest() {
-#
-#    local output
-#
-#    local tenant=${TENANT:-$PROD_PUBLIC_TENANT_ID}
-#    local replicadir=$TEST_TMPDIR/merklelogs
-#    local SHA=shasum
-#
-#    rm -rf $replicadir
-#
-#    # replicate the most recent massif (--ancestors=0 assures this)
-#    output=$($VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata \
-#        --tenant=$tenant watch --horizon 10000h \
-#        | $VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata --tenant=$tenant replicate-logs --ancestors=0 --replicadir=$replicadir)
-#    assertEquals "watch-public should return a 0 exit code" 0 $?
-#
-#    # identify the filename of the last massif
-#    local last_massif=$(ls $replicadir/$tenant/0/massifs/*.log)
-#    echo "last_massif: $last_massif"
-#    local sum_first=$(shasum $last_massif | awk '{print $1}')
-#    echo "sum_first: $sum_first"
-#
-#    while true; do
-#        echo "waiting for the log for $tenant to grow"
-#        # now get a different prod public tenant log and seal. NOTE: this is a full massif
-#        output=$($VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata \
-#            --tenant=$tenant watch --horizon 10000h \
-#            | $VERACITY_INSTALL --data-url $DATATRAILS_URL/verifiabledata --tenant=$tenant replicate-logs --replicadir=$replicadir)
-#        echo "output: $output"
-#
-#        local sum_cur=$($SHA $last_massif | awk '{print $1}')
-#        echo "sum_first, sum_cur: $sum_first, $sum_cur"
-#        if [ "$sum_first" != "$sum_cur" ]; then
-#            echo "the log grew"
-#            break
-#        fi
-#        sleep 3
-#    done;
-#    # now get a different prod public tenant log and seal. NOTE: this is a full massif
-#}
-
 assertStringMatch() {
     local message="$1"
     local expected="$2"

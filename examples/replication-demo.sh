@@ -88,7 +88,7 @@ run() {
         local sum_cur=$($SHASUM_BIN $last_massif | awk '{print $1}')
         if [ "$sum_last" != "$sum_cur" ]; then
             echo "The log grew for tenant $MONITOR_TENANT, old hash: $sum_last, new hash: $sum_cur"
-            sum_cur=$sum_last
+            sum_last=$sum_cur
         fi
         echo "Sleeping for $REPLICATION_INTERVAL seconds (Use Ctrl-C to exit)"
         sleep $REPLICATION_INTERVAL

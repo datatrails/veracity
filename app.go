@@ -15,6 +15,9 @@ func NewApp(version string, ikwid bool) *cli.App {
 		Name:    "veracity",
 		Version: version,
 		Usage:   "common read only operations on datatrails merklelog verifiable data",
+		Description:
+			"Veracity is a tool for verifying, forensically inspecting or efficiently replicating DataTrails transparency logs\n"+
+			"Note the commands described below have further options which can be seen in the individual sub command --help output",
 		Flags: []cli.Flag{
 			&cli.StringFlag{Name: "loglevel", Value: "NOOP"},
 			&cli.Int64Flag{Name: "height", Value: int64(defaultMassifHeight), Usage: "override the massif height"},

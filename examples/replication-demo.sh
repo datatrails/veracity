@@ -64,7 +64,7 @@ shift $((OPTIND-1))
 run() {
     # default to replicating a single tenant and monitoring that same tenant for
     # changes.
-    local tenants_to_replicate=$MONITOR_CHANGES_FOR_TENANT
+    local tenants_to_replicate="--tenant $MONITOR_CHANGES_FOR_TENANT"
 
     # If the user has asked to replicate all tenants, we clear the option that
     # specifies an explicit set of tenants to replicate.

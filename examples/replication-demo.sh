@@ -77,7 +77,7 @@ run() {
          $tenants_to_replicate replicate-logs --progress --latest --replicadir=$REPLICADIR
 
 
-    # identify the filename of the last massif replicated for the tnenant
+    # identify the filename of the last massif replicated for the tenant
     local last_massif=$(ls $REPLICADIR/$MONITOR_CHANGES_FOR_TENANT/0/massifs/*.log | sort -n | tail -n 1)
     echo "last_massif: $last_massif"
 

@@ -35,8 +35,9 @@ usage: $SCRIPTNAME
 
     -f              set to replicate all tenants
     -d              veracity replicate-logs --replicadir value, default: $REPLICADIR
+    -m              when replicating all tenants using -f, use this option to
+                    explicitly watch for changes in a single tenant. defaults to the public tenant:
     -s              interval between replication attempts in seconds, default $REPLICATION_INTERVAL
-    -t              a single tenant to watch for changes, defaults to the public tenant
 END
     exit 1
 }
@@ -47,9 +48,9 @@ while getopts "d:fo:s:t:" o; do
             ;;
         f)  FULL_REPLICA=true
             ;;
-        s)  REPLICATION_INTERVAL=$OPTARG
+        m)  MONITOR_CHANGES_FOR_TENANT=$OPTARG
             ;;
-        t)  MONITOR_CHANGES_FOR_TENANT=$OPTARG
+        s)  REPLICATION_INTERVAL=$OPTARG
             ;;
         *)  usage
             ;;
@@ -61,7 +62,12 @@ shift $((OPTIND-1))
 
 
 run() {
-    local tenants_to_replicate="--tenant tenant/6ea5cd00-c711-3649-6914-7b125928bbb4"
+    # default to replicating a single tenant and monitoring that same tenant for
+    # changes.
+    local tenants_to_replicate=$MONITOR_CHANGES_FOR_TENANT
+
+    # If the user has asked to replicate all tenants, we clear the option that
+    # specifies an explicit set of tenants to replicate.
     if $FULL_REPLICA; then
         # The default, when no tenants are specified to replicate-logs, is to replicate all tenants
         tenants_to_replicate=""

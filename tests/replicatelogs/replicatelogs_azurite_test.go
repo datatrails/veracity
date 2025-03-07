@@ -68,6 +68,9 @@ func (s *ReplicateLogsCmdSuite) TestReplicateMassifUpdate() {
 
 		// make sure we cover the obvious edge cases
 		{name: "complete first massif", massifHeight: 8, firstUpdateMassifs: 0, firstUpdateExtraLeaves: h8MassifLeaves - 3, secondUpdateMassifs: 0, secondUpdateExtraLeaves: 3},
+
+		// make sure we cover update from partial blob to new massif
+		{name: "partial first massif", massifHeight: 8, firstUpdateMassifs: 0, firstUpdateExtraLeaves: h8MassifLeaves - 6, secondUpdateMassifs: 2, secondUpdateExtraLeaves: 0},
 	}
 	key := massifs.TestGenerateECKey(s.T(), elliptic.P256())
 

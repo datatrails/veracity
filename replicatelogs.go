@@ -465,8 +465,6 @@ func (v *VerifiedReplica) ReplicateVerifiedUpdates(
 			return err
 		}
 
-		// next round, use the just replicated remote as the trusted base for verification
-
 		// read the local massif, if it exists, reading at the end of the loop
 		local, err = v.localReader.GetVerifiedContext(ctx, tenantIdentity, uint64(i))
 		if !isNilOrNotFound(err) {
@@ -475,6 +473,13 @@ func (v *VerifiedReplica) ReplicateVerifiedUpdates(
 
 		// copy the remote locally, safely replacing the coresponding local if one exists
 		err = v.replicateVerifiedContext(local, remote)
+		if err != nil {
+			return err
+		}
+
+		// make sure we get the verified context again here that includes
+		// new data now - so next go around the trusted state is set to complete massif
+		local, err = v.localReader.GetVerifiedContext(ctx, tenantIdentity, uint64(i))
 		if err != nil {
 			return err
 		}
@@ -531,7 +536,19 @@ func (v *VerifiedReplica) replicateVerifiedContext(
 		return nil
 	}
 
-	return v.localReader.ReplaceVerifiedContext(remote, v.writeOpener)
+	// localContext, err := v.localReader.VerifyContext(ctx, local.MassifContext)
+	// if err != nil {
+	// 	return err
+	// }
+
+	err := v.localReader.ReplaceVerifiedContext(remote, v.writeOpener)
+	if err != nil {
+		return err
+	}
+
+	//v.localReader.GetVerifiedContext()
+	return nil
+
 }
 
 func verifiedStateEqual(a *massifs.VerifiedContext, b *massifs.VerifiedContext) bool {

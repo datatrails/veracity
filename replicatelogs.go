@@ -471,15 +471,10 @@ func (v *VerifiedReplica) ReplicateVerifiedUpdates(
 			return err
 		}
 
-		// copy the remote locally, safely replacing the coresponding local if one exists
-		err = v.replicateVerifiedContext(local, remote)
-		if err != nil {
-			return err
-		}
-
-		// make sure we get the verified context again here that includes
-		// new data now - so next go around the trusted state is set to complete massif
-		local, err = v.localReader.GetVerifiedContext(ctx, tenantIdentity, uint64(i))
+		// copy the remote locally, safely replacing the coresponding local if
+		// one exists. if the local is replaced (or created) without error, the
+		// remote verified context becomes the new local.
+		local, err = v.replicateVerifiedContext(local, remote)
 		if err != nil {
 			return err
 		}
@@ -500,18 +495,19 @@ func (v *VerifiedReplica) ReplicateVerifiedUpdates(
 // This method has no side effects in the case where the remote and the local
 // are verified to be identical, the original local instance is retained.
 func (v *VerifiedReplica) replicateVerifiedContext(
-	local *massifs.VerifiedContext, remote *massifs.VerifiedContext) error {
+	local *massifs.VerifiedContext, remote *massifs.VerifiedContext) (*massifs.VerifiedContext, error) {
 
 	if local == nil {
-		return v.localReader.ReplaceVerifiedContext(remote, v.writeOpener)
+		return nil, v.localReader.ReplaceVerifiedContext(remote, v.writeOpener)
 	}
 
+	// note: return a nil local for all error cases, the caller should not carry on
 	if local.TenantIdentity != remote.TenantIdentity {
-		return fmt.Errorf("can't replace, tenant identies don't match: local %s vs remote %s", local.TenantIdentity, remote.TenantIdentity)
+		return nil, fmt.Errorf("can't replace, tenant identies don't match: local %s vs remote %s", local.TenantIdentity, remote.TenantIdentity)
 	}
 
 	if local.Start.MassifIndex != remote.Start.MassifIndex {
-		return fmt.Errorf(
+		return nil, fmt.Errorf(
 			"can't replace, massif indices don't match: local %d vs remote %d",
 			local.Start.MassifIndex, remote.Start.MassifIndex)
 	}
@@ -521,7 +517,7 @@ func (v *VerifiedReplica) replicateVerifiedContext(
 
 	if len(local.Data) > len(remote.Data) {
 		// the remote log has been truncated since we last looked
-		return fmt.Errorf("%w: %s, massif=%d", ErrRemoteLogTruncated, tenantIdentity, massifIndex)
+		return nil, fmt.Errorf("%w: %s, massif=%d", ErrRemoteLogTruncated, tenantIdentity, massifIndex)
 	}
 
 	// if the remote and local are the same, we are done, provided the roots still match
@@ -531,24 +527,19 @@ func (v *VerifiedReplica) replicateVerifiedContext(
 		// verifiedStateEqual in the interest of avoiding accidents due to
 		// future refactorings.
 		if !verifiedStateEqual(local, remote) {
-			return fmt.Errorf("%w: %s, massif=%d", ErrRemoteLogInconsistentRootState, tenantIdentity, massifIndex)
+			return nil, fmt.Errorf("%w: %s, massif=%d", ErrRemoteLogInconsistentRootState, tenantIdentity, massifIndex)
 		}
-		return nil
+		return local, nil
 	}
-
-	// localContext, err := v.localReader.VerifyContext(ctx, local.MassifContext)
-	// if err != nil {
-	// 	return err
-	// }
 
 	err := v.localReader.ReplaceVerifiedContext(remote, v.writeOpener)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	//v.localReader.GetVerifiedContext()
-	return nil
-
+	// We have succesfully the local data with the data from the remote. The
+	// remote vc is now equivalent to the local
+	return remote, nil
 }
 
 func verifiedStateEqual(a *massifs.VerifiedContext, b *massifs.VerifiedContext) bool {

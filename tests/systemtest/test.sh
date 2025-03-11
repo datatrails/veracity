@@ -414,3 +414,35 @@ testInvalidBlobUrl() {
     assertEquals "verifying an event not in the massif should result in an error" 1 $?
     assertStringMatch "Error should have the correct error message" "$expected_message" "$output"
 }
+
+# test that the manual post release test works when the local directory has junk (and small) files in the replica directory
+testReleaseCheckVerifyIncludedMixedFilesLessThanHeaderSize() {
+    local output
+
+    # This test always targets the production instance as it replicates a manual release check
+    local tenant=${PROD_PUBLIC_TENANT_ID}
+    local replicadir=$TEST_TMPDIR/mixed
+    local datatrails_url="https://app.datatrails.ai"
+
+    rm -rf $replicadir*
+    mkdir -p $replicadir
+
+
+    local event_id="publicassets/14ba3825-e174-40ac-9dac-da1e7a39f785/events/1421caf9-31c4-4f13-91b0-7eeae36784cb"
+
+
+    # Create a file that is not a valid massif and is also shorter than the 32 bytes
+    echo "<342b" > $replicadir/small.file.whatever
+
+    # running veracity include with mmr.log in cwd as it is in the test plan
+
+    local veracity_bin=$(realpath $VERACITY_INSTALL)
+
+    pushd $replicadir
+    echo curl -H "x-ms-blob-type: BlockBlob" -H "x-ms-version: 2019-12-12" $datatrails_url/verifiabledata/merklelogs/v1/mmrs/$tenant/0/massifs/0000000000000001.log -o mmr.log
+    curl -H "x-ms-blob-type: BlockBlob" -H "x-ms-version: 2019-12-12" $datatrails_url/verifiabledata/merklelogs/v1/mmrs/$tenant/0/massifs/0000000000000001.log -o mmr.log
+    curl -sL $datatrails_url/archivist/v2/$event_id \
+        | $veracity_bin --data-local mmr.log --tenant=$tenant verify-included
+    assertEquals "verify-included failed" 0 $?
+    popd
+}

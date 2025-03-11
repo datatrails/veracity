@@ -401,7 +401,7 @@ testNotBlobFile() {
 
     output=$(curl -sL $DATATRAILS_URL/archivist/v2/$PUBLIC_EVENT_ID | $VERACITY_INSTALL --data-local $INVALID_BLOB_FILE --tenant=$PROD_PUBLIC_TENANT_ID verify-included 2>&1)
     assertEquals "verifying an event not in the massif should result in an error" 1 $?
-    assertContains "$output" "a massif file header was to short or badly formed"
+    assertContains "$output" "a log file corresponding to the massif index was not found"
 }
 
 testInvalidBlobUrl() {

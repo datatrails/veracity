@@ -48,8 +48,8 @@ github.com/datatrails/go-datatrails-common-api-gen v0.6.1 h1:rkzx2FBdTTNirLNLWHp
 github.com/datatrails/go-datatrails-common-api-gen v0.6.1/go.mod h1:rTMGdMdu5M6mGpbXZy1D84cBTGE8JwsDH6BYh9LJlmA=
 github.com/datatrails/go-datatrails-logverification v0.4.1 h1:sCucaDIsyHMCBst6FJPqlJMahsV6pKnhrX5tgksP3V8=
 github.com/datatrails/go-datatrails-logverification v0.4.1/go.mod h1:1KUFqomMuwZY9HcyTNkyTYAbAqYJQcZ6QZiv+5nGqdI=
-github.com/datatrails/go-datatrails-merklelog/massifs v0.3.4 h1:+PPDVDlcgQ7rOK7za9KoITi5DVDSf9H1mJxJAjcnH7w=
-github.com/datatrails/go-datatrails-merklelog/massifs v0.3.4/go.mod h1:3V08x15NPbzBTSrvjvgzUA0ADkxBRV7m3p5ODElmB2A=
+github.com/datatrails/go-datatrails-merklelog/massifs v0.3.5 h1:bCl5J5fQcgwRS1242BDfjtLhGZNB6r8sIVHB71Q+1gM=
+github.com/datatrails/go-datatrails-merklelog/massifs v0.3.5/go.mod h1:3V08x15NPbzBTSrvjvgzUA0ADkxBRV7m3p5ODElmB2A=
 github.com/datatrails/go-datatrails-merklelog/mmr v0.1.1 h1:Ro2fYdDYxGGcPmudYuvPonx78GkdQuKwzrdknLR55cE=
 github.com/datatrails/go-datatrails-merklelog/mmr v0.1.1/go.mod h1:B/Kkz4joZTiTz0q/9FFAgHR+Tcn6UxtphMuCzamAc9Q=
 github.com/datatrails/go-datatrails-merklelog/mmrtesting v0.1.0 h1:q9RXtAGydXKSJjARnFObNu743cbfIOfERTXiiVa2tF4=

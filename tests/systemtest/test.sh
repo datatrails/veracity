@@ -438,11 +438,10 @@ testReleaseCheckVerifyIncludedMixedFilesLessThanHeaderSize() {
 
     local veracity_bin=$(realpath $VERACITY_INSTALL)
 
-    pushd $replicadir
+    cd $replicadir
     echo curl -H "x-ms-blob-type: BlockBlob" -H "x-ms-version: 2019-12-12" $datatrails_url/verifiabledata/merklelogs/v1/mmrs/$tenant/0/massifs/0000000000000001.log -o mmr.log
     curl -H "x-ms-blob-type: BlockBlob" -H "x-ms-version: 2019-12-12" $datatrails_url/verifiabledata/merklelogs/v1/mmrs/$tenant/0/massifs/0000000000000001.log -o mmr.log
     curl -sL $datatrails_url/archivist/v2/$event_id \
         | $veracity_bin --data-local mmr.log --tenant=$tenant verify-included
     assertEquals "verify-included failed" 0 $?
-    popd
 }

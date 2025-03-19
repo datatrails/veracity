@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/datatrails/go-datatrails-common/cbor"
+	"github.com/datatrails/go-datatrails-common/cose"
 	"github.com/datatrails/go-datatrails-common/logger"
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
 	"github.com/datatrails/go-datatrails-merklelog/massifs/watcher"
@@ -38,16 +39,34 @@ const (
 )
 
 var (
-	ErrChangesFlagIsExclusive         = errors.New("use --changes Or --massif and --tenant, not both")
-	ErrNewReplicaNotEmpty             = errors.New("the local directory for a new replica already exists")
-	ErrSealNotFound                   = errors.New("seal not found")
-	ErrSealVerifyFailed               = errors.New("the seal signature verification failed")
-	ErrFailedCheckingConsistencyProof = errors.New("failed to check a consistency proof")
-	ErrFailedToCreateReplicaDir       = errors.New("failed to create a directory needed for local replication")
-	ErrRequiredOption                 = errors.New("a required option was not provided")
-	ErrRemoteLogTruncated             = errors.New("the local replica indicates the remote log has been truncated")
-	ErrRemoteLogInconsistentRootState = errors.New("the local replica root state disagrees with the remote")
+	ErrChangesFlagIsExclusive          = errors.New("use --changes Or --massif and --tenant, not both")
+	ErrNewReplicaNotEmpty              = errors.New("the local directory for a new replica already exists")
+	ErrSealNotFound                    = errors.New("seal not found")
+	ErrSealVerifyFailed                = errors.New("the seal signature verification failed")
+	ErrFailedCheckingConsistencyProof  = errors.New("failed to check a consistency proof")
+	ErrFailedToCreateReplicaDir        = errors.New("failed to create a directory needed for local replication")
+	ErrRequiredOption                  = errors.New("a required option was not provided")
+	ErrRemoteLogTruncated              = errors.New("the local replica indicates the remote log has been truncated")
+	ErrRemoteLogInconsistentRootState  = errors.New("the local replica root state disagrees with the remote")
+	ErrInconsistentUseOfPrefetchedSeal = errors.New("prefetching signed root reader used inconsistently")
 )
+
+// prefetchingSealReader pre-fetches the seal for the massif to avoid racing with the
+// sealer.  If the massif is read first, the log can grow and a a new seal can
+// be applied to the *longer* log. At which point the previously read copy of
+// the massif will be "to short" for the seal.
+// See Bug#10530
+type prefetchingSealReader struct {
+	msg            *cose.CoseSign1Message
+	state          massifs.MMRState
+	tenantIdentity string
+	massifIndex    uint32
+}
+
+type changeCollector struct {
+	log         logger.Logger
+	watchOutput string
+}
 
 // NewReplicateLogsCmd updates a local replica of a remote log, verifying the mutual consistency of the two before making any changes.
 //
@@ -266,6 +285,7 @@ type VerifiedReplica struct {
 	writeOpener  massifs.WriteAppendOpener
 	localReader  massifs.ReplicaReader
 	remoteReader MassifReader
+	rootReader   massifs.SealGetter
 	cborCodec    cbor.CBORCodec
 }
 
@@ -324,7 +344,6 @@ func NewVerifiedReplica(
 
 	remoteReader := massifs.NewMassifReader(
 		logger.Sugar, reader,
-		massifs.WithSealGetter(&cmd.rootReader),
 	)
 
 	return &VerifiedReplica{
@@ -333,6 +352,7 @@ func NewVerifiedReplica(
 		writeOpener:  NewFileWriteOpener(),
 		localReader:  &localReader,
 		remoteReader: &remoteReader,
+		rootReader:   &cmd.rootReader,
 		cborCodec:    cmd.cborCodec,
 	}, nil
 }
@@ -441,10 +461,20 @@ func (v *VerifiedReplica) ReplicateVerifiedUpdates(
 
 	for i := startMassif; i <= endMassif; i++ {
 
-		remoteVerifyOpts := []massifs.ReaderOption{massifs.WithCBORCodec(v.cborCodec)}
+		// Note: we have to fetch the seal before the massif, otherwise we can lose a rase with the builder
+		// See bug#10530
+		remoteSealReader, err := NewPrefetchingSealReader(ctx, v.rootReader, tenantIdentity, i)
+		if err != nil {
+			return err
+		}
+		remoteVerifyOpts := []massifs.ReaderOption{
+			massifs.WithCBORCodec(v.cborCodec),
+			massifs.WithSealGetter(remoteSealReader),
+		}
 		if local != nil {
+			var baseState massifs.MMRState
 			// Promote the trusted base state to a V1 state if it is a V0 state.
-			baseState, err := trustedBaseState(local)
+			baseState, err = trustedBaseState(local)
 			if err != nil {
 				return err
 			}
@@ -595,11 +625,6 @@ func peakBaggedRoot(state massifs.MMRState) []byte {
 	return mmr.HashPeaksRHS(sha256.New(), state.Peaks)
 }
 
-type changeCollector struct {
-	log         logger.Logger
-	watchOutput string
-}
-
 func (c *changeCollector) Logf(msg string, args ...any) {
 	if c.log == nil {
 		return
@@ -676,4 +701,29 @@ func readTenantMassifChanges(ctx context.Context, cCtx *cli.Context, cmd *CmdCtx
 
 	// No explicit config and --all not set, read from stdin
 	return stdinToDecodedTenantMassifs()
+}
+
+func NewPrefetchingSealReader(ctx context.Context, sealGetter massifs.SealGetter, tenantIdentity string, massifIndex uint32) (*prefetchingSealReader, error) {
+
+	msg, state, err := sealGetter.GetSignedRoot(ctx, tenantIdentity, massifIndex)
+	if err != nil {
+		return nil, err
+	}
+	reader := prefetchingSealReader{
+		msg:            msg,
+		state:          state,
+		tenantIdentity: tenantIdentity,
+		massifIndex:    massifIndex,
+	}
+	return &reader, nil
+}
+
+func (r *prefetchingSealReader) GetSignedRoot(ctx context.Context, tenantIdentity string, massifIndex uint32, opts ...massifs.ReaderOption) (*cose.CoseSign1Message, massifs.MMRState, error) {
+	if tenantIdentity != r.tenantIdentity {
+		return nil, massifs.MMRState{}, fmt.Errorf("%w: tenant requested: %s, tenant prefetched: %s", ErrInconsistentUseOfPrefetchedSeal, tenantIdentity, r.tenantIdentity)
+	}
+	if massifIndex != r.massifIndex {
+		return nil, massifs.MMRState{}, fmt.Errorf("%w: massif requested: %d, massif prefetched: %d", ErrInconsistentUseOfPrefetchedSeal, massifIndex, r.massifIndex)
+	}
+	return r.msg, r.state, nil
 }

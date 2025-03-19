@@ -13,7 +13,13 @@ func cfgLogging(cmd *CmdCtx, cCtx *cli.Context) error {
 	if logLevel == "" {
 		logLevel = "INFO"
 	}
-	if logLevel == "TEST" {
+	// This special case allows our integration tests to disable logging
+	// configuration all together. This is necessary due to the approach of
+	// instancing the entire veracity command, including its logging
+	// initialisation, in the integration tests. In cases where the test needs
+	// to be threaded, this can cause a data race due to the way our logging
+	// package deals with its global process state.
+	if logLevel == "NOOP" {
 		cmd.log = &logger.WrappedLogger{
 			SugaredLogger: zap.NewNop().Sugar(),
 		}

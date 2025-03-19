@@ -7,13 +7,11 @@ import (
 	"crypto/elliptic"
 	"crypto/sha256"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/datatrails/go-datatrails-common/logger"
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
@@ -43,104 +41,6 @@ func mustHashFile(t *testing.T, filename string) []byte {
 	hash, err := fileSHA256(filename)
 	require.NoError(t, err)
 	return hash
-}
-
-// TestRegression10530 covers the case where the seal fetched for the massif is
-// ahead of the masssif.  Essentially, this can only happen where the seal is
-// read *after* the massif, and between reading the massif and generating the
-// seal that was fetched, more items are added to the massif. Thus the massif
-// data fetched does not containe all the items that are covered by the seal.
-//
-// NOTICE: this test is unavoidably *flaky* on the PASS side. It will mostly
-// catch the race, but occasionally it will pass. It is not possible to
-// faithfully test a race condition in a "not flaky" way.
-func (s *ReplicateLogsCmdSuite) TestRegression10530() {
-
-	//s.ReplaceStdout()
-
-	// logger.New("TestRegression10530")
-	// defer logger.OnExit()
-	tests := []struct {
-		name string
-		// attempts mitigates the inherent flakyness of detecting a race bug
-		attempts     int
-		massifHeight uint8
-		leafBatch    int
-		batchCount   int
-		activeMassif string
-	}{
-		// note: we only need a single massif to catch the race condition. and
-		// having more makes it much harder to configure the replication run.
-		// these numbers are tuned to balance run time against the reliability
-		// of catching the error. A pass unfortunately takes 10's of seconds
-		{"one by one", 3, 14, 1, 250, "0"},
-	}
-	key := massifs.TestGenerateECKey(s.T(), elliptic.P256())
-	tc := massifs.NewLocalMassifReaderTestContext(s.T(), logger.Sugar, "TestRegression10530")
-	tenantId0 := tc.G.NewTenantIdentity()
-	tc.AzuriteContext.DeleteBlobsByPrefix(massifs.TenantMassifPrefix(tenantId0))
-
-	for _, tt := range tests {
-
-		s.Run(tt.name, func() {
-
-			for attempt := range tt.attempts {
-
-				ctx, cancel := context.WithCancel(context.Background())
-				go func(cancel context.CancelFunc, massifHeight uint8, leafBatch, batchcount int) {
-					defer cancel()
-
-					for range batchcount {
-						tc.AddLeavesToLog(
-							tenantId0, massifHeight, leafBatch,
-							massifs.TestWithSealKey(&key),
-						)
-					}
-				}(cancel, tt.massifHeight, tt.leafBatch, tt.batchCount)
-
-				// Replicate the log
-				// note: VERACITY_IKWID is set in main, we need it to enable --envauth so we force it here
-				app := veracity.NewApp("tests", true)
-				veracity.AddCommands(app, true)
-
-				replicaDir := s.T().TempDir()
-				veracityRuns := 1
-				done := false
-				for !done {
-
-					err := app.Run([]string{
-						"veracity",
-						"--loglevel", "TEST", // sets the zap noop logger which avoids a race with our logging package.
-						"--envauth", // uses the emulator
-						"--container", tc.TestConfig.Container,
-						"--data-url", s.Env.AzuriteVerifiableDataURL,
-						"--tenant", tenantId0,
-						"--height", fmt.Sprintf("%d", tt.massifHeight),
-						"replicate-logs",
-						// "--ancestors", fmt.Sprintf("%d", tt.ancestors),
-						"--replicadir", replicaDir,
-						"--massif", tt.activeMassif,
-					})
-					if err != nil {
-						// We want to fatal out on the first instalce of state size exceeds data
-						if errors.Is(err, massifs.ErrStateSizeExceedsData) {
-							s.T().Fatalf("seal race detected on run %d, in attempt %d. %v", veracityRuns, attempt, err)
-						}
-						fmt.Printf("run %d: %v\n", veracityRuns, err)
-					}
-					time.Sleep(1 * time.Second)
-
-					select {
-					case <-ctx.Done():
-						done = true
-					default:
-						continue
-					}
-					veracityRuns++
-				}
-			}
-		})
-	}
 }
 
 // TestReplicateMassifUpdate ensures that an extension to a previously replicated

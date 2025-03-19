@@ -18,8 +18,11 @@ func cfgLogging(cmd *CmdCtx, cCtx *cli.Context) error {
 	// instancing the entire veracity command, including its logging
 	// initialisation, in the integration tests. In cases where the test needs
 	// to be threaded, this can cause a data race due to the way our logging
-	// package deals with its global process state.
-	if logLevel == "NOOP" {
+	// package deals with its global process state.  NOTE: Veracity uses the
+	// NOOP logger so that consol output can be produced cleanly via the logging
+	// package. For that reason we override the TEST logger instead. It is only
+	// integration tests that need to make use of this.
+	if logLevel == "TEST" {
 		cmd.log = &logger.WrappedLogger{
 			SugaredLogger: zap.NewNop().Sugar(),
 		}

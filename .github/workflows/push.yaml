@@ -10,7 +10,7 @@ jobs:
     name: Quality Control
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           # make tags available for the build
           fetch-depth: 0
@@ -57,7 +57,7 @@ jobs:
     name: System Test
     runs-on: [ubuntu-latest]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           # make tags available for the build
           fetch-depth: 0

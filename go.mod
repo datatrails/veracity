@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/datatrails/go-datatrails-common v0.18.3
-	github.com/datatrails/go-datatrails-common-api-gen v0.6.1
+	github.com/datatrails/go-datatrails-common-api-gen v0.6.6
 	github.com/datatrails/go-datatrails-logverification v0.4.1
 	github.com/datatrails/go-datatrails-merklelog/massifs v0.3.5
 	github.com/datatrails/go-datatrails-merklelog/mmr v0.1.1
@@ -67,7 +67,7 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.0 // indirect
+	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.26.0 // indirect
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/sys v0.24.0 // indirect

@@ -38,7 +38,7 @@ tasks:
             -v \
             -coverprofile={{.UNITTEST_DIR}}/main.out \
             ./...
-          gocov convert {{.UNITTEST_DIR}}/main.out > {{.UNITTEST_DIR}}/coverage.json
+          # gocov convert {{.UNITTEST_DIR}}/main.out > {{.UNITTEST_DIR}}/coverage.json
 
   go:prodpublic:
     desc: "run the integration tests"
@@ -59,7 +59,7 @@ tasks:
             -v \
             -coverprofile={{.UNITTEST_DIR}}/main.out \
             ./...
-          gocov convert {{.UNITTEST_DIR}}/main.out > {{.UNITTEST_DIR}}/coverage.json
+          # gocov convert {{.UNITTEST_DIR}}/main.out > {{.UNITTEST_DIR}}/coverage.json
 
 
   go:unit:
@@ -80,4 +80,4 @@ tasks:
             -v \
             -coverprofile={{.UNITTEST_DIR}}/main.out \
             ./...
-          gocov convert {{.UNITTEST_DIR}}/main.out > {{.UNITTEST_DIR}}/coverage.json
+          # gocov convert {{.UNITTEST_DIR}}/main.out > {{.UNITTEST_DIR}}/coverage.json

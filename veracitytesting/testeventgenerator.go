@@ -11,12 +11,10 @@ import (
 
 	"github.com/datatrails/go-datatrails-common-api-gen/assets/v2/assets"
 	"github.com/datatrails/go-datatrails-common-api-gen/attribute/v2/attribute"
-	"github.com/datatrails/go-datatrails-common/azbus"
 	"github.com/datatrails/go-datatrails-merklelog/massifs/snowflakeid"
 	"github.com/datatrails/go-datatrails-merklelog/mmrtesting"
 	"github.com/datatrails/go-datatrails-simplehash/simplehash"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -141,27 +139,6 @@ func (g *EventTestGenerator) GenerateEventBatch(count int) []*assets.EventRespon
 		events = append(events, g.GenerateNextEvent(mmrtesting.DefaultGeneratorTenantIdentity))
 	}
 	return events
-}
-
-func (g *EventTestGenerator) GenerateTenantEventMessageBatch(tenantIdentity string, count int) []*azbus.ReceivedMessage {
-	msgs := make([]*azbus.ReceivedMessage, 0, count)
-	for range count {
-		event := assets.EventMessage{
-			TenantId: tenantIdentity,
-			Event:    g.GenerateNextEvent(tenantIdentity),
-		}
-		m := protojson.MarshalOptions{UseProtoNames: true}
-		data, err := m.Marshal(&event)
-		if err != nil {
-			g.T.Fatalf("failed to marshal event: %v", err)
-		}
-
-		props := make(map[string]any)
-		props[resourceChangedProperty] = resourceChangeMerkleLogStoredEvent
-
-		msgs = append(msgs, &azbus.ReceivedMessage{Body: data, ApplicationProperties: props})
-	}
-	return msgs
 }
 
 func (g *EventTestGenerator) GenerateNextEvent(tenantIdentity string) *assets.EventResponse {

@@ -61,7 +61,6 @@ tasks:
             ./...
           gocov convert {{.UNITTEST_DIR}}/main.out > {{.UNITTEST_DIR}}/coverage.json
 
-
   go:unit:
     desc: "run unit tests"
     dir: ../

@@ -68,7 +68,7 @@ func TestVerifiableEventsV1EventsFromData(t *testing.T) {
 							0x5b, 0x5d, 0x7d,
 						}, // serialized bytes
 					),
-					1, // mmr index
+					18446744073709551614, // mmr index
 				),
 			},
 			err: nil,
@@ -94,7 +94,7 @@ func TestVerifiableEventsV1EventsFromData(t *testing.T) {
 							0x5b, 0x5d, 0x7d,
 						}, // serialized bytes
 					),
-					1, // mmr index
+					18446744073709551614, // mmr index
 				),
 			},
 			err: nil,

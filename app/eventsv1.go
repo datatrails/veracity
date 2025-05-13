@@ -4,13 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"sort"
+	"strconv"
 	"strings"
 
-	"github.com/datatrails/go-datatrails-common-api-gen/assets/v2/assets"
 	"github.com/datatrails/go-datatrails-logverification/logverification/app"
 	"github.com/datatrails/go-datatrails-serialization/eventsv1"
 	"github.com/google/uuid"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 var (
@@ -70,6 +69,24 @@ func NewEventsV1AppEntries(eventsJson []byte, logTenant string) ([]app.AppEntry,
 	return events, nil
 }
 
+type ledgerEntry struct {
+	Index       string `json:"index,omitempty"`
+	Idtimestamp string `json:"idtimestamp,omitempty"`
+	LogId       string `json:"log_id,omitempty"`
+}
+
+type eventData struct {
+	Identity     string `json:"identity,omitempty"`
+	OriginTenant string `json:"origin_tenant,omitempty"`
+
+	Attributes map[string]any `json:"attributes,omitempty"`
+	Trails     []string       `json:"trails,omitempty"`
+	EventType  string         `json:"event_type,omitempty"`
+
+	// Note: the proof_details top level field can be ignored here because it is a 'oneof'
+	LedgerEntry json.RawMessage `json:"ledger_entry,omitempty"`
+}
+
 // NewEventsV1AppEntry takes a single eventsv1 event JSON and returns a VerifiableEventsV1Event,
 // providing just enough information to verify and identify the event.
 func NewEventsV1AppEntry(eventJson []byte, logTenant string) (*app.AppEntry, error) {
@@ -81,16 +98,7 @@ func NewEventsV1AppEntry(eventJson []byte, logTenant string) (*app.AppEntry, err
 	// Unmarshal into a generic type to get just the bits we need. Use
 	// defered decoding to get the raw merklelog entry as it must be
 	// unmarshaled using protojson and the specific generated target type.
-	entry := struct {
-		Identity     string `json:"identity,omitempty"`
-		OriginTenant string `json:"origin_tenant,omitempty"`
-
-		Attributes map[string]any `json:"attributes,omitempty"`
-		Trails     []string       `json:"trails,omitempty"`
-
-		// Note: the proof_details top level field can be ignored here because it is a 'oneof'
-		MerkleLogCommit json.RawMessage `json:"merklelog_commit,omitempty"`
-	}{}
+	entry := eventData{}
 
 	err := json.Unmarshal(eventJson, &entry)
 	if err != nil {
@@ -102,6 +110,7 @@ func NewEventsV1AppEntry(eventJson []byte, logTenant string) (*app.AppEntry, err
 		return nil, ErrInvalidEventsV1EventJson
 	}
 
+	//TODO: don't need to pass in logTenant any more
 	// if logTenant isn't given, default to the origin tenant
 	// for log tenant.
 	if logTenant == "" {
@@ -109,8 +118,8 @@ func NewEventsV1AppEntry(eventJson []byte, logTenant string) (*app.AppEntry, err
 	}
 
 	// get the merklelog commit info
-	merkleLogCommit := &assets.MerkleLogCommit{}
-	err = protojson.Unmarshal(entry.MerkleLogCommit, merkleLogCommit)
+	eventLedgerEntry := &ledgerEntry{}
+	err = json.Unmarshal(entry.LedgerEntry, eventLedgerEntry)
 	if err != nil {
 		return nil, err
 	}
@@ -126,8 +135,14 @@ func NewEventsV1AppEntry(eventJson []byte, logTenant string) (*app.AppEntry, err
 	serializableEvent := eventsv1.SerializableEvent{
 		Attributes: entry.Attributes,
 		Trails:     entry.Trails,
+		EventType:  entry.EventType,
 	}
 	serializedBytes, err := serializableEvent.Serialize()
+	if err != nil {
+		return nil, err
+	}
+
+	entryIndex, err := strconv.ParseUint(eventLedgerEntry.Index, 10, 64)
 	if err != nil {
 		return nil, err
 	}
@@ -139,6 +154,6 @@ func NewEventsV1AppEntry(eventJson []byte, logTenant string) (*app.AppEntry, err
 			byte(0),
 			serializedBytes,
 		),
-		merkleLogCommit.Index,
+		entryIndex,
 	), nil
 }

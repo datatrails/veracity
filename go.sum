@@ -54,8 +54,6 @@ github.com/datatrails/go-datatrails-merklelog/mmr v0.2.0 h1:NUP0OUVixuyWf+Gmi/e3
 github.com/datatrails/go-datatrails-merklelog/mmr v0.2.0/go.mod h1:iLipg39Ce3U68NjXFxjxwxXR9U0T6Dm6pldJA47Lx8s=
 github.com/datatrails/go-datatrails-merklelog/mmrtesting v0.2.0 h1:cv8JincUm3h/4hyVcuofPt5pAtOZ+KYLnsDdvQ3D6Lc=
 github.com/datatrails/go-datatrails-merklelog/mmrtesting v0.2.0/go.mod h1:h8b1O0xAoMv2DsVQuo6vNyM4RLL2DlJCWJqgysX127w=
-github.com/datatrails/go-datatrails-serialization/eventsv1 v0.0.2 h1:yEk+0KvWkn/xYbf3WgdFCAZNkLE4pze9ySqeCr6Pnos=
-github.com/datatrails/go-datatrails-serialization/eventsv1 v0.0.2/go.mod h1:9i6Tip2lIXwSZ3SxP7XEhU2eQ9zkpxhEBmPmlOGqv/8=
 github.com/datatrails/go-datatrails-serialization/eventsv1 v0.0.3 h1:BLHfCXjzXUgr1knXE9XtZC+jNnf2orGEL+BTAWqSyp4=
 github.com/datatrails/go-datatrails-serialization/eventsv1 v0.0.3/go.mod h1:9i6Tip2lIXwSZ3SxP7XEhU2eQ9zkpxhEBmPmlOGqv/8=
 github.com/datatrails/go-datatrails-simplehash v0.0.5 h1:igu4QRYO87RQXrJlqSm3fgMA2Q0F4jglWqBlfvKrXKQ=

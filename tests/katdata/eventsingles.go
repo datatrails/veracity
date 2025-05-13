@@ -85,9 +85,10 @@ var (
     "created_by": "a3732a3f-1406-45b6-bdce-2976945752fc",
     "created_at": 1738143218368,
     "confirmation_status": "CONFIRMED",
-    "merklelog_commit": {
+    "ledger_entry": {
         "index": "4",
-        "idtimestamp": "0194b168bcde03be00"
+        "idtimestamp": "0194b168bcde03be00",
+        "log_id": "97e90a09-8c56-40df-a4de-42fde462ef6f"
     }
 }`)
 

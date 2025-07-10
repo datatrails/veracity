@@ -1,4 +1,4 @@
-package veracity
+package localmassifs
 
 import (
 	"bufio"
@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
 )
@@ -49,11 +50,17 @@ func (o *StdinOpener) Open(string) (io.ReadCloser, error) {
 
 // Utilities to remove the os dependencies from the MassifReader
 type OsDirLister struct{}
+type SuffixDirLister struct {
+	OsDirLister
+	Suffix string
+}
 
 func NewDirLister() massifs.DirLister {
 	return &OsDirLister{}
 }
-
+func NewSuffixDirLister(suffix string) massifs.DirLister {
+	return &SuffixDirLister{Suffix: suffix}
+}
 func (*OsDirLister) ListFiles(name string) ([]string, error) {
 	dpath, err := filepath.Abs(name)
 	if err != nil {
@@ -71,4 +78,18 @@ func (*OsDirLister) ListFiles(name string) ([]string, error) {
 		}
 	}
 	return result, nil
+}
+
+func (s *SuffixDirLister) ListFiles(name string) ([]string, error) {
+	found, err := s.OsDirLister.ListFiles(name)
+	if err != nil {
+		return nil, err
+	}
+	var matched []string
+	for _, f := range found {
+		if strings.HasSuffix(f, s.Suffix) {
+			matched = append(matched, f)
+		}
+	}
+	return matched, nil
 }

@@ -2,10 +2,12 @@ package veracity
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/datatrails/go-datatrails-common/cbor"
 	"github.com/datatrails/go-datatrails-common/logger"
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
+	"github.com/datatrails/go-datatrails-merklelog/massifs/snowflakeid"
 )
 
 // MassifGetter gets a specific massif based on the massifIndex given for a tenant log
@@ -37,7 +39,7 @@ type MassifReader interface {
 type CmdCtx struct {
 	log logger.Logger
 	// storer *azblob.Storer
-	//reader       azblob.Reader
+	// reader       azblob.Reader
 	massifReader MassifReader
 	readerURL    string
 	cborCodec    cbor.CBORCodec
@@ -46,7 +48,17 @@ type CmdCtx struct {
 
 	massifHeight uint8
 
+	commitmentEpoch uint8
+	idState         *snowflakeid.IDState
+
 	bugs map[string]bool
+}
+
+func (cmd *CmdCtx) NextID() (uint64, error) {
+	if cmd.idState == nil {
+		return 0, fmt.Errorf("idState not initialized, cannot generate next ID")
+	}
+	return cmd.idState.NextID()
 }
 
 // Clone returns a copy of the CmdCtx with only those members that are safe to share copied.

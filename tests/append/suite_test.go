@@ -1,5 +1,5 @@
 // Package replicatelogs provides a test suite for the ReplicateLogs command.
-package verifyconsistency
+package append
 
 import (
 	"testing"
@@ -8,16 +8,16 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type ReplicateLogsCmdSuite struct {
+type AppendCmdSuite struct {
 	tests.IntegrationTestSuite
 }
 
-func (s *ReplicateLogsCmdSuite) SetupSuite() {
+func (s *AppendCmdSuite) SetupSuite() {
 	s.IntegrationTestSuite.SetupSuite()
 	// ensure we have the azurite config in the env for all the tests so that --envauth always uses the emulator
 	s.EnsureAzuriteEnv()
 }
 
-func TestReplicateLogsCmdSuite(t *testing.T) {
-	suite.Run(t, new(ReplicateLogsCmdSuite))
+func TestAppendCmdSuite(t *testing.T) {
+	suite.Run(t, new(AppendCmdSuite))
 }

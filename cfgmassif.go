@@ -6,6 +6,7 @@ import (
 
 	"github.com/datatrails/go-datatrails-common/logger"
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
+	"github.com/datatrails/veracity/localmassifs"
 	"github.com/urfave/cli/v2"
 )
 
@@ -57,10 +58,11 @@ func cfgMassifReader(cmd *CmdCtx, cCtx *cli.Context) error {
 		// not automatically derived.
 		cache, err := massifs.NewLogDirCache(
 			logger.Sugar,
-			NewFileOpener(),
-			massifs.WithDirCacheTenant(cCtx.String("tenant")), // may be empty string
-			massifs.WithDirCacheMassifLister(NewDirLister()),
-			massifs.WithDirCacheSealLister(NewDirLister()),
+			localmassifs.NewFileOpener(),
+			massifs.WithDirCacheTenant(cCtx.String("tenant")),
+			// massifs.WithExplicitFilePaths(cCtx.String("tenant")), // may be empty string
+			massifs.WithDirCacheMassifLister(localmassifs.NewDirLister()),
+			massifs.WithDirCacheSealLister(localmassifs.NewDirLister()),
 			massifs.WithReaderOption(massifs.WithMassifHeight(cmd.massifHeight)),
 			massifs.WithReaderOption(massifs.WithCBORCodec(codec)),
 		)

@@ -17,6 +17,8 @@ import (
 	"github.com/datatrails/go-datatrails-merklelog/massifs"
 	"github.com/datatrails/go-datatrails-merklelog/massifs/watcher"
 	"github.com/datatrails/go-datatrails-merklelog/mmr"
+	"github.com/datatrails/veracity/keyio"
+	"github.com/datatrails/veracity/localmassifs"
 	"github.com/gosuri/uiprogress"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/exp/rand"
@@ -179,7 +181,6 @@ By default transient errors are re-tried without limit, and if the error is 429,
 // replicateChanges replicate the changes for the provided slice of tenants.
 // Paralelism is limited by breaking the total changes into smaller slices and calling this function
 func replicateChanges(cCtx *cli.Context, cmd *CmdCtx, changes []TenantMassif, progress Progresser) error {
-
 	var wg sync.WaitGroup
 	errChan := make(chan error, len(changes)) // buffered so it doesn't block
 
@@ -249,7 +250,6 @@ func replicateChanges(cCtx *cli.Context, cmd *CmdCtx, changes []TenantMassif, pr
 }
 
 func initReplication(cCtx *cli.Context, cmd *CmdCtx, change TenantMassif) (*VerifiedReplica, uint32, uint32, error) {
-
 	replicator, err := NewVerifiedReplica(cCtx, cmd.Clone())
 	if err != nil {
 		return nil, 0, 0, err
@@ -268,7 +268,6 @@ func defaultRetryDelay(_ error) time.Duration {
 }
 
 func newProgressor(cCtx *cli.Context, barName string, increments int) Progresser {
-
 	if !cCtx.Bool("progress") {
 		return NewNoopProgress()
 	}
@@ -292,7 +291,6 @@ type VerifiedReplica struct {
 func NewVerifiedReplica(
 	cCtx *cli.Context, cmd *CmdCtx,
 ) (*VerifiedReplica, error) {
-
 	dataUrl := cCtx.String("data-url")
 	reader, err := cfgReader(cmd, cCtx, dataUrl == "")
 	if err != nil {
@@ -307,7 +305,7 @@ func NewVerifiedReplica(
 		return nil, fmt.Errorf("massif height must be less than 256")
 	}
 
-	cache, err := massifs.NewLogDirCache(logger.Sugar, NewFileOpener())
+	cache, err := massifs.NewLogDirCache(logger.Sugar, localmassifs.NewFileOpener())
 	if err != nil {
 		return nil, err
 	}
@@ -318,8 +316,8 @@ func NewVerifiedReplica(
 
 	opts := []massifs.DirCacheOption{
 		massifs.WithDirCacheReplicaDir(cCtx.String("replicadir")),
-		massifs.WithDirCacheMassifLister(NewDirLister()),
-		massifs.WithDirCacheSealLister(NewDirLister()),
+		massifs.WithDirCacheMassifLister(localmassifs.NewDirLister()),
+		massifs.WithDirCacheSealLister(localmassifs.NewDirLister()),
 		massifs.WithReaderOption(massifs.WithMassifHeight(uint8(massifHeight))),
 		massifs.WithReaderOption(massifs.WithSealGetter(&localReader)),
 		massifs.WithReaderOption(massifs.WithCBORCodec(cmd.cborCodec)),
@@ -330,7 +328,7 @@ func NewVerifiedReplica(
 	// verification will fail with a suitable error.
 	pemString := cCtx.String("sealer-key")
 	if pemString != "" {
-		pem, err := DecodeECDSAPublicString(pemString)
+		pem, err := keyio.DecodeECDSAPublicString(pemString)
 		if err != nil {
 			return nil, err
 		}
@@ -349,7 +347,7 @@ func NewVerifiedReplica(
 	return &VerifiedReplica{
 		cCtx:         cCtx,
 		log:          logger.Sugar,
-		writeOpener:  NewFileWriteOpener(),
+		writeOpener:  localmassifs.NewFileWriteOpener(),
 		localReader:  &localReader,
 		remoteReader: &remoteReader,
 		rootReader:   &cmd.rootReader,
@@ -364,8 +362,8 @@ func NewVerifiedReplica(
 // interesting.
 func (v *VerifiedReplica) ReplicateVerifiedUpdates(
 	ctx context.Context,
-	tenantIdentity string, startMassif, endMassif uint32) error {
-
+	tenantIdentity string, startMassif, endMassif uint32,
+) error {
 	isNilOrNotFound := func(err error) bool {
 		if err == nil {
 			return true
@@ -381,7 +379,6 @@ func (v *VerifiedReplica) ReplicateVerifiedUpdates(
 
 	// on demand promotion of a v0 state to a v1 state, for compatibility with the consistency check.
 	trustedBaseState := func(local *massifs.VerifiedContext) (massifs.MMRState, error) {
-
 		if local.MMRState.Version > int(massifs.MMRStateVersion0) {
 			return local.MMRState, nil
 		}
@@ -447,7 +444,6 @@ func (v *VerifiedReplica) ReplicateVerifiedUpdates(
 	// dealt with, local is always the predecessor.
 
 	if local != nil {
-
 		// Start from the next massif after the last verified massif and do not
 		// re-verify massifs we have already verified and replicated,
 		if startMassif > local.Start.MassifIndex+1 {
@@ -525,8 +521,8 @@ func (v *VerifiedReplica) ReplicateVerifiedUpdates(
 // This method has no side effects in the case where the remote and the local
 // are verified to be identical, the original local instance is retained.
 func (v *VerifiedReplica) replicateVerifiedContext(
-	local *massifs.VerifiedContext, remote *massifs.VerifiedContext) (*massifs.VerifiedContext, error) {
-
+	local *massifs.VerifiedContext, remote *massifs.VerifiedContext,
+) (*massifs.VerifiedContext, error) {
 	if local == nil {
 		return nil, v.localReader.ReplaceVerifiedContext(remote, v.writeOpener)
 	}
@@ -573,7 +569,6 @@ func (v *VerifiedReplica) replicateVerifiedContext(
 }
 
 func verifiedStateEqual(a *massifs.VerifiedContext, b *massifs.VerifiedContext) bool {
-
 	var err error
 
 	// There is no difference in the log format between the two versions currently supported.
@@ -661,7 +656,6 @@ func newWatchConfig(cCtx *cli.Context, cmd *CmdCtx) (WatchConfig, error) {
 }
 
 func readTenantMassifChanges(ctx context.Context, cCtx *cli.Context, cmd *CmdCtx) ([]TenantMassif, error) {
-
 	if cCtx.IsSet("latest") {
 		// This is because people get tripped up with the `veracity watch -z 90000h | veracity replicate-logs` idiom,
 		// Its such a common use case that we should just make it work.
@@ -704,7 +698,6 @@ func readTenantMassifChanges(ctx context.Context, cCtx *cli.Context, cmd *CmdCtx
 }
 
 func NewPrefetchingSealReader(ctx context.Context, sealGetter massifs.SealGetter, tenantIdentity string, massifIndex uint32) (*prefetchingSealReader, error) {
-
 	msg, state, err := sealGetter.GetSignedRoot(ctx, tenantIdentity, massifIndex)
 	if err != nil {
 		return nil, err

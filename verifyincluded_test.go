@@ -20,7 +20,6 @@ import (
 // the first entry is a known assetsv2 events
 // the seconds entry is a known eventsv1 event
 func testMassifContext(t *testing.T) *massifs.MassifContext {
-
 	start := massifs.MassifStart{
 		MassifHeight: 3,
 	}
@@ -80,19 +79,16 @@ type fakeMassifGetter struct {
 //
 // one assetsv2 event entry and one eventsv1 entry
 func NewFakeMassifGetter(t *testing.T) *fakeMassifGetter {
-
 	massifContext := testMassifContext(t)
 
 	return &fakeMassifGetter{
 		t:             t,
 		massifContext: massifContext,
 	}
-
 }
 
 // NewFakeMassifGetterInvalidRoot creates a new massif getter that has an incorrect massif root
 func NewFakeMassifGetterInvalidRoot(t *testing.T) *fakeMassifGetter {
-
 	massifContext := testMassifContext(t)
 
 	// a massif context with 2 entries has its root at index 2
@@ -172,7 +168,6 @@ func TestVerifyAssetsV2Event(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-
 			logTenant, err := test.event.LogTenant()
 			require.Nil(t, err)
 

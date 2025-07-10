@@ -1,4 +1,4 @@
-package veracity
+package keyio
 
 import (
 	"crypto/ecdsa"
@@ -49,7 +49,6 @@ func DecodeECDSAPublicPEM(data []byte) (*ecdsa.PublicKey, error) {
 // material presented as a single, base64 encoded, string. This is typically
 // more convenient for command line and environment vars
 func DecodeECDSAPublicString(data string) (*ecdsa.PublicKey, error) {
-
 	keyData, err := base64.StdEncoding.DecodeString(data)
 	if err != nil {
 		return nil, err

@@ -1,4 +1,4 @@
-package veracity
+package localmassifs
 
 import (
 	"io"
